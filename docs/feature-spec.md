@@ -6,10 +6,7 @@ Each section ends with its decisions. A decision marked **proposed** is my defau
 
 ## Needs your input
 
-Two things in this spec cannot be written without you. Until the first is filled in, T0.3's last acceptance check is not met.
-
-1. **Three real cards** for [§2.3](#23-card-walk-through). Photos are enough. Pick ones that differ: for example one with a "for the sauce" style section, one handwritten, and one with an unusual yield or a note in the margin.
-2. **People and devices** in [§1](#1-people-and-devices). The table holds my assumptions.
+One thing in this spec still rests on my assumptions: **people and devices** in [§1](#1-people-and-devices). Correct the table if it is wrong.
 
 ## 1. People and devices
 
@@ -61,13 +58,58 @@ Only the title is required. Everything else can be left empty and added later.
 
 ### 2.3 Card walk-through
 
-To be filled from three real cards. For each card, every piece of writing on it is listed with the field it goes into. Anything with no home is a gap in the data model and is settled before the Phase 0 gate.
+Three sample cards supplied by the owner on 22 Nov 2026. Every piece of writing on each card is listed with the field it goes into. The photos are not in the repository; the cards are transcribed as fixtures in `packages/schema`, with their ingredient lines exactly as written.
+
+**Card 1: "Pancakes Recipe"**, a neat journal page with a bulleted ingredient list and five numbered steps.
 
 | On the card | Goes into | Fits? |
 | --- | --- | --- |
-| *Card 1: to be added* | | |
-| *Card 2: to be added* | | |
-| *Card 3: to be added* | | |
+| "Pancakes Recipe" | Title, as "Pancakes" | Yes |
+| Seven bulleted lines, such as "1 1/2 cups all purpose flour" | Ingredient lines, one each, in the card's order | Yes |
+| "4 tbsp butter melted" | Quantity 4, unit tablespoon, food butter, note "melted" | Yes. There is no comma before the note, so the parser must find where the food name ends |
+| Five numbered directions | Five steps | Yes |
+| "for 1min on each side" | Stays in the step text | Yes. Phase 2's step details can read it as a duration |
+| Drawings, the page number "56" | The original-card photo only | Yes, nothing to enter |
+| No yield, times or source | Left empty | Yes, all optional |
+
+**Card 2: "Meat Loaf"**, an index card with ingredients in two columns and the method as one paragraph.
+
+| On the card | Goes into | Fits? |
+| --- | --- | --- |
+| "Meat Loaf" | Title | Yes |
+| "M" in the corner | Nothing. It is the card's filing letter | Not captured; the photo keeps it |
+| Five ingredients in the left column, three in the right | Eight ingredient lines, left column first | Yes. The order must be kept: the method says "mix first 5 ingredients" |
+| "2 lbs. ground chuck", "1/3 c. minced onions" | Unit matched from "lbs." and "c."; "minced" becomes the note | Yes, once units match abbreviations with full stops |
+| "1 - (15 1/2 oz can) Chef Boy-ar-Dee spaghetti sauce with mushrooms" | Quantity 1, unit can, food spaghetti sauce, note with the can size, brand and "with mushrooms" | Yes. Doubling the recipe gives 2 cans. The parser will find this line hard and may leave it as free text |
+| The sauce is used in three amounts: 1/4 c., 1/4 c. and 1/2 c. | One ingredient line; the amounts stay in the step text | Yes |
+| One paragraph of directions | Split into seven steps by the person entering it | Yes |
+| "Preheat oven to 400°" | The first step's text | Yes. There is no oven-temperature field, and none is proposed |
+| "Bake 25 min." | Cook time, and the last step's text | Yes |
+| Six loaves, implied by "cut crosswise into 6 strips" | Servings, only if the cook chooses to enter 6 | Yes. An importer must not infer it: the card does not state a yield |
+
+**Card 3: "Chocolate Chip Pan Cookies"**, a handwritten page with abbreviations, a yield and some uncertain pen marks.
+
+| On the card | Goes into | Fits? |
+| --- | --- | --- |
+| "Chocolate Chip Pan Cookies" | Title | Yes |
+| Ingredients in three loose groups with no headings | One untitled list, in reading order | Yes, but the grouping is lost. Sections need a title, and untitled neighbours would merge |
+| "2 1/4 C. flour", "1 t. soda", "1 t. vanilla" | Unit cup or teaspoon; foods matched through aliases ("flour", "soda", "vanilla") | Yes, with one rule: a one-letter unit matches in its exact case only, because "t" is a teaspoon and "T" a tablespoon |
+| "3/4 C B. Sugar - Firmly Packed" | Quantity 3/4, unit cup, food brown sugar, note "firmly packed" | Yes, if the household gives brown sugar the alias "B. Sugar"; otherwise it stays free text |
+| A pen line through or under both "3/4 C" amounts | A note saying the marks are unclear and how they were read | Yes. Phase 2's review should flag marks like this, not pick silently |
+| "1 - 12 oz Chocolate Chips" | Quantity 12, unit ounce, food chocolate chips | Yes |
+| Three paragraphs of directions | Six steps | Yes |
+| "15 x 10 x 1 inch pan" | Step text. Optionally a tool | Yes |
+| "Bake 20 minutes at 375°" | Cook time, and step text | Yes |
+| "Makes 35 squares" | Yield: 35, "squares" | Yes |
+
+**What the cards showed**
+
+- Every piece of recipe content has a home. No new field is needed.
+- None of the three states a source, so "From" stays empty on all of them.
+- Oven temperature has no field and stays in the step text. That is deliberate: it belongs to a step, not to the recipe.
+- Ingredient groups without a heading cannot be kept as separate sections. The original-card photo preserves the layout.
+- Unit matching needed a rule the plan did not have: full stops are ignored, and one-letter units match by exact case. It is now in the shared schema with tests.
+- Six lines from these cards are good tests for the Phase 1 parser, and are listed in the implementation plan for T1.5.
 
 **Decisions**
 

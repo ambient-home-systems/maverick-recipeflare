@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { beefChili, pancakes, roastChicken } from "./fixtures";
+import { beefChili, cardMeatLoaf, cardPanCookies, pancakes, roastChicken } from "./fixtures";
 import { formatIngredient, formatQuantity, isFreeText, isScalable } from "./format";
 import type { Ingredient } from "./recipe";
 
@@ -78,6 +78,24 @@ describe("formatIngredient", () => {
     expect(isFreeText(line)).toBe(true);
     expect(isScalable(line)).toBe(false);
     expect(formatIngredient(line, { scale: 4 })).toBe("Salt and pepper, to taste");
+  });
+
+  it("formats the sample cards' lines from their parsed fields", () => {
+    expect(formatIngredient(lineOf(cardMeatLoaf, "1/3 c. minced onions"))).toBe(
+      "⅓ cup onion, minced",
+    );
+    expect(
+      formatIngredient(
+        lineOf(cardMeatLoaf, "1 - (15 1/2 oz can) Chef Boy-ar-Dee spaghetti sauce with mushrooms"),
+        { scale: 2 },
+      ),
+    ).toBe("2 cans spaghetti sauce, 15 1/2 oz, Chef Boy-ar-Dee, with mushrooms");
+    expect(formatIngredient(lineOf(cardPanCookies, "2 1/4 C. flour"))).toBe(
+      "2¼ cups all-purpose flour",
+    );
+    expect(
+      formatIngredient(lineOf(cardPanCookies, "1 - 12 oz Chocolate Chips"), { scale: 0.5 }),
+    ).toBe("6 oz chocolate chips");
   });
 
   it("shows a food with no quantity", () => {

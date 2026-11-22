@@ -14,7 +14,10 @@ import {
  * sections, free-text lines beside parsed ones, a long recipe, a title-only
  * recipe, an imported recipe, photos of a paper card, notes and nutrition.
  *
- * Three recipes transcribed from real family cards are still to be added.
+ * The last three come from sample cards the owner supplied. Their ingredient
+ * lines are kept exactly as written on the card, abbreviations and all, because
+ * that is what the parser and the screens must cope with. Their steps are
+ * reworded. The card photos themselves are not in the repository.
  */
 
 function unit(name: string): UnitRef {
@@ -439,6 +442,145 @@ export const lentilSoup = buildRecipe(6, {
   updatedAt: "2026-11-19T12:15:00.000Z",
 });
 
+/**
+ * Sample card 1: a neat page with a bulleted ingredient list and five numbered
+ * steps. It states no yield, time or source.
+ */
+export const cardPancakes = buildRecipe(7, {
+  title: "Pancakes",
+  slug: "pancakes",
+  ingredients: [
+    {
+      title: null,
+      lines: [
+        ["1 egg", 1, null, "egg"],
+        ["1 1/2 cups all purpose flour", 1.5, "cup", "all-purpose flour"],
+        ["3/4 tsp salt", 0.75, "teaspoon", "salt"],
+        ["2 tbsp sugar", 2, "tablespoon", "sugar"],
+        ["4 tbsp butter melted", 4, "tablespoon", "butter", "melted"],
+        ["1 1/4 cups milk", 1.25, "cup", "milk"],
+        ["1 tbsp baking powder", 1, "tablespoon", "baking powder"],
+      ],
+    },
+  ],
+  steps: [
+    {
+      title: null,
+      steps: [
+        "Stir the flour, salt, sugar and baking powder together in a bowl.",
+        "In a second bowl, stir the egg, melted butter and milk together.",
+        "Combine the two and mix to a smooth batter.",
+        "Put a frying pan over medium heat.",
+        "Once the pan is hot, cook the pancakes for about 1 minute per side, until golden.",
+      ],
+    },
+  ],
+  categories: ["Breakfast"],
+  assets: ["original"],
+  updatedAt: "2026-11-22T09:00:00.000Z",
+});
+
+/**
+ * Sample card 2: an index card with ingredients in two columns and the method
+ * as one paragraph. One ingredient names a brand and a can size, and the method
+ * refers to "the first 5 ingredients", so the order of the lines matters.
+ */
+export const cardMeatLoaf = buildRecipe(8, {
+  title: "Meat Loaf",
+  slug: "meat-loaf",
+  cookMinutes: 25,
+  ingredients: [
+    {
+      title: null,
+      lines: [
+        ["2 lbs. ground chuck", 2, "pound", "ground chuck"],
+        ["1/3 c. minced onions", 1 / 3, "cup", "onion", "minced"],
+        ["1 tsp salt", 1, "teaspoon", "salt"],
+        ["1/4 tsp oregano", 0.25, "teaspoon", "dried oregano"],
+        ["1 egg, slightly beaten", 1, null, "egg", "slightly beaten"],
+        [
+          "1 - (15 1/2 oz can) Chef Boy-ar-Dee spaghetti sauce with mushrooms",
+          1,
+          "can",
+          "spaghetti sauce",
+          "15 1/2 oz, Chef Boy-ar-Dee, with mushrooms",
+        ],
+        ["1 1/2 c. cooked rice", 1.5, "cup", "cooked rice"],
+        ["1/3 c. minced green pepper", 1 / 3, "cup", "green bell pepper", "minced"],
+      ],
+    },
+  ],
+  steps: [
+    {
+      title: null,
+      steps: [
+        "Heat the oven to 400°F.",
+        "Mix the ground chuck, onions, salt, oregano and egg. Mix in 1/4 cup of the spaghetti sauce.",
+        "On waxed paper, press the meat into a 12 by 7 inch rectangle and cut it crosswise into 6 strips.",
+        "Mix the rice, green pepper and another 1/4 cup of sauce. Divide it into 6 portions and set one in the middle of each strip.",
+        "Fold the meat over the rice and shape each strip into a small loaf.",
+        "Set the loaves on a baking sheet and spoon 1/2 cup of sauce over them.",
+        "Bake for 25 minutes.",
+      ],
+    },
+  ],
+  categories: ["Dinner"],
+  assets: ["original"],
+  updatedAt: "2026-11-22T09:05:00.000Z",
+});
+
+/**
+ * Sample card 3: a handwritten page with one-letter unit abbreviations
+ * ("C.", "t."), shorthand food names ("soda", "B. Sugar"), a package size as a
+ * quantity, a stated yield, and two amounts whose pen marks are hard to read.
+ */
+export const cardPanCookies = buildRecipe(9, {
+  title: "Chocolate Chip Pan Cookies",
+  slug: "chocolate-chip-pan-cookies",
+  yieldQuantity: 35,
+  yieldUnit: "squares",
+  cookMinutes: 20,
+  ingredients: [
+    {
+      title: null,
+      lines: [
+        ["2 1/4 C. flour", 2.25, "cup", "all-purpose flour"],
+        ["1 t. soda", 1, "teaspoon", "baking soda"],
+        ["1 t. salt", 1, "teaspoon", "salt"],
+        ["1 t. vanilla", 1, "teaspoon", "vanilla extract"],
+        ["2 eggs", 2, null, "egg"],
+        ["1 - 12 oz Chocolate Chips", 12, "ounce", "chocolate chips"],
+        ["1 cup Nuts", 1, "cup", "nuts"],
+        ["1 C. Butter, Softened", 1, "cup", "butter", "softened"],
+        ["3/4 C Sugar", 0.75, "cup", "sugar"],
+        ["3/4 C B. Sugar - Firmly Packed", 0.75, "cup", "brown sugar", "firmly packed"],
+      ],
+    },
+  ],
+  steps: [
+    {
+      title: null,
+      steps: [
+        "In a small bowl, stir together the flour, baking soda and salt. Set it aside.",
+        "In a large bowl, beat the butter, sugar, brown sugar and vanilla until creamy. Beat in the eggs.",
+        "Add the flour mixture a little at a time and mix well. Stir in the chocolate chips and nuts.",
+        "Spread the dough in a greased 15 by 10 by 1 inch pan.",
+        "Bake at 375°F for 20 minutes.",
+        "Cut into 2-inch squares.",
+      ],
+    },
+  ],
+  notes: [
+    {
+      title: "Reading the card",
+      text: "The two sugar amounts are marked with a pen line that could be an underline or a strike-through. They are entered as 3/4 cup each.",
+    },
+  ],
+  categories: ["Dessert"],
+  assets: ["original"],
+  updatedAt: "2026-11-22T09:10:00.000Z",
+});
+
 export const fixtureRecipes: Recipe[] = [
   pancakes,
   roastChicken,
@@ -446,4 +588,7 @@ export const fixtureRecipes: Recipe[] = [
   cardamomCookies,
   cinnamonToast,
   lentilSoup,
+  cardPancakes,
+  cardMeatLoaf,
+  cardPanCookies,
 ];

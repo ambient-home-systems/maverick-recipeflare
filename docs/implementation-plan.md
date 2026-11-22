@@ -368,7 +368,7 @@ Index: `(label_id)`.
 | `standard_unit` | TEXT | yes | |
 | `created_at`, `updated_at` | TEXT | no | |
 
-A migration inserts about 25 common units with fixed IDs. Foods and labels start empty and are created as recipes are entered.
+A migration inserts about 25 common units with fixed IDs. Teaspoon gets the alias `t`, tablespoon `T` and cup `C`, so that handwritten abbreviations match (see [§5.1](#51-rule-based-ingredient-parser)). `name_key` uniqueness applies to unit names; aliases are compared as written. Foods and labels start empty and are created as recipes are entered.
 
 **`assets`** — images and attachments, owned by a recipe, an import job, or both in turn.
 
@@ -595,7 +595,7 @@ Design rules:
 - **One conversion from draft to input.** `draftToInput(draft, lists)` assigns IDs, matches unit, food and organizer names against the household's lists, and returns the input and the issues. Ingredient lines that arrive as text only go through the rule-based parser on the way.
 - **Caps are part of the schema**: 100 ingredient lines, 100 steps, 20 notes, 50 organizers, 4,000 characters per step. They are what make the save's size provable in [§4.6](#46-one-batch-recipe-save).
 - **Formatting is shared.** `formatQuantity`, `formatIngredient`, scaling and duration helpers live here, so the viewer, cook mode, the search text and later the Mealie `display` field agree.
-- **Fixtures live here too**, under the `@recipeflare/schema/fixtures` import so they stay out of production bundles. Six invented recipes cover sections, free-text lines, a long recipe, a title-only recipe, an imported recipe and photos of a paper card. Three more, transcribed from real family cards, are added when the owner supplies them. They feed the mock screens and the tests.
+- **Fixtures live here too**, under the `@recipeflare/schema/fixtures` import so they stay out of production bundles. Six invented recipes cover sections, free-text lines, a long recipe, a title-only recipe, an imported recipe and photos of a paper card. Three more come from sample cards the owner supplied: their ingredient lines are kept exactly as written and their steps are reworded. They feed the mock screens and the tests.
 
 Drizzle table definitions stay in the Worker and are not generated from Zod, nor the reverse. The API shapes are nested documents and the tables are rows; one repository module maps between them, and a save-then-load test guards the mapping.
 
@@ -604,11 +604,13 @@ Drizzle table definitions stay in the Worker and are not generated from Zod, nor
 `parseIngredientLine(text, lists)` lives in the shared package. It is a pure function with no network or model call, so it runs in the editor as the cook types, offline included, and in the Worker for imported lines.
 
 - **Quantity.** A leading integer, decimal, fraction, mixed number or Unicode fraction ("1 1/2", "1½", "0.5"). For a range it takes the first number.
-- **Unit.** The next word or two, matched against the household's units by name, plural, abbreviation and alias.
+- **Unit.** The next word or two, matched against the household's units by name, plural, abbreviation and alias. Full stops are ignored ("c.", "lbs."). A one-letter unit matches in its exact case only, because handwritten recipes use "t" for teaspoon and "T" for tablespoon; longer names ignore case. `unitMatcher()` in the shared package implements this and `draftToInput` already uses it.
 - **Food.** The remaining text up to a comma or parenthesis, matched against the household's foods by name, plural and alias.
 - **Note.** Whatever follows.
 - **Result.** The fields it is sure of, and a list of what it could not match. An unmatched food is marked as new in the editor and is created only when the cook confirms at save; nothing is created silently. A line it cannot read at all stays a free-text line.
 - **It never alters `originalText`.**
+
+The three sample cards in the feature spec supply lines the parser's test corpus must include: "4 tbsp butter melted" (a note with no comma), "2 lbs. ground chuck", "1 t. soda", "3/4 C B. Sugar - Firmly Packed", "1 - 12 oz Chocolate Chips" and "1 - (15 1/2 oz can) Chef Boy-ar-Dee spaghetti sauce with mushrooms". The last may stay free text; it must not be misread.
 
 Phase 2 adds the AI fallback for lines the rules cannot read, behind the same function signature. The Mealie-compatible `parser/ingredient` endpoint in Phase 4 calls the same code.
 
