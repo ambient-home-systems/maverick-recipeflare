@@ -34,7 +34,10 @@ describe("the mock index", () => {
       "/mock/fixtures",
     );
     expect(screen.getByText("Cook mode")).toBeTruthy();
-    expect(screen.getAllByText("Not drawn yet.")).toHaveLength(4);
+    expect(screen.getByRole("link", { name: /Recipe list and search/ }).getAttribute("href")).toBe(
+      "/mock/list",
+    );
+    expect(screen.getAllByText("Not drawn yet.")).toHaveLength(3);
   });
 
   it("reports that the API is reachable", async () => {
@@ -134,8 +137,8 @@ describe("the fixture recipes screen", () => {
   it("credits a recipe's source on its row", async () => {
     await renderAt("/mock/fixtures");
     const metaLines = screen.getAllByTestId("recipe-meta").map((line) => line.textContent);
-    expect(metaLines).toContain("30 min · Dessert · From Aunt June");
-    expect(metaLines).toContain("40 min · Soup · From Example Kitchen");
+    expect(metaLines).toContain("30 min · Dessert · From Aunt June · Holiday, Family favorite");
+    expect(metaLines).toContain("40 min · Soup · From Example Kitchen · Vegetarian, Weeknight");
   });
 });
 

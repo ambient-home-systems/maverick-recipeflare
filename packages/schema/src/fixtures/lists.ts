@@ -16,6 +16,9 @@ export function fixtureId(group: number, n: number): string {
 
 const GROUP = { member: 1, unit: 2, food: 3, label: 4, organizer: 5 } as const;
 
+/** The ID group for fixture import jobs. Recipes use 16 and up. */
+export const IMPORT_JOB_GROUP = 6;
+
 export const fixtureMember: Member = {
   id: fixtureId(GROUP.member, 1),
   email: "cook@example.com",

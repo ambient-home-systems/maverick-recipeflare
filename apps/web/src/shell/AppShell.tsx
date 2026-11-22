@@ -1,11 +1,25 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { NAV_ITEMS, type NavItem } from "./nav";
 
-function isCurrent(item: NavItem, pathname: string): boolean {
-  return item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
+/** Inside the mock harness the navigation leads to mock screens, where one is drawn. */
+function target(item: NavItem, pathname: string): NavItem["to"] | NonNullable<NavItem["mockTo"]> {
+  return pathname.startsWith("/mock") && item.mockTo ? item.mockTo : item.to;
 }
 
-function NavLink({ item, current }: { item: NavItem; current: boolean }) {
+function isCurrent(item: NavItem, pathname: string): boolean {
+  const to = target(item, pathname);
+  return to === "/" ? pathname === "/" : pathname.startsWith(to);
+}
+
+function NavLink({
+  item,
+  to,
+  current,
+}: {
+  item: NavItem;
+  to: ReturnType<typeof target>;
+  current: boolean;
+}) {
   const Icon = item.icon;
   // The bar on a phone is card white; the rail from tablet width is ink navy.
   // One ink on each: the current destination is marked by a tinted ground and
@@ -15,7 +29,7 @@ function NavLink({ item, current }: { item: NavItem; current: boolean }) {
     : "font-semibold hover:bg-surface-sunk md:font-normal md:hover:bg-shell-raised";
   return (
     <Link
-      to={item.to}
+      to={to}
       aria-current={current ? "page" : undefined}
       className={`transition-rf flex min-h-touch-nav flex-1 flex-col items-center justify-center gap-1 rounded-md text-xs text-ink no-underline md:flex-none md:flex-row md:justify-start md:gap-3 md:px-3 md:text-base md:text-on-shell ${tone}`}
     >
@@ -59,7 +73,12 @@ export function AppShell() {
           Recipeflare
         </Link>
         {NAV_ITEMS.map((item) => (
-          <NavLink key={item.to} item={item} current={isCurrent(item, pathname)} />
+          <NavLink
+            key={item.to}
+            item={item}
+            to={target(item, pathname)}
+            current={isCurrent(item, pathname)}
+          />
         ))}
       </nav>
 

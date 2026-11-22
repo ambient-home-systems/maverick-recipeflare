@@ -82,6 +82,8 @@ function buildRecipe(number: number, spec: RecipeSpec): Recipe {
   let counter = 1;
   const nextId = () => fixtureId(group, counter++);
   const id = nextId();
+  // One a day from the first of the month, so that "newest" has an order to show.
+  const createdAt = `2026-11-${String(number).padStart(2, "0")}T12:00:00.000Z`;
 
   const toIngredient = (line: LineSpec): Ingredient => {
     if (typeof line === "string") {
@@ -147,8 +149,8 @@ function buildRecipe(number: number, spec: RecipeSpec): Recipe {
     tools: organizers("tool", spec.tools ?? []),
     assets,
     createdBy: fixtureMember.id,
-    createdAt: FIXTURE_TIME,
-    updatedAt: spec.updatedAt ?? FIXTURE_TIME,
+    createdAt,
+    updatedAt: spec.updatedAt ?? createdAt,
   };
 }
 

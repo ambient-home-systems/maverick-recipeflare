@@ -578,7 +578,14 @@
         "value": "0 10px 28px rgb(13 22 38 / 0.2), 0 2px 6px rgb(13 22 38 / 0.12)",
         "dark": "0 10px 28px rgb(0 0 0 / 0.5), 0 2px 6px rgb(0 0 0 / 0.35)",
         "cssVar": "--rf-overlay-shadow",
-        "purpose": "For surfaces that float over the page, such as a menu or dialog. Defined; no shipped component uses it yet."
+        "purpose": "For surfaces that float over the page. The sheet uses it, over the scrim."
+      },
+      {
+        "name": "scrim",
+        "value": "rgb(13 22 38 / 0.5)",
+        "dark": "rgb(0 0 0 / 0.62)",
+        "cssVar": "--rf-scrim",
+        "purpose": "Dims the page behind a sheet (dialog::backdrop). The only translucent colour."
       }
     ],
     "motion": [
@@ -597,6 +604,11 @@
         "name": "reduced-motion",
         "value": "animation-duration and transition-duration 0.01ms, one iteration",
         "purpose": "Applied to everything when the device asks for reduced motion."
+      },
+      {
+        "name": "sheet-rise",
+        "value": "translate 0 1.5rem to 0 and opacity 0 to 1, var(--rf-motion)",
+        "purpose": "A sheet rises a little as it opens. The one authored entrance; held still under reduced motion."
       }
     ],
     "breakpoints": [
@@ -635,7 +647,10 @@
       "sizes": {
         "navigation": "1.375rem",
         "button": "20px",
-        "notice": "18px"
+        "notice": "18px",
+        "field": "20px",
+        "chip": "18px",
+        "importTile": "1.375rem"
       },
       "inUse": [
         "ScrollText",
@@ -643,7 +658,17 @@
         "SlidersHorizontal",
         "Trash2",
         "CloudOff",
-        "TriangleAlert"
+        "TriangleAlert",
+        "Search",
+        "X",
+        "ListFilter",
+        "ChevronDown",
+        "Check",
+        "Link2",
+        "LoaderCircle",
+        "RotateCw",
+        "PencilLine",
+        "ArrowDownUp"
       ],
       "appIcon": "public/icon.svg is a placeholder: an index card with a buff divider tab and a red rule on ink navy. The final icon and wordmark are unresolved."
     },
@@ -714,7 +739,7 @@
       "name": "Recipe Row",
       "kind": "custom",
       "refersTo": "recipe-row",
-      "description": "One recipe in the index: a ruled row with a letter tile in the category's stock, a title and one meta line. The whole row is the link.",
+      "description": "One recipe in the index: a letter tile or a photo with a stock band, the title, and one line of time, category, From and up to two tags that never wraps.",
       "html": "<ul class=\"ds-rows\"><li><a class=\"ds-row\" href=\"#\"><span class=\"ds-row-tile ds-row-tile-salmon\" aria-hidden=\"true\">S</span><span><span class=\"ds-row-title\">Sunday Beef and Bean Chili</span><span class=\"ds-row-meta\">2 hr 30 min · Dinner · <b>Freezes well</b></span></span></a></li><li><a class=\"ds-row\" href=\"#\"><span class=\"ds-row-tile ds-row-tile-sky\" aria-hidden=\"true\">C</span><span><span class=\"ds-row-title\">Cardamom Sugar Cookies</span><span class=\"ds-row-meta\">30 min · Dessert · From Aunt June</span></span></a></li><li><a class=\"ds-row\" href=\"#\"><span class=\"ds-row-tile ds-row-tile-plain\" aria-hidden=\"true\">C</span><span><span class=\"ds-row-title\">Cinnamon Toast</span></span></a></li></ul>",
       "css": ".ds-rows { list-style: none; margin: 0; padding: 0; background: var(--rf-surface); border: 1px solid var(--rf-rule); font-family: var(--rf-font); } .ds-rows li { border-bottom: 1px solid var(--rf-rule); } .ds-rows li:last-child { border-bottom: 0; } .ds-row { display: flex; min-height: 4.25rem; align-items: center; gap: 0.75rem; padding: 0.625rem 1rem; color: var(--rf-ink); text-decoration: none; transition: background-color var(--rf-motion), color var(--rf-motion), border-color var(--rf-motion); } .ds-row:hover, .ds-row:active { background: var(--rf-surface-sunk); } .ds-row:focus-visible { outline: 3px solid var(--rf-focus); outline-offset: 2px; border-radius: var(--rf-radius-sm); } .ds-row-tile { display: grid; width: 3rem; height: 3rem; flex: none; place-items: center; border-radius: var(--rf-radius-sm); font-family: var(--rf-font); font-size: var(--rf-text-lg); font-weight: 700; color: var(--rf-on-stock); } .ds-row-tile-salmon { background: var(--rf-stock-salmon); } .ds-row-tile-sky { background: var(--rf-stock-sky); } .ds-row-tile-plain { background: var(--rf-stock-plain); color: var(--rf-ink); } .ds-row-title { display: block; font-size: var(--rf-text-lg); font-weight: 600; line-height: 1.25; } .ds-row-meta { display: block; margin-top: 0.125rem; font-size: var(--rf-text-sm); line-height: 1.429; font-variant-numeric: tabular-nums; } .ds-row-meta b { font-weight: 600; }"
     },
@@ -749,6 +774,54 @@
       "description": "Ink-navy rail down the left from tablet width, with the wordmark at its top. Current and hovered items take the raised navy; the focus ring is white.",
       "html": "<nav class=\"ds-rail\" aria-label=\"Main\"><a class=\"ds-rail-mark\" href=\"#\">Recipeflare</a><a class=\"ds-rail-item\" href=\"#\" aria-current=\"page\"><span class=\"ds-rail-icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M15 12h-5\"/><path d=\"M15 8h-5\"/><path d=\"M19 17V5a2 2 0 0 0-2-2H4\"/><path d=\"M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3\"/></svg></span><span>Recipes</span></a><a class=\"ds-rail-item\" href=\"#\"><span class=\"ds-rail-icon ds-rail-icon-add\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12h14\"/><path d=\"M12 5v14\"/></svg></span><span>Add</span></a><a class=\"ds-rail-item\" href=\"#\"><span class=\"ds-rail-icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><line x1=\"21\" x2=\"14\" y1=\"4\" y2=\"4\"/><line x1=\"10\" x2=\"3\" y1=\"4\" y2=\"4\"/><line x1=\"21\" x2=\"12\" y1=\"12\" y2=\"12\"/><line x1=\"8\" x2=\"3\" y1=\"12\" y2=\"12\"/><line x1=\"21\" x2=\"16\" y1=\"20\" y2=\"20\"/><line x1=\"12\" x2=\"3\" y1=\"20\" y2=\"20\"/><line x1=\"14\" x2=\"14\" y1=\"2\" y2=\"6\"/><line x1=\"8\" x2=\"8\" y1=\"10\" y2=\"14\"/><line x1=\"16\" x2=\"16\" y1=\"18\" y2=\"22\"/></svg></span><span>Manage</span></a></nav>",
       "css": ".ds-rail { display: flex; width: 14rem; flex-direction: column; gap: 0.25rem; padding: 0 0.75rem 0.75rem; background: var(--rf-shell); font-family: var(--rf-font); } .ds-rail-mark { display: flex; min-height: var(--rf-touch); align-items: center; margin-bottom: 0.5rem; padding: 1rem 0.75rem; color: var(--rf-on-shell); font-size: var(--rf-text-xl); font-weight: 700; text-decoration: none; } .ds-rail-item { display: flex; min-height: var(--rf-touch-nav); align-items: center; gap: 0.75rem; padding: 0 0.75rem; border-radius: var(--rf-radius-md); color: var(--rf-on-shell); font-size: var(--rf-text-base); font-weight: 400; text-decoration: none; transition: background-color var(--rf-motion), color var(--rf-motion), border-color var(--rf-motion); } .ds-rail-item:hover { background: var(--rf-shell-raised); } .ds-rail-item[aria-current=\"page\"] { background: var(--rf-shell-raised); font-weight: 700; } .ds-rail-item:focus-visible, .ds-rail-mark:focus-visible { outline: 3px solid var(--rf-focus-on-shell); outline-offset: 2px; } .ds-rail-icon { display: grid; width: 2.5rem; height: 2.25rem; place-items: center; border-radius: var(--rf-radius-md); } .ds-rail-icon-add { background: var(--rf-red-fill); color: var(--rf-on-red); }"
+    },
+    {
+      "name": "Search Field",
+      "kind": "input",
+      "refersTo": "search-field",
+      "description": "The one search box, on the recipe list. Placeholder in ink at 400, typed text at 600.",
+      "html": "<form class=\"ds-search\"><svg viewBox=\"0 0 24 24\" width=\"20\" height=\"20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><path d=\"m21 21-4.3-4.3\"/></svg><input type=\"search\" placeholder=\"Search recipes\" aria-label=\"Search recipes\"></form>",
+      "css": ".ds-search { display: flex; align-items: center; height: 3rem; border-radius: var(--rf-radius-md); border: 1px solid var(--rf-rule-strong); background: var(--rf-surface); font-family: var(--rf-font); color: var(--rf-ink); } .ds-search svg { margin-left: 0.875rem; flex: none; } .ds-search input { flex: 1; min-width: 0; height: 100%; padding: 0 0.625rem; border: 0; background: transparent; font: inherit; font-size: var(--rf-text-base); font-weight: 600; color: inherit; outline: none; } .ds-search input::placeholder { color: var(--rf-ink); font-weight: 400; opacity: 1; } .ds-search:has(input:focus-visible) { outline: 3px solid var(--rf-focus); outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "text-field",
+      "description": "A text box or select on card white, with its label above.",
+      "html": "<label class=\"ds-field\"><span>Recipe page address</span><input type=\"url\"></label>",
+      "css": ".ds-field { display: grid; gap: 0.25rem; font-family: var(--rf-font); color: var(--rf-ink); font-size: var(--rf-text-sm); font-weight: 600; } .ds-field input { min-height: var(--rf-touch); width: 100%; padding: 0 0.75rem; border-radius: var(--rf-radius-md); border: 1px solid var(--rf-rule-strong); background: var(--rf-surface); color: var(--rf-ink); font: inherit; font-size: var(--rf-text-base); font-weight: 400; } .ds-field input:focus-visible { outline: 3px solid var(--rf-focus); outline-offset: 2px; }"
+    },
+    {
+      "name": "Choice Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "A filter in the filter sheet. Chosen, it is filled and gains a tick.",
+      "html": "<span class=\"ds-chips\"><button class=\"ds-chip\" aria-pressed=\"false\">Holiday</button><button class=\"ds-chip\" aria-pressed=\"true\">&#10003; Weeknight</button></span>",
+      "css": ".ds-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; } .ds-chip { display: inline-flex; align-items: center; gap: 0.375rem; min-height: var(--rf-touch); padding: 0 1rem; border-radius: var(--rf-radius-pill); border: 1px solid var(--rf-rule-strong); background: var(--rf-surface); color: var(--rf-ink); font-family: var(--rf-font); font-size: var(--rf-text-sm); font-weight: 600; cursor: pointer; transition: background-color var(--rf-motion), color var(--rf-motion); } .ds-chip:hover { background: var(--rf-surface-sunk); } .ds-chip[aria-pressed=\"true\"] { background: var(--rf-primary); border-color: var(--rf-primary); color: var(--rf-on-primary); padding-left: 0.75rem; } .ds-chip:focus-visible { outline: 3px solid var(--rf-focus); outline-offset: 2px; }"
+    },
+    {
+      "name": "Chip In Use",
+      "kind": "chip",
+      "refersTo": "chip-in-use",
+      "description": "A filter that is on, above the list. Pressing it removes the filter.",
+      "html": "<button class=\"ds-chip-used\" aria-label=\"Remove filter: Weeknight\">Weeknight <span aria-hidden=\"true\">&#10005;</span></button>",
+      "css": ".ds-chip-used { display: inline-flex; align-items: center; gap: 0.375rem; min-height: var(--rf-touch); padding: 0 0.75rem 0 1rem; border-radius: var(--rf-radius-pill); border: 1px solid var(--rf-rule-strong); background: var(--rf-surface-sunk); color: var(--rf-ink); font-family: var(--rf-font); font-size: var(--rf-text-sm); font-weight: 600; cursor: pointer; } .ds-chip-used:hover { background: var(--rf-surface); } .ds-chip-used:focus-visible { outline: 3px solid var(--rf-focus); outline-offset: 2px; }"
+    },
+    {
+      "name": "Sheet",
+      "kind": "dialog",
+      "refersTo": "sheet",
+      "description": "A modal panel for one short job. Bottom sheet on a phone, centred from 768 px. The only surface with a shadow.",
+      "html": "<div class=\"ds-sheet\"><div class=\"ds-sheet-head\"><h2>Filter recipes</h2><button>Close</button></div><p>A recipe must match everything you choose.</p><div class=\"ds-sheet-foot\"><button class=\"ds-sheet-quiet\">Clear filters</button><button class=\"ds-sheet-primary\">Show 2 recipes</button></div></div>",
+      "css": ".ds-sheet { max-width: 34rem; border: 1px solid var(--rf-rule); border-radius: var(--rf-radius-md); background: var(--rf-surface); box-shadow: var(--rf-overlay-shadow); overflow: hidden; font-family: var(--rf-font); color: var(--rf-ink); } .ds-sheet-head { display: flex; align-items: center; justify-content: space-between; padding: 0.25rem 0.25rem 0.25rem 1rem; border-bottom: 2px solid var(--rf-red-line); } .ds-sheet-head h2 { margin: 0; font-size: var(--rf-text-xl); font-weight: 700; } .ds-sheet-head button { min-height: var(--rf-touch); padding: 0 0.75rem; border: 0; border-radius: var(--rf-radius-md); background: transparent; color: inherit; font: inherit; font-size: var(--rf-text-sm); font-weight: 600; } .ds-sheet p { margin: 0; padding: 0.75rem 1rem; font-size: var(--rf-text-sm); } .ds-sheet-foot { display: flex; justify-content: flex-end; gap: 0.75rem; padding: 0.75rem 1rem; border-top: 1px solid var(--rf-rule); } .ds-sheet-foot button { min-height: var(--rf-touch); padding: 0 1.25rem; border-radius: var(--rf-radius-md); font: inherit; font-size: var(--rf-text-base); font-weight: 600; } .ds-sheet-quiet { background: var(--rf-surface); color: var(--rf-ink); border: 1px solid var(--rf-rule-strong); } .ds-sheet-primary { background: var(--rf-primary); color: var(--rf-on-primary); border: 0; }"
+    },
+    {
+      "name": "Import Row",
+      "kind": "row",
+      "refersTo": "import-row",
+      "description": "An import from a link, above the recipes until a person has dealt with it. Not a recipe yet: plain stock, no category colour.",
+      "html": "<div class=\"ds-import\"><span class=\"ds-import-tile\" aria-hidden=\"true\">&#128279;</span><span class=\"ds-import-text\"><strong>Skillet Cornbread</strong><span><b>Ready to review</b> · recipes.example.com</span></span><button>Review</button></div>",
+      "css": ".ds-import { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; padding: 0.625rem 1rem; background: var(--rf-surface-sunk); border-bottom: 1px solid var(--rf-rule); font-family: var(--rf-font); color: var(--rf-ink); } .ds-import-tile { display: grid; place-items: center; width: 3rem; height: 3rem; flex: none; border-radius: var(--rf-radius-sm); background: var(--rf-stock-plain); } .ds-import-text { flex: 1; min-width: 8rem; display: grid; gap: 0.125rem; font-size: var(--rf-text-sm); } .ds-import-text strong { font-size: var(--rf-text-lg); font-weight: 600; line-height: 1.25; } .ds-import-text b { font-weight: 600; } .ds-import button { min-height: var(--rf-touch); padding: 0 1.25rem; border: 0; border-radius: var(--rf-radius-md); background: var(--rf-primary); color: var(--rf-on-primary); font: inherit; font-size: var(--rf-text-base); font-weight: 600; }"
     }
   ],
   "narrative": {
@@ -820,7 +893,9 @@
       "Do design each screen in both themes; check the dark one as a dim kitchen, not as a copy of light.",
       "Do pair every icon with words, and use bundled Lucide icons at stroke width 2.",
       "Do give every screen its loading (skeleton rows), empty (empty state), error and offline (notice band) states.",
-      "Do honour reduced motion: transitions and the skeleton sweep stop when the device asks."
+      "Do honour reduced motion: transitions and the skeleton sweep stop when the device asks.",
+      "Use a chip for a filter and only for a filter, and a sheet for a short job over the page.",
+      "Say what an empty result was asked for, and offer one button that clears it."
     ],
     "donts": [
       "Don't add a grey, muted or soft text colour, or fade text with opacity.",
@@ -833,7 +908,9 @@
       "Don't load a font or an icon from a network service. The app must work offline.",
       "Don't derive a dark value by inverting or dimming the light one without checking its pairings.",
       "Don't build a dashboard or a second home screen. The recipe list is the index.",
-      "Don't use the word Cloudflare or its flare shapes in the name, icon or logo, and don't borrow Mealie's look or copy."
+      "Don't use the word Cloudflare or its flare shapes in the name, icon or logo, and don't borrow Mealie's look or copy.",
+      "Don't grey a placeholder, a disabled label or a secondary line. A placeholder is ink at regular weight.",
+      "Don't add a second Add control to the recipe list. Adding starts from the red Add in the navigation; only the first-run state offers it in the page."
     ]
   }
 }

@@ -42,6 +42,8 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 - The header's full-width search field arrives with the recipe-list screen (task T0.7). Until then the phone header carries the wordmark only.
 - Rule red has exactly two jobs: the rule a title sits on, and adding a recipe. Save, cook and confirm use the ink primary button. Delete is a quiet ink-outline button with an icon. Problems are shown in the notice band with an icon.
 - Colours repeat after five categories: a sixth category shares the first one's stock.
+- The search field was built with the recipe list (T0.7) and belongs to that screen: other screens' headers carry the wordmark only. From tablet width it sits on the ground above the dividers.
+- Inside the mock harness the navigation's Recipes and Add lead to the mock list and the mock Add screen, so a review on a phone stays among the mock screens.
 
 ## Unresolved
 
