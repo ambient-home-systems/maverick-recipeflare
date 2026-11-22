@@ -6,7 +6,7 @@ Guidance for Claude Code working in this repository.
 
 Maverick Recipeflare (Recipeflare for short) is a household recipe app on Cloudflare: one TypeScript Worker serving a React PWA and a JSON API, with D1, R2, Queues and, in later phases, Workers AI and Durable Objects. One household per install. Licensed AGPL-3.0-only.
 
-**Status: Phase 0, scaffold only (T0.1).** The workspace, a Worker with a health route and an empty React app exist. There are no features, no database, no auth and no tests yet. When a pull request changes a command or path below, it updates this file in the same pull request.
+**Status: Phase 0, scaffold and CI (T0.1, T0.2).** The workspace, a Worker with a health route, an empty React app, a first test in each Vitest project and the CI workflow exist. There are no features, no database and no auth yet. When a pull request changes a command or path below, it updates this file in the same pull request.
 
 ## Read first
 
@@ -44,6 +44,8 @@ Run from the repository root. Needs Node 22.12 or later and pnpm 10 (`corepack e
 | `pnpm dev` | Worker (`wrangler dev`, port 8787) and web app (Vite, port 5173) together. Open `http://localhost:5173`; Vite proxies `/api` to the Worker |
 | `pnpm build` | Build the web app into `apps/web/dist` |
 | `pnpm lint` | Biome lint and format check. `pnpm format` applies fixes. Markdown is not formatted |
+| `pnpm test` | All Vitest projects once: `schema` (Node), `worker` (Workers runtime), `web` (happy-dom). `pnpm test:watch` re-runs on change |
+| `pnpm test --project worker` | One project. A file path or `-t "name"` narrows it further |
 | `pnpm typecheck` | Regenerate the Worker's types, then run TypeScript in every package |
 | `pnpm types` | Regenerate `apps/worker/worker-configuration.d.ts` from `wrangler.jsonc`. The file is git-ignored; run this after changing bindings |
 
@@ -53,7 +55,6 @@ Not here yet:
 
 | Command | Arrives with |
 | --- | --- |
-| `pnpm test`, `pnpm test --project worker` | T0.2 |
 | `pnpm run deploy:staging`, `pnpm run deploy` (use `pnpm run`; bare `pnpm deploy` is a different pnpm command) | T0.5 |
 | `pnpm db:generate`, `pnpm db:migrate:local` | T0.11 |
 | Local sign-in through `.dev.vars` (`AUTH_MODE=dev`, `DEV_MEMBER_EMAIL`) | T0.12 |
@@ -114,10 +115,14 @@ Not here yet:
 
 ## Testing
 
-- Worker tests run in workerd through `@cloudflare/vitest-plugin` (`cloudflareTest()` in the Vitest config). Import `env` and `exports` from `cloudflare:workers`; queue and migration helpers come from `cloudflare:test`.
+- Three Vitest projects, run together from the root config: `packages/schema` (tests beside the source), `apps/worker` (tests in `apps/worker/test/`), `apps/web` (tests beside the source).
+- Worker tests run in workerd through `@cloudflare/vitest-plugin` (`cloudflareTest()` in the Vitest config). Import `env` and `exports` from `cloudflare:workers` and call `exports.default.fetch()`; queue and migration helpers come from `cloudflare:test`.
+- Web tests use Testing Library on happy-dom. Stub `fetch` with `vi.stubGlobal`; stubs and mocks are reset after each test by the config.
+- Test tooling (`vitest`, the Cloudflare plugin, happy-dom) is installed at the workspace root only. Do not add `vitest` to a package: a second copy breaks the run.
 - Storage is isolated per test file, not per test. Use distinct IDs within a file, or reset and re-apply migrations.
-- Tests apply the real migration files, so a schema change needs its migration before its tests can pass.
+- Once the database exists (T0.11), tests apply the real migration files, so a schema change needs its migration before its tests can pass.
 - New behaviour comes with a test. A bug fix comes with a test that fails without it.
+- CI (`.github/workflows/ci.yml`) runs lint, typecheck, test and build on every pull request and on pushes to `main`.
 
 ## Style
 
