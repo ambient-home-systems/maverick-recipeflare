@@ -17,7 +17,9 @@
     "types": "wrangler types apps/worker/worker-configuration.d.ts",
     "typecheck": "pnpm run types && pnpm -r run typecheck",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "deploy": "node scripts/deploy.mjs",
+    "deploy:staging": "node scripts/deploy.mjs --env staging"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.8",
