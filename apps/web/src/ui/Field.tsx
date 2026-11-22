@@ -28,6 +28,8 @@ type FieldProps = {
   className?: string;
   /** Hides the label from sight while keeping it for assistive technology. */
   hideLabel?: boolean;
+  /** Marks the box as wrong when its problem is shown somewhere else, such as under a row of boxes. */
+  invalid?: boolean;
 };
 
 /** A small outlined word beside a label or a row: "check", "new", "as written". */
@@ -101,7 +103,7 @@ export function TextField({
         spellCheck={type === "url" ? false : undefined}
         enterKeyHint={enterKeyHint}
         value={props.value}
-        aria-invalid={props.error ? true : undefined}
+        aria-invalid={props.error || props.invalid ? true : undefined}
         aria-describedby={described(id, props.error, props.hint)}
         onChange={(event) => props.onChange(event.target.value)}
         onKeyDown={(event) => {

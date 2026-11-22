@@ -315,7 +315,8 @@ describe("editing a recipe", () => {
     );
     expect(screen.getByText("A recipe needs a title.")).toBeTruthy();
     expect(screen.getByText(/does not look like a web address/)).toBeTruthy();
-    expect(screen.getByText("Use a number above zero, such as 6 or 1 1/2.")).toBeTruthy();
+    expect(screen.getByText("Serves: Use a number above zero, such as 6 or 1 1/2.")).toBeTruthy();
+    expect(screen.getByLabelText("Serves").getAttribute("aria-invalid")).toBe("true");
     expect(screen.getByText("Give this section a title, or remove it.")).toBeTruthy();
   });
 

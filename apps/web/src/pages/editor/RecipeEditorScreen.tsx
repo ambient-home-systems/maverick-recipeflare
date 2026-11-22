@@ -256,33 +256,34 @@ export function RecipeEditorScreen({
           />
         </div>
         <p className="-mt-2 text-sm">Leave the total empty to show prep and cook added together.</p>
-        <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-3 gap-y-4 md:grid-cols-[6.5rem_6.5rem_minmax(0,1fr)]">
+        {/* Short boxes for the numbers; what the yield is made of takes the rest, or its own line when text is large. */}
+        <div className="flex flex-wrap gap-x-3 gap-y-4">
           <TextField
-            className="col-span-2 max-w-[6.5rem] md:col-span-1"
+            className="w-[6.5rem]"
             label="Serves"
             inputMode="decimal"
+            invalid={Boolean(errors.servings)}
             value={value.servings}
-            error={errors.servings}
             onChange={(servings) => set("servings", servings)}
           />
           <TextField
+            className="w-[6.5rem]"
             label="Makes"
             inputMode="decimal"
+            invalid={Boolean(errors.yield)}
             value={value.yieldQuantity}
             onChange={(yieldQuantity) => set("yieldQuantity", yieldQuantity)}
           />
           <TextField
+            className="min-w-[min(100%,10rem)] flex-1"
             label="Of what"
             value={value.yieldUnit}
-            hint={errors.yield ? undefined : "Such as cookies, or 9-inch pie."}
+            hint="Such as cookies, or 9-inch pie."
             onChange={(yieldUnit) => set("yieldUnit", yieldUnit)}
           />
-          {errors.yield ? (
-            <div className="col-span-2 -mt-3 md:col-span-3">
-              <FieldProblem>{errors.yield}</FieldProblem>
-            </div>
-          ) : null}
         </div>
+        {errors.servings ? <FieldProblem>Serves: {errors.servings}</FieldProblem> : null}
+        {errors.yield ? <FieldProblem>Makes: {errors.yield}</FieldProblem> : null}
       </div>
 
       <SectionHead title="Ingredients">
@@ -376,8 +377,9 @@ export function RecipeEditorScreen({
             className="transition-rf group-open:rotate-180"
           />
         </summary>
-        <div className="grid grid-cols-2 gap-x-3 gap-y-3 px-4 py-4 md:grid-cols-3">
-          <p className="col-span-2 text-sm md:col-span-3">
+        {/* As many columns as fit: two on a phone, one when the text is very large. */}
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,9rem),1fr))] gap-x-3 gap-y-3 px-4 py-4">
+          <p className="col-span-full text-sm">
             Written as printed, with the unit: 320, 12 g, 480 mg. Leave empty what the recipe does
             not say.
           </p>
@@ -425,7 +427,7 @@ export function RecipeEditorScreen({
 
         {review ? (
           <div className="border-b border-rule px-4 py-4">
-            <p>
+            <p className="[overflow-wrap:anywhere]">
               Read from <span className="font-semibold">{review.from}</span>. Nothing is saved until
               you press Save recipe.
             </p>
@@ -478,12 +480,12 @@ export function RecipeEditorScreen({
           <div className="@container">
             {/* On a phone the original and the recipe take turns; on a wide card they sit side by side. */}
             <div className="border-b border-rule px-4 py-2 @[44rem]:hidden">
-              <fieldset className="flex w-full items-center gap-1 rounded-md border border-rule-strong bg-surface p-1">
+              <fieldset className="flex w-full min-w-0 items-center gap-1 rounded-md border border-rule-strong bg-surface p-1">
                 <legend className="sr-only">Show</legend>
                 {(["recipe", "original"] as const).map((option) => (
                   <label
                     key={option}
-                    className={`transition-rf grid min-h-touch flex-1 cursor-pointer place-items-center rounded-sm px-2 text-base font-semibold has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-focus ${
+                    className={`transition-rf grid min-h-touch min-w-0 flex-1 cursor-pointer place-items-center rounded-sm px-2 text-base font-semibold [overflow-wrap:anywhere] has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-focus ${
                       pane === option
                         ? "bg-primary text-on-primary"
                         : "text-ink hover:bg-surface-sunk"

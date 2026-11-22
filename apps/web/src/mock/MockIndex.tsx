@@ -26,9 +26,19 @@ const READY = [
     name: "Add a recipe",
     detail: "The two ways a recipe starts: typed in, or from a link.",
   },
+  {
+    to: "/mock/new",
+    name: "Recipe editor: a new recipe",
+    detail: "Type lines the way a card writes them and see what the app reads.",
+  },
+  {
+    to: "/mock/review",
+    name: "Reviewing an import",
+    detail: "What a link brought in, with what to check and the original beside it.",
+  },
 ] as const;
 
-const COMING = ["Recipe editor and review", "Cook mode"];
+const COMING = ["Cook mode"];
 
 /**
  * The mock harness: screens drawn from fixture recipes, for reviewing the
@@ -63,6 +73,19 @@ export function MockIndex() {
               <span className="block text-lg font-semibold">Recipe view</span>
               <span className="block text-sm">
                 A long recipe, with links to a title-only one and the loading, offline and error
+                states.
+              </span>
+            </Link>
+          </li>
+          <li className="border-b border-rule">
+            <Link
+              to="/mock/edit/$slug"
+              params={{ slug: "roast-chicken-with-lemon-and-thyme" }}
+              className="transition-rf block min-h-touch px-4 py-3 no-underline hover:bg-surface-sunk"
+            >
+              <span className="block text-lg font-semibold">Recipe editor: a saved recipe</span>
+              <span className="block text-sm">
+                Sections, reordering, pickers and photos, with the problem, leaving and conflict
                 states.
               </span>
             </Link>

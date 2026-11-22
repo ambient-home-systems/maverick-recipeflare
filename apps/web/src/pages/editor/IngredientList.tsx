@@ -310,9 +310,9 @@ export function IngredientList({
                 ) : (
                   summary.map((part, at) => (
                     // biome-ignore lint/suspicious/noArrayIndexKey: the parts of one line never reorder
-                    <span key={at} className="inline-flex items-center gap-1.5">
+                    <span key={at} className="inline-flex max-w-full items-center gap-1.5">
                       {at > 0 ? <span aria-hidden="true">·</span> : null}
-                      <span className="font-semibold">{part.text}</span>
+                      <span className="min-w-0 font-semibold">{part.text}</span>
                       {part.isNew ? <Mark>new</Mark> : null}
                     </span>
                   ))
