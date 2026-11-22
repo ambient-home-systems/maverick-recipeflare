@@ -91,7 +91,7 @@ The model for each task is a setting, as Mealie's provider setting is. AI Gatewa
 
 A shared video link becomes text (caption, subtitles or transcript, plus on-screen text), and that text goes through the normal AI pipeline. Only the download step runs outside Workers, because it needs yt-dlp and ffmpeg.
 
-&#91;embedded content: video import flow · 9 steps, 1 decision\]
+![Video import flow. A shared link reaches the import Worker, which expands short links, skips duplicates and records an import job. If the caption has the recipe, it goes straight to the AI pipeline. Otherwise the job waits on a Queue for the fetch agent on the home server, which uses yt-dlp and ffmpeg and uploads audio, subtitles, caption and keyframes to R2 (deleted after 7 days). A Workflow extracts text from subtitles or a Whisper transcript and reads on-screen text with a vision model, then the AI pipeline builds a draft for review with the source link, thumbnail and transcript kept.](images/video-import-flow.png)
 
 Posts whose caption carries the full recipe never reach the agent. Only the rest are downloaded, on the home server.
 
@@ -138,7 +138,7 @@ Downloading from these platforms may conflict with their terms of service. The d
 
 One Worker serves the frontend and the API, and everything stateful lives in Cloudflare storage. The only piece off Cloudflare is the optional fetch agent for video downloads.
 
-&#91;embedded content: architecture · 1 Worker, 6 services, 1 outside agent\]
+![Architecture. Family devices (installed PWA) and the iOS Shortcut and email path go through Cloudflare Access to one App Worker (TypeScript, Hono) that serves the PWA and the API. Home Assistant reaches the Worker on its own hostname with an API token from the home IP, skipping Access. The Worker uses D1 with FTS5, Durable Objects for live shopping-list sync, R2 with the Images binding, Queues and Workflows for import jobs, Workers AI with AI Gateway, and Cron with Email Routing. The fetch agent runs outside Cloudflare on the home server (yt-dlp and ffmpeg in Docker), pulls jobs from the Queue and uploads media to R2.](images/architecture.png)
 
 Every request passes Cloudflare Access except Home Assistant's, which uses its own hostname and an app token. The fetch agent reaches in only to pull jobs and upload media.
 
@@ -213,7 +213,20 @@ The app will answer the 30 Mealie API paths that Home Assistant's client library
 
 Seven phases take the app from mockups to a copy other households can install themselves. The family can start using it after Phase 2, about 95–160 hours in (2–5 months at 8–12 hours a week). Native apps come after Phase 6.
 
-&#91;embedded content: roadmap · 6 phases, 6 gates\]
+![Roadmap by phase with hours and gates, summarized in the table below.](images/roadmap.png)
+
+| Phase | Hours | Includes | Gate |
+| --- | --- | --- | --- |
+| 0 Foundations and design | 20–30 | Feature spec, mockups of the four core screens, data model; repository, D1 schema and migrations, Access, deploy pipeline | Mockups approved and schema reviewed |
+| 1 Core recipes | 40–70 | Recipe editor and viewer, organizers, foods and units, full-text search; import from a URL with structured data, images in R2, cook mode | 10 family recipes typed in and edited without workarounds |
+| 2 AI import | 35–60 | Photo import with batch capture of recipe cards; text import, ingredient parser, auto-organize; review screen beside the original photo; model per task through AI Gateway | **Usable:** 20 paper cards imported by photo with minor fixes (95–160 h in total, 2–5 months) |
+| 3 Social-media video import | 25–40 | Fetch agent on the home server, Queue, R2 media, Whisper, keyframe reading; Android share target, iOS Shortcut, email-a-link | TikTok, Reels and YouTube links each produce a reviewable draft |
+| 4 Planning and shopping | 40–60 | Meal planner, random-pick rules, iCal feed; shopping lists with live sync; Home Assistant API subset with contract tests | A week planned and shopped from the app; HA shows plans and lists |
+| 5 Household extras | 60–100 | Cookbooks, favorites, ratings, comments, made-it timeline; conversions, print, share links, bulk import, importers, webhooks, backup export | Full household feature set (220–360 h in total, 4–10 months) |
+| 6 Packaging for other households | 30–50 | Deploy to Cloudflare button, setup wizard, passkey login, household invite links; published fetch-agent image, setup guide, test install in a fresh account | A fresh account installs it and imports a recipe (250–410 h in total, 5–12 months) |
+| Later: native apps | Not estimated | Capacitor wrapper for iOS and Android with a native share extension | None yet |
+
+Hours are estimates at 8 to 12 hours a week.
 
 A phase ends when its gate passes, not on a date. AI and video import come before planning and shopping because they set this app apart and need real links to tune. Estimates assume Claude Code does most of the typing.
 
