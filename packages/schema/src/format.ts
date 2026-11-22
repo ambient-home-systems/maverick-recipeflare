@@ -48,24 +48,21 @@ export function isFreeText(line: Pick<Ingredient, "quantity" | "unit" | "food">)
   return line.quantity === null && line.unit === null && line.food === null;
 }
 
-/**
- * An ingredient line for display, scaled by `scale`.
- *
- * A parsed line is built from its fields: "1½ cups flour, sifted". A line with
- * no parsed fields is returned as it was written and is not scaled.
- */
-export function formatIngredient(
-  line: Pick<Ingredient, "originalText" | "quantity" | "unit" | "food" | "note">,
-  options: { scale?: number } = {},
-): string {
-  if (isFreeText(line)) {
-    return line.originalText ?? line.note;
-  }
+type DisplayLine = Pick<Ingredient, "originalText" | "quantity" | "unit" | "food" | "note">;
 
+/**
+ * The amount an ingredient line starts with, scaled by `scale`: "1½ cups", or
+ * "2" for two eggs. Empty for a free-text line and for a line with no quantity
+ * and no unit. It is always the start of what `formatIngredient` returns for
+ * the same line and scale, so a screen can set it in a heavier weight.
+ */
+export function ingredientAmount(line: DisplayLine, options: { scale?: number } = {}): string {
+  if (isFreeText(line)) {
+    return "";
+  }
   const quantity = line.quantity === null ? null : line.quantity * (options.scale ?? 1);
   const plural = quantity !== null && quantity > 1 + FRACTION_TOLERANCE;
   const parts: string[] = [];
-
   if (quantity !== null) {
     parts.push(formatQuantity(quantity, { fraction: line.unit?.fraction ?? true }));
   }
@@ -76,6 +73,28 @@ export function formatIngredient(
       ? (unit.pluralAbbreviation ?? unit.abbreviation ?? unit.pluralName)
       : unit.pluralName;
     parts.push(plural ? (pluralForm ?? singular) : singular);
+  }
+  return parts.join(" ");
+}
+
+/**
+ * An ingredient line for display, scaled by `scale`.
+ *
+ * A parsed line is built from its fields: "1½ cups flour, sifted". A line with
+ * no parsed fields is returned as it was written and is not scaled.
+ */
+export function formatIngredient(line: DisplayLine, options: { scale?: number } = {}): string {
+  if (isFreeText(line)) {
+    return line.originalText ?? line.note;
+  }
+
+  const quantity = line.quantity === null ? null : line.quantity * (options.scale ?? 1);
+  const plural = quantity !== null && quantity > 1 + FRACTION_TOLERANCE;
+  const parts: string[] = [];
+
+  const amount = ingredientAmount(line, options);
+  if (amount) {
+    parts.push(amount);
   }
   if (line.food) {
     // "2 eggs", but "2 cups flour": the unit carries the plural when there is one.

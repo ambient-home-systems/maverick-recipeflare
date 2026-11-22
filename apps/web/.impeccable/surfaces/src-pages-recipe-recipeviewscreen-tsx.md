@@ -29,10 +29,9 @@ DECISIONS:
 - Cook and Edit are a bar that sticks above the navigation, so the main action is under the thumb however long the recipe is. Delete is at the end of the page and asks first.
 - The viewer is tin navy, full screen, with the browser's own zoom.
 
-FINISH: to be reviewed by the finish reviewer; DESIGN.md is updated for the components this screen adds (divider links, section head and facts, photo thumbnails and viewer, action bar).
+FINISH: reviewed by the finish reviewer on 22 Nov 2026, verdict "ship after fixes", eight fixes, all made: a scaling note that is true and counts the lines left as written; an action bar that sticks only on a tall screen; times that break between hours and minutes; ingredients beside steps on a wide card; Edit as the main action on a title-only recipe; one statement of a loading failure; viewer buttons that dim without looking hovered and keep the arrow keys; a skeleton in the page's shape. The amount on each ingredient line was set heavier, from the review's ceiling note. DESIGN.md is updated for the components this screen adds (divider links, section head and facts, photo thumbnails and viewer, action bar).
 
 ## Unresolved
 
 - Attachments such as a PDF: listed by file name per the spec, not drawn because no fixture has one.
-- Whether the ingredient amount should be set apart from the food in a heavier weight.
 - Dates ("added", "last changed") are not shown.

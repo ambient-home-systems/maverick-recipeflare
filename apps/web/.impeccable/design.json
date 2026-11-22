@@ -632,7 +632,9 @@
       },
       "rowMinHeight": "4.25rem",
       "safeArea": "The header pads to env(safe-area-inset-top) and the bottom bar to at least 0.5rem or env(safe-area-inset-bottom).",
-      "navHeight": "--rf-nav-height: calc(4.25rem + max(0.5rem, env(safe-area-inset-bottom))) on a phone, 0px from 768 px. The navigation bar's height and the action bar's offset."
+      "navHeight": "--rf-nav-height: calc(4.25rem + max(0.5rem, env(safe-area-inset-bottom))) on a phone, 0px from 768 px. The navigation bar's height and the action bar's offset.",
+      "actionBar": "Sticks above the navigation only when the screen is at least 36rem tall; otherwise it rests at the end of the page.",
+      "recipeColumns": "When the recipe's card is at least 44rem wide: Ingredients in a 23rem column, Steps in the rest. A container query on the card, not the screen."
     },
     "states": {
       "disabledOpacity": 0.55,
@@ -949,7 +951,7 @@
       "Don't derive a dark value by inverting or dimming the light one without checking its pairings.",
       "Don't build a dashboard or a second home screen. The recipe list is the index.",
       "Don't use the word Cloudflare or its flare shapes in the name, icon or logo, and don't borrow Mealie's look or copy.",
-      "Don't grey a placeholder, a disabled label or a secondary line. A placeholder is ink at regular weight.",
+      "Don't grey a placeholder or a secondary line. A placeholder is ink at regular weight. The one faded thing is a control that cannot be used, at opacity 0.55.",
       "Don't add a second Add control to the recipe list. Adding starts from the red Add in the navigation; only the first-run state offers it in the page.",
       "Don't put a large photo at the top of a recipe. Pictures are thumbnails that open full screen."
     ]

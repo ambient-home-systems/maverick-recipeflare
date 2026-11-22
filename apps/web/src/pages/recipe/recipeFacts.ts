@@ -12,6 +12,14 @@ export const SCALE_NAMES: Record<Scale, string> = {
   3: "Triple",
 };
 
+/** What was done to the amounts, for the note under the switch. */
+export const SCALE_DONE: Record<Scale, string> = {
+  0.5: "Halved",
+  1: "As written",
+  2: "Doubled",
+  3: "Tripled",
+};
+
 /** The scale named in a page address, or 1 for anything else. */
 export function parseScale(value: unknown): Scale {
   const number = typeof value === "string" ? Number(value) : value;

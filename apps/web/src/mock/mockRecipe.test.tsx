@@ -20,7 +20,11 @@ const facts = () =>
   Object.fromEntries(
     within(screen.getByLabelText("At a glance"))
       .getAllByRole("term")
-      .map((term) => [term.textContent, term.nextElementSibling?.textContent]),
+      // A number is tied to its unit with a non-breaking space; read it as a plain one.
+      .map((term) => [
+        term.textContent,
+        term.nextElementSibling?.textContent?.replace(/\u00a0/g, " "),
+      ]),
   );
 
 describe("the recipe view", () => {
@@ -83,12 +87,19 @@ describe("the recipe view", () => {
     expect(facts().Serves).toBe("16");
     expect(facts().Makes).toBe("6 quarts");
     expect(facts().Cook).toBe("2 hr");
-    expect(ingredients().getByRole("status").textContent).toContain("Double.");
+    // The chili has one line with no amount ("Lime wedges and a handful of cilantro").
+    expect(ingredients().getByRole("status").textContent).toBe(
+      "Doubled. 1 line is shown as written and was not changed; work that one out yourself. Amounts in the steps are not changed.",
+    );
   });
 
   it("halves into fractions a cook would recognise", async () => {
     await renderAt(`${COOKIES}?scale=0.5`);
     expect((screen.getByRole("radio", { name: "Half" }) as HTMLInputElement).checked).toBe(true);
+    // Every line of the cookies has an amount, so the note mentions no unscaled lines.
+    expect(ingredients().getByRole("status").textContent).toBe(
+      "Halved. Amounts in the steps are not changed.",
+    );
     expect(lines()).toContain("¼ tsp baking powder");
     expect(facts().Makes).toBe("18 cookies");
   });
@@ -102,6 +113,10 @@ describe("the recipe view", () => {
     expect(lines()).toContain("6 cups water or vegetable stockas written");
     expect(lines()).toContain("4 tbsp olive oil");
     expect(ingredients().getAllByText("as written")).toHaveLength(3);
+    // The note counts them, and does not claim they have no amount: one says "6 cups".
+    expect(ingredients().getByRole("status").textContent).toBe(
+      "Doubled. 3 lines are shown as written and were not changed; work those out yourself. Amounts in the steps are not changed.",
+    );
   });
 
   it("credits who the recipe is from and links to where it came from", async () => {
@@ -123,11 +138,17 @@ describe("the recipe view", () => {
     expect(viewer.getByRole("img").getAttribute("alt")).toBe(
       "The original card for Cardamom Sugar Cookies, 1 of 2",
     );
-    expect((viewer.getByRole("button", { name: "Previous" }) as HTMLButtonElement).disabled).toBe(
-      true,
-    );
+    // Spent, but still focusable, so the arrow keys keep working from it.
+    const previous = viewer.getByRole("button", { name: "Previous" });
+    expect(previous.getAttribute("aria-disabled")).toBe("true");
+    fireEvent.click(previous);
+    expect(viewer.getByRole("heading").textContent).toBe("Original card · 1 of 2");
 
     fireEvent.click(viewer.getByRole("button", { name: "Next" }));
+    expect(viewer.getByRole("heading").textContent).toBe("Original card · 2 of 2");
+    fireEvent.keyDown(viewer.getByRole("button", { name: "Next" }), { key: "ArrowLeft" });
+    expect(viewer.getByRole("heading").textContent).toBe("Original card · 1 of 2");
+    fireEvent.keyDown(viewer.getByRole("button", { name: "Previous" }), { key: "ArrowRight" });
     expect(viewer.getByRole("heading").textContent).toBe("Original card · 2 of 2");
 
     fireEvent.click(viewer.getByRole("button", { name: "Close" }));
@@ -161,10 +182,17 @@ describe("the recipe view", () => {
     );
   });
 
-  it("offers Cook and Edit together", async () => {
+  it("offers Cook as the main action, with Edit beside it", async () => {
     await renderAt(CHILI);
-    expect(screen.getByRole("button", { name: "Cook" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Edit" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Cook" }).className).toContain("bg-primary");
+    expect(screen.getByRole("button", { name: "Edit" }).className).not.toContain("bg-primary");
+  });
+
+  it("sets each line's amount heavier than the rest of the line", async () => {
+    await renderAt(CHILI);
+    const first = ingredients().getAllByRole("listitem")[0];
+    expect(first?.querySelector(".font-semibold")?.textContent).toBe("2 tbsp");
+    expect(first?.textContent).toBe("2 tbsp olive oil");
   });
 
   it("names the recipe and its photos before deleting, and deletes only on the second press", async () => {
@@ -195,7 +223,8 @@ describe("the recipe view's other states", () => {
     expect(screen.getByRole("heading", { name: "Only a title so far" })).toBeTruthy();
     expect(screen.queryByRole("region", { name: "Ingredients" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Cook" })).toBeNull();
-    expect(screen.getByRole("button", { name: "Edit" })).toBeTruthy();
+    // With nothing to cook from, Edit is the screen's main action.
+    expect(screen.getByRole("button", { name: "Edit" }).className).toContain("bg-primary");
     // With no category it stands behind "All recipes" alone.
     expect(
       within(screen.getByRole("navigation", { name: "Filed under" })).getAllByRole("link"),
@@ -221,6 +250,8 @@ describe("the recipe view's other states", () => {
   it("says so when the recipe could not be loaded, and offers to try again", async () => {
     await renderAt(`${CHILI}?scene=error`);
     expect(screen.getByRole("alert").textContent).toBe("The recipe could not be loaded.");
+    // Said once: the notice is not followed by a second, vaguer heading.
+    expect(screen.queryByRole("heading", { name: "Something went wrong" })).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByRole("region", { name: "Ingredients" })).toBeTruthy();

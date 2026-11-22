@@ -4,7 +4,10 @@ import { useEffect, useId, useRef } from "react";
 export type ViewerPhoto = { id: string; url: string; alt: string };
 
 const BAR_BUTTON =
-  "transition-rf inline-flex min-h-touch min-w-touch items-center justify-center gap-1.5 rounded-md px-3 text-base font-semibold text-on-shell hover:bg-shell-raised disabled:opacity-55";
+  "transition-rf inline-flex min-h-touch min-w-touch items-center justify-center gap-1.5 rounded-md px-3 text-base font-semibold text-on-shell";
+const LIVE = "hover:bg-shell-raised";
+// At the first or last photo the button stays focusable, so the arrow keys go on working.
+const SPENT = "cursor-not-allowed opacity-55";
 
 /**
  * A photo, or the original card, filling the screen. The browser's own pinch
@@ -30,6 +33,8 @@ export function PhotoViewer({
   const open = index !== null && photos.length > 0;
   const current = open ? Math.min(index, photos.length - 1) : 0;
   const photo = photos[current];
+  const atStart = current === 0;
+  const atEnd = current === photos.length - 1;
 
   useEffect(() => {
     const dialog = ref.current;
@@ -69,7 +74,7 @@ export function PhotoViewer({
                 </span>
               ) : null}
             </h2>
-            <button type="button" onClick={onClose} className={BAR_BUTTON}>
+            <button type="button" onClick={onClose} className={`${BAR_BUTTON} ${LIVE}`}>
               <X aria-hidden="true" size="1.25rem" />
               Close
             </button>
@@ -81,18 +86,18 @@ export function PhotoViewer({
             <div className="flex flex-none items-center justify-between gap-3 px-2 pt-1 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
               <button
                 type="button"
-                disabled={current === 0}
-                onClick={() => onIndex(current - 1)}
-                className={BAR_BUTTON}
+                aria-disabled={atStart}
+                onClick={() => (atStart ? undefined : onIndex(current - 1))}
+                className={`${BAR_BUTTON} ${atStart ? SPENT : LIVE}`}
               >
                 <ChevronLeft aria-hidden="true" size="1.25rem" />
                 Previous
               </button>
               <button
                 type="button"
-                disabled={current === photos.length - 1}
-                onClick={() => onIndex(current + 1)}
-                className={BAR_BUTTON}
+                aria-disabled={atEnd}
+                onClick={() => (atEnd ? undefined : onIndex(current + 1))}
+                className={`${BAR_BUTTON} ${atEnd ? SPENT : LIVE}`}
               >
                 Next
                 <ChevronRight aria-hidden="true" size="1.25rem" />

@@ -1,6 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { beefChili, cardMeatLoaf, cardPanCookies, pancakes, roastChicken } from "./fixtures";
-import { formatIngredient, formatQuantity, isFreeText, isScalable } from "./format";
+import {
+  beefChili,
+  cardMeatLoaf,
+  cardPanCookies,
+  fixtureRecipes,
+  pancakes,
+  roastChicken,
+} from "./fixtures";
+import {
+  formatIngredient,
+  formatQuantity,
+  ingredientAmount,
+  isFreeText,
+  isScalable,
+} from "./format";
 import type { Ingredient } from "./recipe";
 
 describe("formatQuantity", () => {
@@ -41,6 +54,33 @@ function lineOf(recipe: typeof pancakes, text: string): Ingredient {
   }
   return line;
 }
+
+describe("ingredientAmount", () => {
+  const lines = fixtureRecipes.flatMap((recipe) =>
+    recipe.ingredientSections.flatMap((section) => section.items),
+  );
+
+  it("is the quantity and the unit, scaled", () => {
+    const oil = beefChili.ingredientSections[0]?.items[0] as Ingredient;
+    expect(ingredientAmount(oil)).toBe("2 tbsp");
+    expect(ingredientAmount(oil, { scale: 0.5 })).toBe("1 tbsp");
+    expect(ingredientAmount(oil, { scale: 3 })).toBe("6 tbsp");
+  });
+
+  it("is empty for a line kept as it was written", () => {
+    const free = lines.filter(isFreeText);
+    expect(free.length).toBeGreaterThan(0);
+    expect(free.map((line) => ingredientAmount(line))).toEqual(free.map(() => ""));
+  });
+
+  it.each([0.5, 1, 2, 3])("is always the start of the whole line, at scale %s", (scale) => {
+    for (const line of lines) {
+      expect(formatIngredient(line, { scale }).startsWith(ingredientAmount(line, { scale }))).toBe(
+        true,
+      );
+    }
+  });
+});
 
 describe("formatIngredient", () => {
   it("builds a parsed line from its fields", () => {

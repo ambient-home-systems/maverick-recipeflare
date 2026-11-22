@@ -1,4 +1,11 @@
-import { type Asset, formatIngredient, isScalable, type Recipe } from "@recipeflare/schema";
+import {
+  type Asset,
+  formatIngredient,
+  type Ingredient,
+  ingredientAmount,
+  isScalable,
+  type Recipe,
+} from "@recipeflare/schema";
 import { Link } from "@tanstack/react-router";
 import { ChefHat, ChevronDown, CloudOff, ExternalLink, Pencil, Trash2 } from "lucide-react";
 import { type ReactNode, useState } from "react";
@@ -15,7 +22,7 @@ import {
   linkHost,
   nutritionFacts,
   recipeFacts,
-  SCALE_NAMES,
+  SCALE_DONE,
   type Scale,
 } from "./recipeFacts";
 import { ScaleControl } from "./ScaleControl";
@@ -58,6 +65,18 @@ function SectionHead({ title, children }: { title: string; children?: ReactNode 
 /** A title inside a part: "For the gravy". */
 function SubHead({ title }: { title: string }) {
   return <h3 className="border-t border-rule px-4 pt-3 pb-1 text-base font-bold">{title}</h3>;
+}
+
+/** An ingredient line with its amount set heavier, so a glance down the list finds the numbers. */
+function IngredientText({ item, scale }: { item: Ingredient; scale: number }) {
+  const text = formatIngredient(item, { scale });
+  const amount = ingredientAmount(item, { scale });
+  return (
+    <span>
+      {amount ? <span className="font-semibold">{amount}</span> : null}
+      {text.slice(amount.length)}
+    </span>
+  );
 }
 
 type Viewing = { group: "photos" | "original"; index: number } | null;
@@ -106,28 +125,46 @@ export function RecipeViewScreen({
         ) : problem === "error" ? (
           <Page joined title="Recipe">
             <Notice problem>The recipe could not be loaded.</Notice>
-            <EmptyState
-              title="Something went wrong"
-              actions={
-                <Button variant="quiet" onClick={onRetry}>
-                  Try again
-                </Button>
-              }
-            >
-              Check the connection and try again. Your recipes are not affected.
-            </EmptyState>
+            <div className="px-4 py-6">
+              <p className="max-w-[38ch]">
+                Check the connection and try again. Your recipes are not affected.
+              </p>
+              <Button variant="quiet" className="mt-5" onClick={onRetry}>
+                Try again
+              </Button>
+            </div>
           </Page>
         ) : (
           <Page joined title="Loading">
             <p className="sr-only" role="status">
               Loading the recipe
             </p>
-            <div aria-hidden="true" className="grid gap-3 px-4 py-5" data-testid="recipe-skeleton">
+            {/* The page's own shape in outline, so the recipe does not jump as it arrives. */}
+            <div aria-hidden="true" data-testid="recipe-skeleton">
+              <div className="grid gap-2 px-4 py-4">
+                <span className="skeleton h-4 w-4/5" />
+                <span className="skeleton h-4 w-3/5" />
+              </div>
+              <div className="flex overflow-hidden">
+                {["a", "b", "c"].map((cell) => (
+                  <div
+                    key={cell}
+                    className="-mr-px grid flex-1 gap-2 border-t border-r border-rule px-4 py-2.5"
+                  >
+                    <span className="skeleton h-3 w-10" />
+                    <span className="skeleton h-4 w-16" />
+                  </div>
+                ))}
+              </div>
+              <div className="border-t border-rule bg-surface-sunk px-4 py-3.5">
+                <span className="skeleton block h-4 w-28" />
+              </div>
               {SKELETON_LINES.map((line, index) => (
-                <span
-                  key={line}
-                  className={`skeleton h-4 ${index % 3 === 0 ? "w-2/5" : index % 3 === 1 ? "w-4/5" : "w-3/5"}`}
-                />
+                <div key={line} className="border-t border-rule px-4 py-3">
+                  <span
+                    className={`skeleton block h-4 ${index % 3 === 0 ? "w-2/5" : index % 3 === 1 ? "w-3/5" : "w-1/2"}`}
+                  />
+                </div>
               ))}
             </div>
           </Page>
@@ -186,6 +223,10 @@ export function RecipeViewScreen({
   const hasIngredients = recipe.ingredientSections.some((section) => section.items.length > 0);
   const hasSteps = recipe.stepSections.some((section) => section.steps.length > 0);
   const scaled = scale !== 1;
+  const unscaled = recipe.ingredientSections
+    .flatMap((section) => section.items)
+    .filter((item) => !isScalable(item)).length;
+  const canCook = hasIngredients || hasSteps;
   const titleOnly = isTitleOnly(recipe);
   const open = viewing ? groups[viewing.group] : null;
 
@@ -271,79 +312,100 @@ export function RecipeViewScreen({
                 className="-mr-px flex-1 basis-[6.5rem] border-t border-r border-rule px-4 py-2"
               >
                 <dt className="text-sm">{fact.label}</dt>
-                <dd className="text-lg font-semibold leading-tight">{fact.value}</dd>
+                {/* A number stays with its unit: "2 hr" and "30 min" may part, "30" and "min" may not. */}
+                <dd className="text-lg font-semibold leading-tight">
+                  {fact.value.replace(/(\d) (hr|min)\b/g, "$1\u00a0$2")}
+                </dd>
               </div>
             ))}
           </dl>
         ) : null}
 
-        {hasIngredients ? (
-          <section aria-labelledby="ingredients-heading">
-            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-rule bg-surface-sunk px-4 py-2">
-              <h2 id="ingredients-heading" className="text-lg font-bold">
-                Ingredients
-              </h2>
-              <ScaleControl scale={scale} onScale={onScale} />
-            </div>
-            {scaled ? (
-              <p className="border-t border-rule px-4 py-2 text-sm" role="status">
-                <span className="font-semibold">{SCALE_NAMES[scale]}.</span> Lines marked “as
-                written” have no amount to scale, and amounts in the steps are not changed.
-              </p>
+        {/* On a wide card, such as a tablet on its side, the ingredients stay beside the steps. */}
+        <div className="@container">
+          <div
+            className={
+              hasIngredients && hasSteps
+                ? "@[44rem]:grid @[44rem]:grid-cols-[23rem_minmax(0,1fr)]"
+                : undefined
+            }
+          >
+            {hasIngredients ? (
+              <section
+                aria-labelledby="ingredients-heading"
+                className="@[44rem]:border-r @[44rem]:border-rule"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-rule bg-surface-sunk px-4 py-2">
+                  <h2 id="ingredients-heading" className="text-lg font-bold">
+                    Ingredients
+                  </h2>
+                  <ScaleControl scale={scale} onScale={onScale} />
+                </div>
+                {scaled ? (
+                  <p className="border-t border-rule px-4 py-2 text-sm" role="status">
+                    <span className="font-semibold">{SCALE_DONE[scale]}.</span>{" "}
+                    {unscaled > 0
+                      ? `${unscaled} ${unscaled === 1 ? "line is" : "lines are"} shown as written and ${unscaled === 1 ? "was" : "were"} not changed; work ${unscaled === 1 ? "that one" : "those"} out yourself. `
+                      : ""}
+                    Amounts in the steps are not changed.
+                  </p>
+                ) : null}
+                {recipe.ingredientSections.map((section, index) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: sections have no ID and do not reorder here
+                  <div key={index}>
+                    {section.title ? <SubHead title={section.title} /> : null}
+                    <ul>
+                      {section.items.map((item) => (
+                        <li
+                          key={item.id}
+                          className="flex flex-wrap items-baseline gap-x-2 border-t border-rule px-4 py-2"
+                        >
+                          <IngredientText item={item} scale={scale} />
+                          {scaled && !isScalable(item) ? (
+                            <span className="rounded-sm border border-rule-strong px-1.5 py-0.5 text-sm font-semibold">
+                              as written
+                            </span>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </section>
             ) : null}
-            {recipe.ingredientSections.map((section, index) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: sections have no ID and do not reorder here
-              <div key={index}>
-                {section.title ? <SubHead title={section.title} /> : null}
-                <ul>
-                  {section.items.map((item) => (
-                    <li
-                      key={item.id}
-                      className="flex flex-wrap items-baseline gap-x-2 border-t border-rule px-4 py-2"
-                    >
-                      <span>{formatIngredient(item, { scale })}</span>
-                      {scaled && !isScalable(item) ? (
-                        <span className="rounded-sm border border-rule-strong px-1.5 text-xs font-semibold">
-                          as written
-                        </span>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </section>
-        ) : null}
 
-        {hasSteps ? (
-          <section aria-labelledby="steps-heading">
-            <div className="border-t border-rule bg-surface-sunk px-4 py-2">
-              <h2 id="steps-heading" className="text-lg font-bold">
-                Steps
-              </h2>
-            </div>
-            {recipe.stepSections.map((section, index) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: sections have no ID and do not reorder here
-              <div key={index}>
-                {section.title ? <SubHead title={section.title} /> : null}
-                <ol>
-                  {section.steps.map((step, number) => (
-                    <li key={step.id} className="flex gap-3 border-t border-rule px-4 py-3">
-                      <span
-                        aria-hidden="true"
-                        className="w-6 flex-none text-lg font-bold leading-snug"
-                      >
-                        {number + 1}
-                      </span>
-                      <span className="sr-only">Step {number + 1}.</span>
-                      <p className="min-w-0 max-w-[62ch] leading-normal">{step.text}</p>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            ))}
-          </section>
-        ) : null}
+            {hasSteps ? (
+              <section aria-labelledby="steps-heading">
+                {/* Beside the ingredients, the band is as tall as theirs, which holds the scale switch. */}
+                <div className="border-t border-rule bg-surface-sunk px-4 py-2 @[44rem]:flex @[44rem]:min-h-[4.375rem] @[44rem]:items-center">
+                  <h2 id="steps-heading" className="text-lg font-bold">
+                    Steps
+                  </h2>
+                </div>
+                {recipe.stepSections.map((section, index) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: sections have no ID and do not reorder here
+                  <div key={index}>
+                    {section.title ? <SubHead title={section.title} /> : null}
+                    <ol>
+                      {section.steps.map((step, number) => (
+                        <li key={step.id} className="flex gap-3 border-t border-rule px-4 py-3">
+                          <span
+                            aria-hidden="true"
+                            className="w-6 flex-none text-lg font-bold leading-snug"
+                          >
+                            {number + 1}
+                          </span>
+                          <span className="sr-only">Step {number + 1}.</span>
+                          <p className="min-w-0 max-w-[62ch] leading-normal">{step.text}</p>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                ))}
+              </section>
+            ) : null}
+          </div>
+        </div>
 
         {recipe.notes.length > 0 ? (
           <section aria-label="Notes">
@@ -422,8 +484,9 @@ export function RecipeViewScreen({
         </div>
 
         {/* The screen's main actions stay within reach of a thumb, above the navigation. */}
-        <div className="sticky bottom-[var(--rf-nav-height)] z-[5] flex flex-wrap gap-2 border-t border-rule-strong bg-surface px-4 py-2.5">
-          {hasIngredients || hasSteps ? (
+        {/* It sticks only on a screen tall enough to spare the room: not on a phone held sideways, nor with very large text. */}
+        <div className="bottom-[var(--rf-nav-height)] z-[5] flex flex-wrap gap-2 border-t border-rule-strong bg-surface px-4 py-2.5 [@media(min-height:36rem)]:sticky">
+          {canCook ? (
             <Button
               className="flex-1 md:flex-none md:px-10"
               icon={<ChefHat aria-hidden="true" size="1.25rem" />}
@@ -433,8 +496,9 @@ export function RecipeViewScreen({
             </Button>
           ) : null}
           <Button
-            variant="quiet"
-            className={hasIngredients || hasSteps ? "" : "flex-1 md:flex-none"}
+            // With nothing to cook from, Edit is what the screen is for.
+            variant={canCook ? "quiet" : "primary"}
+            className={canCook ? "" : "flex-1 md:flex-none md:px-10"}
             icon={<Pencil aria-hidden="true" size="1.25rem" />}
             disabled={offline}
             onClick={() => onEdit?.(recipe)}
