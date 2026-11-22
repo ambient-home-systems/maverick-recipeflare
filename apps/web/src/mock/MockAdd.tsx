@@ -13,6 +13,7 @@ export function MockAdd() {
     <>
       <AddScreen
         offline={offline}
+        onType={() => navigate({ to: "/mock/new", search: {} })}
         onImport={() => navigate({ to: "/mock/list", search: { scene: "imports" } })}
       />
       <aside
@@ -22,7 +23,7 @@ export function MockAdd() {
         <h2 className="text-base font-bold">Mock controls</h2>
         <p className="mt-1 text-sm">
           Not part of the screen. Import leads to the list with sample imports in progress, whatever
-          the link. New recipe opens the editor, which is not drawn yet.
+          the link.
         </p>
         <p className="mt-1 text-sm">
           <Link

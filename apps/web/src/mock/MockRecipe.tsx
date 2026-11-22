@@ -50,6 +50,9 @@ export function MockRecipe() {
         photoUrl={(asset) => (found ? placeholderPhoto(found, asset) : undefined)}
         offline={scene === "offline"}
         listTo="/mock/list"
+        onEdit={(recipe) =>
+          navigate({ to: "/mock/edit/$slug", params: { slug: recipe.slug }, search: {} })
+        }
         onDelete={() => navigate({ to: "/mock/list" })}
       />
 
@@ -60,7 +63,7 @@ export function MockRecipe() {
         <h2 className="text-base font-bold">Mock controls</h2>
         <p className="mt-1 text-sm">
           Not part of the screen. Sample data only; every photo and card is a placeholder drawing.
-          Cook and Edit lead to screens that are not drawn yet, and Delete only returns to the list.
+          Cook leads to a screen that is not drawn yet, and Delete only returns to the list.
         </p>
         <ul className="mt-3 flex flex-wrap gap-2">
           {RECIPE_SCENES.map((option) => (

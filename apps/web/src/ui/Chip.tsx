@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Check, X } from "lucide-react";
+import { STOCK_BG, STOCK_TEXT, type Stock } from "./stock";
 
 const CHIP =
   "transition-rf inline-flex min-h-touch items-center gap-1.5 rounded-pill border px-4 text-sm font-semibold";
@@ -34,14 +35,33 @@ export function ToggleChip({
   );
 }
 
-/** A filter that is on, shown above the list. Pressing it takes the filter off. */
-export function RemovableChip({ label, onRemove }: { label: string; onRemove: () => void }) {
+/**
+ * Something that is on and can be taken off by pressing it: a filter above the
+ * list, or a category, tag or tool chosen in the editor. A category's chip
+ * takes its divider stock.
+ */
+export function RemovableChip({
+  label,
+  onRemove,
+  removeLabel = `Remove filter: ${label}`,
+  stock,
+}: {
+  label: string;
+  onRemove: () => void;
+  /** What pressing it does, read out in place of the label. */
+  removeLabel?: string;
+  stock?: Stock;
+}) {
   return (
     <button
       type="button"
       onClick={onRemove}
-      aria-label={`Remove filter: ${label}`}
-      className={`${CHIP} border-rule-strong bg-surface-sunk pr-3 text-ink hover:bg-surface`}
+      aria-label={removeLabel}
+      className={`${CHIP} pr-3 ${
+        stock
+          ? `border-transparent ${STOCK_BG[stock]} ${STOCK_TEXT[stock]} hover:brightness-105`
+          : "border-rule-strong bg-surface-sunk text-ink hover:bg-surface"
+      }`}
     >
       {label}
       <X aria-hidden="true" size="1.125rem" />

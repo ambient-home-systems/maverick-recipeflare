@@ -111,3 +111,22 @@ export function DividerLinks({
     </nav>
   );
 }
+
+/**
+ * The way back from a screen that may hold unsaved work: a divider-shaped
+ * button, so the screen can ask before it lets go.
+ */
+export function DividerBack({ label, onBack }: { label: string; onBack: () => void }) {
+  return (
+    <div className="relative z-[1] -mb-px flex items-end px-3 pt-3 md:px-6 md:pt-6">
+      <button
+        type="button"
+        onClick={onBack}
+        className={`transition-rf inline-flex h-touch min-w-touch max-w-full items-center gap-1 rounded-t-md border-b border-rule px-3 text-sm font-semibold hover:brightness-105 md:px-5 ${STOCK_BG.plain} ${STOCK_TEXT.plain}`}
+      >
+        <ChevronLeft aria-hidden="true" size="1.125rem" className="-ml-1 flex-none" />
+        <span className="truncate">{label}</span>
+      </button>
+    </div>
+  );
+}

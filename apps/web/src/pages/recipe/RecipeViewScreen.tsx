@@ -8,12 +8,13 @@ import {
 } from "@recipeflare/schema";
 import { Link } from "@tanstack/react-router";
 import { ChefHat, ChevronDown, CloudOff, ExternalLink, Pencil, Trash2 } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { useState } from "react";
 import { Button } from "../../ui/Button";
 import { LinkChip } from "../../ui/Chip";
 import { type DividerLink, DividerLinks } from "../../ui/DividerTabs";
 import { EmptyState, Notice } from "../../ui/Notice";
 import { Page } from "../../ui/Page";
+import { SectionHead } from "../../ui/SectionHead";
 import { Sheet } from "../../ui/Sheet";
 import type { Stock } from "../../ui/stock";
 import { PhotoViewer, type ViewerPhoto } from "./PhotoViewer";
@@ -51,16 +52,6 @@ type RecipeViewScreenProps = {
 
 const ALL: DividerLink = { key: "all", label: "All recipes", stock: "plain" };
 const SKELETON_LINES = ["a", "b", "c", "d", "e", "f", "g"];
-
-/** A band that opens a part of the recipe: Ingredients, Steps, Notes. */
-function SectionHead({ title, children }: { title: string; children?: ReactNode }) {
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-rule bg-surface-sunk px-4 py-2">
-      <h2 className="text-lg font-bold">{title}</h2>
-      {children}
-    </div>
-  );
-}
 
 /** A title inside a part: "For the gravy". */
 function SubHead({ title }: { title: string }) {

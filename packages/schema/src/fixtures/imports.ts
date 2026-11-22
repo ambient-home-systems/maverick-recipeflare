@@ -21,6 +21,10 @@ const cornbreadDraft = RecipeDraft.parse({
   totalTimeSeconds: 35 * 60,
   sourceName: "Example Kitchen",
   sourceUrl: "https://recipes.example.com/skillet-cornbread",
+  imageUrl: "https://recipes.example.com/images/skillet-cornbread.jpg",
+  // Dinner and Weeknight are the household's own; the other two are not, and are only offered.
+  suggestedCategories: ["Dinner", "Bread"],
+  suggestedTags: ["Weeknight", "Comfort food"],
   ingredientSections: [
     {
       items: [
