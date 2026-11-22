@@ -5,6 +5,7 @@ import {
   lazyRouteComponent,
   type RouterHistory,
 } from "@tanstack/react-router";
+import { validateMockAddSearch, validateMockListSearch } from "./mock/scenes";
 import { AddPage } from "./pages/AddPage";
 import { ManagePage } from "./pages/ManagePage";
 import { RecipesPage } from "./pages/RecipesPage";
@@ -35,6 +36,19 @@ const MockTokens = lazyRouteComponent(() => import("./mock/MockTokens"), "MockTo
 const MockComponents = lazyRouteComponent(() => import("./mock/MockComponents"), "MockComponents");
 const MockFixtures = lazyRouteComponent(() => import("./mock/MockFixtures"), "MockFixtures");
 
+const mockListRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/mock/list",
+  validateSearch: validateMockListSearch,
+  component: lazyRouteComponent(() => import("./mock/MockList"), "MockList"),
+});
+const mockAddRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/mock/add",
+  validateSearch: validateMockAddSearch,
+  component: lazyRouteComponent(() => import("./mock/MockAdd"), "MockAdd"),
+});
+
 const routeTree = rootRoute.addChildren([
   at("/", RecipesPage),
   at("/add", AddPage),
@@ -43,6 +57,8 @@ const routeTree = rootRoute.addChildren([
   at("/mock/tokens", MockTokens),
   at("/mock/components", MockComponents),
   at("/mock/fixtures", MockFixtures),
+  mockListRoute,
+  mockAddRoute,
 ]);
 
 /** Builds the router. Tests pass a memory history to start at a chosen address. */

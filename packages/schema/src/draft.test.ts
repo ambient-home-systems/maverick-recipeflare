@@ -8,7 +8,14 @@ import {
   recipeDraftJsonSchema,
   unitMatcher,
 } from "./draft";
-import { fixtureFoods, fixtureId, fixtureOrganizers, fixtureUnits } from "./fixtures";
+import {
+  fixtureFoods,
+  fixtureId,
+  fixtureImportJobs,
+  fixtureOrganizers,
+  fixtureUnits,
+  importNeedsReview,
+} from "./fixtures";
 import { ImportJob, UrlImportRequest } from "./import-job";
 import { RecipeCreate } from "./recipe";
 
@@ -435,6 +442,22 @@ describe("import jobs", () => {
       finishedAt: null,
     };
     expect(ImportJob.parse(job)).toEqual(job);
+  });
+
+  it.each(fixtureImportJobs.map((job) => [job.status, job] as const))(
+    "the fixture import that is %s is a valid ImportJob",
+    (_status, job) => {
+      expect(ImportJob.parse(job)).toEqual(job);
+    },
+  );
+
+  it("has a fixture import in each state the list shows, one of them flagged for review", () => {
+    expect(fixtureImportJobs.map((job) => job.status)).toEqual([
+      "running",
+      "needs_review",
+      "failed",
+    ]);
+    expect(importNeedsReview.result?.issues.map((issue) => issue.code)).toContain("missing_steps");
   });
 
   it("accepts only http and https links for a URL import", () => {

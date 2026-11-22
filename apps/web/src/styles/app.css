@@ -104,6 +104,27 @@
     outline-color: var(--rf-focus-on-shell);
   }
 
+  /* The search field shows the ring around the whole field, not around the text inside it. */
+  .search-field:has(input:focus-visible) {
+    outline: 3px solid var(--rf-focus);
+    outline-offset: 2px;
+  }
+
+  .search-field input:focus-visible {
+    outline: none;
+  }
+
+  /* On a phone the search field sits in the navy header; from tablet width it is on the ground. */
+  @media (max-width: 47.99rem) {
+    .shell-band .search-field:has(input:focus-visible) {
+      outline-color: var(--rf-focus-on-shell);
+    }
+  }
+
+  dialog::backdrop {
+    background: var(--rf-scrim);
+  }
+
   /* The navigation is a navy rail from tablet width, and a white bar below it. */
   @media (min-width: 48rem) {
     .shell-rail :focus-visible {

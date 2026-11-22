@@ -22,14 +22,32 @@ describe("assignStocks", () => {
 });
 
 describe("recipeMeta", () => {
-  it("gives the time, the first category and the first tag", () => {
+  it("gives the time, the first category and the tags", () => {
     expect(recipeMeta(toRecipeSummary(roastChicken))).toBe(
-      "1 hr 55 min · Dinner · Family favorite",
+      "1 hr 55 min · Dinner · Family favorite, Holiday",
     );
   });
 
-  it("credits the source in place of a tag", () => {
-    expect(recipeMeta(toRecipeSummary(lentilSoup))).toBe("40 min · Soup · From Example Kitchen");
+  it("credits the source before the tags", () => {
+    expect(recipeMeta(toRecipeSummary(lentilSoup))).toBe(
+      "40 min · Soup · From Example Kitchen · Vegetarian, Weeknight",
+    );
+  });
+
+  it("names two tags and counts the rest", () => {
+    const summary = toRecipeSummary(roastChicken);
+    const tags = [...summary.tags, { ...summary.tags[0], name: "Sunday" }, summary.tags[0]].map(
+      (tag, index) => ({ ...summary.tags[0], ...tag, id: `tag-${index}` }),
+    ) as typeof summary.tags;
+    expect(recipeMeta({ ...summary, tags })).toBe(
+      "1 hr 55 min · Dinner · Family favorite, Holiday and 2 more",
+    );
+  });
+
+  it("leaves the category out behind that category's divider", () => {
+    expect(recipeMeta(toRecipeSummary(roastChicken), { showCategory: false })).toBe(
+      "1 hr 55 min · Family favorite, Holiday",
+    );
   });
 
   it("leaves out what a recipe does not state", () => {
@@ -39,6 +57,6 @@ describe("recipeMeta", () => {
 
   it("adds prep and cook time when no total is given", () => {
     const summary = { ...toRecipeSummary(roastChicken), totalTimeSeconds: null };
-    expect(recipeMeta(summary)).toBe("1 hr 40 min · Dinner · Family favorite");
+    expect(recipeMeta(summary)).toBe("1 hr 40 min · Dinner · Family favorite, Holiday");
   });
 });

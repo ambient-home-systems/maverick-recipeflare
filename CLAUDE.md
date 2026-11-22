@@ -6,7 +6,7 @@ Guidance for Claude Code working in this repository.
 
 Maverick Recipeflare (Recipeflare for short) is a household recipe app on Cloudflare: one TypeScript Worker serving a React PWA and a JSON API, with D1, R2, Queues and, in later phases, Workers AI and Durable Objects. One household per install. Licensed AGPL-3.0-only.
 
-**Status: Phase 0, through T0.6.** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, and the web app's shell, design tokens and mock harness exist. There are no product screens, no database tables and no auth yet. When a pull request changes a command or path below, it updates this file in the same pull request.
+**Status: Phase 0, through T0.7.** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, and the recipe list drawn as a mock screen exist. No product screen is connected to data, and there are no database tables and no auth yet. When a pull request changes a command or path below, it updates this file in the same pull request.
 
 ## Read first
 
@@ -32,9 +32,9 @@ apps/worker/          Hono API, queue consumer, auth, Drizzle schema, migrations
 apps/web/             Vite React PWA; builds to apps/web/dist, served as static assets
   src/styles/         tokens.css (the design tokens) and app.css (Tailwind theme, base styles)
   src/shell/          The frame every screen sits in: header and navigation
-  src/ui/             Shared components: Button, DividerTabs, RecipeRow, Page, Notice
-  src/pages/          Product screens
-  src/mock/           The /mock harness: screens drawn from fixtures for design review
+  src/ui/             Shared components: Button, DividerTabs, RecipeRow, Page, Notice, Sheet, Chip
+  src/pages/          Product screens. A screen is given its data as props and fetches nothing itself
+  src/mock/           The /mock harness: the same screens fed from fixtures, for design review
 packages/schema/      @recipeflare/schema: Zod schemas, types, formatting, fixtures
 scripts/              Small Node scripts used by the root package scripts
 services/fetch-agent/ Placeholder until Phase 3 (yt-dlp and ffmpeg Docker image)
@@ -72,7 +72,7 @@ Not here yet:
 ### Shared schema
 
 - `packages/schema/src` holds one module per concern: `recipe.ts` (the three recipe shapes), `draft.ts` (importer output, `checkDraft`, `draftToInput`), `lists.ts` (organizers, foods, units, labels, members, assets), `sections.ts`, `format.ts`, `slug.ts`, `name-key.ts`, `duration.ts`, `id.ts`, `import-job.ts`, `api.ts`. Import from `@recipeflare/schema`.
-- Fixture recipes and lists are imported from `@recipeflare/schema/fixtures`, never from the main entry, so they stay out of production bundles. Six are invented and three come from sample cards the owner supplied (ingredient lines as written, steps reworded, no photos). Do not add text copied from a site or a book.
+- Fixture recipes, lists and import jobs are imported from `@recipeflare/schema/fixtures`, never from the main entry, so they stay out of production bundles. Six are invented and three come from sample cards the owner supplied (ingredient lines as written, steps reworded, no photos). Do not add text copied from a site or a book.
 - Size caps live in `LIMITS` in `primitives.ts`. The one-batch save depends on them; change one only together with the plan's save section.
 - The JSON Schema export of `RecipeDraft` has a snapshot test. When you change the draft on purpose, review the diff and update it with `pnpm test -u`.
 - "From" on a recipe is `sourceName` in the API and `source_name` in the database.
@@ -92,7 +92,9 @@ Not here yet:
 - Rows are ruled, not carded: hairlines in ruling blue, no shadows. No paper textures, handwriting fonts or serif display type.
 - Every link, button and tab is at least 44 by 44 CSS pixels. Use `min-h-touch` and `min-w-touch`.
 - Fonts and icons are self-hosted. Nothing is fetched from a font or icon service, because the app must work offline.
-- Mock screens live under `/mock`, load on demand, and are the only code that imports fixtures.
+- Mock screens live under `/mock`, load on demand, and are the only code that imports fixtures. A mock screen renders the product screen from `src/pages/` with fixture data; do not draw a second copy of a screen for the mock. `src/mock/scenes.ts` loads with the router, so it must not import fixtures.
+- Text boxes have no grey placeholder. A placeholder is ink at regular weight; a label above the box is better.
+- A panel over the page is the `Sheet` component, a native modal dialog. It is the only thing that casts a shadow.
 
 ### Database (D1)
 

@@ -15,9 +15,20 @@ const READY = [
     name: "Fixture recipes",
     detail: "The nine sample recipes, filed under their category dividers.",
   },
+  {
+    to: "/mock/list",
+    name: "Recipe list and search",
+    detail:
+      "Search, dividers, filters and sort, with the loading, first-run, offline and import states.",
+  },
+  {
+    to: "/mock/add",
+    name: "Add a recipe",
+    detail: "The two ways a recipe starts: typed in, or from a link.",
+  },
 ] as const;
 
-const COMING = ["Recipe list and search", "Recipe view", "Recipe editor and review", "Cook mode"];
+const COMING = ["Recipe view", "Recipe editor and review", "Cook mode"];
 
 /**
  * The mock harness: screens drawn from fixture recipes, for reviewing the
