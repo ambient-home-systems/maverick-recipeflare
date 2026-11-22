@@ -386,8 +386,9 @@ The container for a page's content.
 ### Recipe row
 One recipe in the index.
 - **Style:** a row at least 4.25rem tall on card white with a ruling-blue bottom hairline. A 3rem letter tile, then the title (title, 600) and one meta line (body small).
-- **Meta line:** time, first category, "From …" if the recipe has a source, then up to two tags in 600 ("and 2 more" counts the rest). Parts are joined with " · " and the line may wrap to a second line. Anything the recipe does not state is left out; a recipe with nothing to state has no meta line. Behind a category's divider the category is left out, because the divider says it.
-- **Photo:** a recipe with a photo shows it in place of the letter tile, at the same 3rem size and 6 px corners, cropped to fill. A recipe without one keeps its tile; nothing marks a photo as missing.
+- **Meta line:** time, first category, "From …" if the recipe has a source, then up to two tags in 600 ("and 2 more" counts the rest). Parts are joined with " · ". It is always one line: what does not fit ends in an ellipsis, and the whole line is still read out. Anything the recipe does not state is left out; a recipe with nothing to state has no meta line. Behind a category's divider the category is left out, because the divider says it.
+- **On a phone** the line holds about forty characters. A recipe with a source or tags to show leaves the category word out below 768 px; its tile carries the colour and the word is still read out. A recipe with neither keeps the word.
+- **Photo:** a recipe with a photo shows it in place of the letter tile, at the same 3rem size and 6 px corners, cropped to fill, with a 5 px band of its category's stock along the top, as a selected divider has. A recipe without one keeps its tile; nothing marks a photo as missing.
 - **Hover / pressed:** the whole row turns `surface-sunk`. The row is the link; the title is not underlined.
 - **Loading:** a skeleton row of the same height: a 3rem block and two bars, sweeping from `skeleton` through `surface-sunk` over 1.6 s, and held still under reduced motion.
 
@@ -395,7 +396,7 @@ One recipe in the index.
 Stands in for a photo. The recipe's first letter, 700 weight, on its category's stock, 3rem square with 6 px corners. Plain stock when the recipe has no category. It is decorative and hidden from assistive technology.
 
 ### Notice band and empty state
-- **Notice:** a full-width band in `notice` with `on-notice` text at label weight, an 18 px icon and one or two sentences, padded 0.625rem by 1rem. The same band serves a standing condition (offline) and a problem (a save that failed); a problem is announced at once to assistive technology. It is not red.
+- **Notice:** a full-width band in `notice` with `on-notice` text at label weight, an 18 px icon and one or two sentences, padded 0.625rem by 1rem. A problem always has a warning triangle, supplied by the component; a standing condition brings its own icon. The same band serves a standing condition (offline) and a problem (a save that failed); a problem is announced at once to assistive technology. It is not red.
 - **Empty state:** a 700 title, a paragraph of at most 38ch saying what goes here, and one or two buttons, padded 2.5rem top and bottom. No illustration.
 
 ### Search field
@@ -406,7 +407,7 @@ The one search box, on the recipe list only.
 - **Behaviour:** the list follows the text after a 250 ms pause. There is no search button; Enter puts the keyboard away.
 
 ### Text field and select
-A text box or a native select on card white: at least 2.75rem tall, 10 px radius, 1 px `rule-strong` outline, 0.75rem inside. A visible label sits above a text box in body small. A select has a 20 px chevron at its right end and its value in 600. A field's problem is a notice band directly under it, tied to the field for assistive technology; the field itself does not turn red.
+A text box or a native select on card white: at least 2.75rem tall, 10 px radius, 1 px `rule-strong` outline, 0.75rem inside. A visible label sits above a text box in body small. A select has a 20 px chevron at its right end and its value in 600. The sort select has no visible label, so it leads with a sort icon and its options are short enough to stay whole on a phone: "Last changed", "Newest", "A to Z", and "Best match" while searching. A field's problem is a notice band directly under it, tied to the field for assistive technology; the field itself does not turn red.
 
 ### Chips
 Filters, and nothing else.
@@ -421,12 +422,14 @@ A panel over the page for one short job, such as choosing filters. It is a nativ
 - **Parts:** a title on the red rule with a Close button beside it; a body that scrolls; a footer with the quiet action on the left of the primary one. The primary button says what closing will show, for example "Show 2 recipes".
 - **Depth:** the overlay shadow over the scrim. This is the only shadow on a surface.
 - Escape, Close and a tap on the scrim all close it, and focus returns to the control that opened it.
+- **Motion:** it rises 1.5rem and fades in over 180 ms as it opens. This is the one authored entrance in the system, and it is held still under reduced motion.
+- What changes behind a sheet is not read out, so a sheet that changes the page announces the result itself: the filter sheet has a spoken count.
 
 ### Import row
 An import from a link, listed above the recipes until a person has dealt with it.
 - **Style:** rows on `surface-sunk`, so they read as a tray apart from the recipes. A 3rem tile in plain stock with a link icon: an import is not a recipe yet and takes no category colour.
-- **Text:** the title the page gave, or the site's name until there is one; then one line of status. "Reading the page…" has a small turning mark that stops under reduced motion. A failure says what happened and what to try, at 400.
-- **Actions:** "Review" is a primary button at the right of the row. A failed import has "Try again" and "Remove", both quiet, on a line below.
+- **Text:** the title the page gave, or the site's name until there is one; then a status in 600. "Reading the page…" has a small turning mark that stops under reduced motion. "Ready to review" is followed by the site, on its own line on a phone. A failure leads with a warning icon and "Could not import." in 600, then what happened and what to try at 400.
+- **Actions:** "Review" is a primary button at the right of the row. A failed import has "Try again" and "Remove", both quiet, on a line below its text.
 - Imports are hidden while the list is searched or filtered, and when offline.
 
 ### Navigation

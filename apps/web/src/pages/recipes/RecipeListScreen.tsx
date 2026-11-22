@@ -1,6 +1,6 @@
 import type { ImportJob, RecipeSummary } from "@recipeflare/schema";
 import { Link } from "@tanstack/react-router";
-import { ChevronDown, CloudOff, Link2, ListFilter, Plus } from "lucide-react";
+import { ArrowDownUp, ChevronDown, CloudOff, Link2, ListFilter, Plus } from "lucide-react";
 import { useId, useState } from "react";
 import { Button } from "../../ui/Button";
 import { RemovableChip } from "../../ui/Chip";
@@ -65,7 +65,7 @@ function SortSelect({ state, onChange }: { state: ListState; onChange: (sort: Li
     ? ["match", "changed", "newest", "title"]
     : ["changed", "newest", "title"];
   return (
-    <div className="relative min-w-0 flex-1 basis-40 md:max-w-64">
+    <div className="relative min-w-[min(11rem,100%)] flex-1 md:max-w-64">
       <label htmlFor={id} className="sr-only">
         Sort by
       </label>
@@ -73,7 +73,7 @@ function SortSelect({ state, onChange }: { state: ListState; onChange: (sort: Li
         id={id}
         value={effectiveSort(state)}
         onChange={(event) => onChange(event.target.value as ListSort)}
-        className="transition-rf min-h-touch w-full appearance-none truncate rounded-md border border-rule-strong bg-surface py-0 pr-9 pl-3 text-base font-semibold text-ink hover:bg-surface-sunk"
+        className="transition-rf min-h-touch w-full appearance-none rounded-md border border-rule-strong bg-surface py-0 pr-9 pl-10 text-base font-semibold text-ink hover:bg-surface-sunk"
       >
         {sorts.map((sort) => (
           <option key={sort} value={sort}>
@@ -81,6 +81,12 @@ function SortSelect({ state, onChange }: { state: ListState; onChange: (sort: Li
           </option>
         ))}
       </select>
+      {/* Says that this control sorts, since its label is read out but not shown. */}
+      <ArrowDownUp
+        aria-hidden="true"
+        size="1.25rem"
+        className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2"
+      />
       <ChevronDown
         aria-hidden="true"
         size="1.25rem"

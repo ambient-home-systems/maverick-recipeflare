@@ -47,7 +47,7 @@ export function Sheet({
           onClose();
         }
       }}
-      className="fixed inset-x-0 top-auto bottom-0 m-0 max-h-[88dvh] w-full max-w-full overflow-hidden rounded-t-md border border-rule bg-surface p-0 text-ink shadow-overlay md:inset-0 md:m-auto md:max-h-[80dvh] md:w-[34rem] md:rounded-md"
+      className="sheet fixed inset-x-0 top-auto bottom-0 m-0 max-h-[88dvh] w-full max-w-full overflow-hidden rounded-t-md border border-rule bg-surface p-0 text-ink shadow-overlay md:inset-0 md:m-auto md:max-h-[80dvh] md:w-[34rem] md:rounded-md"
     >
       {open ? (
         <div className="flex max-h-[inherit] flex-col">

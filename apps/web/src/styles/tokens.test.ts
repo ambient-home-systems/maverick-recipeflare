@@ -114,6 +114,12 @@ describe("the two themes", () => {
   });
 });
 
+describe("the scrim behind a sheet", () => {
+  it("is defined for both themes", () => {
+    expect(css.match(/--rf-scrim:\s*rgb\([^)]+\);/g)).toHaveLength(2);
+  });
+});
+
 describe("sizes", () => {
   it("makes the smallest touch target 44 px", () => {
     expect(css).toMatch(/--rf-touch:\s*2\.75rem;/);

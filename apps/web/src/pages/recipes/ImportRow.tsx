@@ -1,5 +1,5 @@
 import type { ImportJob } from "@recipeflare/schema";
-import { Link2, LoaderCircle, RotateCw, Trash2 } from "lucide-react";
+import { Link2, LoaderCircle, RotateCw, Trash2, TriangleAlert } from "lucide-react";
 import { Button } from "../../ui/Button";
 
 /** What went wrong, in plain words, and what to try. Anything else shows the job's own message. */
@@ -19,7 +19,12 @@ export function importHost(job: Pick<ImportJob, "sourceUrl">): string {
   }
 }
 
-/** One line saying where an import has got to. */
+/** Why a failed import failed, and what to try. */
+export function importFailure(job: ImportJob): string {
+  return FAILURES[job.error?.code ?? ""] ?? job.error?.message ?? "The import did not work.";
+}
+
+/** A few words saying where an import has got to. */
 export function importStatus(job: ImportJob): string {
   switch (job.status) {
     case "queued":
@@ -29,7 +34,7 @@ export function importStatus(job: ImportJob): string {
     case "needs_review":
       return "Ready to review";
     case "failed":
-      return FAILURES[job.error?.code ?? ""] ?? job.error?.message ?? "The import did not work.";
+      return "Could not import";
     case "cancelled":
       return "Cancelled";
     case "completed":
@@ -53,6 +58,7 @@ export function ImportRow({
   onRemove?: (job: ImportJob) => void;
 }) {
   const working = job.status === "queued" || job.status === "running";
+  const failed = job.status === "failed";
   const host = importHost(job);
   const title = job.result?.draft.title.trim() || host;
 
@@ -64,7 +70,8 @@ export function ImportRow({
       >
         <Link2 size="1.375rem" />
       </span>
-      <span className="min-w-[8rem] flex-1">
+      {/* A failure's reason needs room: its text is wide enough to push the actions onto their own line. */}
+      <span className={`flex-1 ${failed ? "min-w-[16rem]" : "min-w-[8rem]"}`}>
         <span className="block text-lg font-semibold leading-tight">{title}</span>
         <span className="mt-0.5 block text-sm">
           {working ? (
@@ -74,17 +81,31 @@ export function ImportRow({
               className="mr-1.5 inline-block animate-spin align-[-0.15em] motion-reduce:animate-none"
             />
           ) : null}
-          <span className={job.status === "failed" ? undefined : "font-semibold"}>
+          {failed ? (
+            <TriangleAlert
+              aria-hidden="true"
+              size="1rem"
+              className="mr-1.5 inline-block align-[-0.15em]"
+            />
+          ) : null}
+          <span className="font-semibold">
             {importStatus(job)}
-            {working ? "…" : ""}
+            {working ? "…" : failed ? "." : ""}
           </span>
-          {title === host ? null : ` · ${host}`}
+          {failed ? ` ${importFailure(job)}` : null}
+          {/* On a phone the site takes its own line, so a line never ends on the dot. */}
+          {failed || title === host ? null : (
+            <span className="block md:inline">
+              <span className="hidden md:inline"> · </span>
+              {host}
+            </span>
+          )}
         </span>
       </span>
       {job.status === "needs_review" ? (
         <Button onClick={() => onReview?.(job)}>Review</Button>
       ) : null}
-      {job.status === "failed" ? (
+      {failed ? (
         <span className="flex flex-wrap gap-2">
           <Button
             variant="quiet"

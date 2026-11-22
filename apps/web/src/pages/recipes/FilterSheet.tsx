@@ -105,6 +105,12 @@ export function FilterSheet({
       <p className="border-b border-rule px-4 py-3 text-sm">
         A recipe must match everything you choose, so each choice narrows the list.
       </p>
+      {/* The page behind a modal is not read out, so the count is announced from in here. */}
+      <p className="sr-only" role="status">
+        {resultCount === null
+          ? ""
+          : `${resultCount} ${resultCount === 1 ? "recipe matches" : "recipes match"}`}
+      </p>
       {tags.length > 0 ? (
         <Group
           legend="Tags"
@@ -142,7 +148,7 @@ export function FilterSheet({
                 onChange={(event) => setFind(event.target.value)}
                 className={FIELD}
               />
-              <p className="mt-2 text-sm" role="status">
+              <p className="mt-2 text-sm" role={needle ? "status" : undefined}>
                 {needle
                   ? `${offered.length} of ${foods.length} foods match.`
                   : `The ${FOODS_OFFERED} most used of ${foods.length} foods. Type to find another.`}

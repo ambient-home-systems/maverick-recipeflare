@@ -1,9 +1,10 @@
+import { TriangleAlert } from "lucide-react";
 import type { ReactNode } from "react";
 
 /**
  * A band for something the cook should know: a standing condition such as being
  * offline, or a problem such as a save that failed. A problem is announced at
- * once; a condition is not. Both use the same band: red is kept for the title
+ * once and always carries a warning icon; a condition is not, and brings its own. Both use the same band: red is kept for the title
  * rule and for adding a recipe.
  */
 export function Notice({
@@ -20,7 +21,10 @@ export function Notice({
       role={problem ? "alert" : "status"}
       className="flex items-center gap-2 bg-notice px-4 py-2.5 text-sm font-semibold text-on-notice"
     >
-      {icon}
+      {icon ??
+        (problem ? (
+          <TriangleAlert aria-hidden="true" size="1.125rem" className="flex-none" />
+        ) : null)}
       <span>{children}</span>
     </p>
   );

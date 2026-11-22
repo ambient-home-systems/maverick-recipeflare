@@ -70,8 +70,25 @@ describe("the recipe list", () => {
       "1 hr 55 min · Dinner · Family favorite, Holiday",
     );
     expect(row?.querySelector("img")).toBeTruthy();
+    // A photo row keeps its category's colour as a band, the way a selected divider does.
+    expect(row?.querySelector("img + span")?.className).toContain("bg-stock-salmon");
     // Most recipes come from paper and have no photo: they get a letter tile.
     expect(screen.getByText("Meat Loaf").closest("li")?.querySelector("img")).toBeNull();
+  });
+
+  it("keeps a phone's line short by leaving the category to the colour, and still reads it out", async () => {
+    await renderAt("/mock/list");
+
+    const row = screen.getByText("Cardamom Sugar Cookies").closest("li");
+    const phone = row?.querySelector("[data-testid=recipe-meta-phone]");
+    expect(phone?.textContent).toBe("30 min · From Aunt June · Holiday, Family favorite");
+    expect(phone?.className).toContain("truncate");
+    expect(row?.querySelector(".sr-only")?.textContent).toBe("Dessert");
+
+    // A row with little to say keeps its category in words at every width.
+    const plain = screen.getByText("Meat Loaf").closest("li");
+    expect(plain?.querySelector("[data-testid=recipe-meta]")?.textContent).toBe("25 min · Dinner");
+    expect(plain?.querySelector("[data-testid=recipe-meta-phone]")).toBeNull();
   });
 
   it("follows the search box after a short pause and keeps the search in the address", async () => {
@@ -120,6 +137,8 @@ describe("the recipe list", () => {
     openFilters();
     expect(sheet().getByText(/must match everything you choose/)).toBeTruthy();
     fireEvent.click(sheet().getByRole("button", { name: "Weeknight" }));
+    // The list behind a modal is not read out, so the sheet announces the count itself.
+    await waitFor(() => expect(sheet().getByRole("status").textContent).toBe("2 recipes match"));
     await waitFor(() =>
       expect(sheet().getByRole("button", { name: "Show 2 recipes" })).toBeTruthy(),
     );
@@ -234,7 +253,10 @@ describe("the list's other states", () => {
     expect(rows[0]).toContain("Reading the page…");
     expect(rows[1]).toContain("Skillet Cornbread");
     expect(rows[1]).toContain("Ready to review · recipes.example.com");
-    expect(rows[2]).toContain("The site blocked the request. Trying again sometimes works.");
+    expect(rows[1]).not.toContain("blocked");
+    expect(rows[2]).toContain(
+      "Could not import. The site blocked the request. Trying again sometimes works.",
+    );
 
     expect(imports.getByRole("button", { name: "Review" })).toBeTruthy();
     expect(imports.getByRole("button", { name: "Try again" })).toBeTruthy();
@@ -259,7 +281,10 @@ describe("adding a recipe", () => {
   it("asks for a link before importing", async () => {
     await renderAt("/mock/add");
     fireEvent.click(screen.getByRole("button", { name: "Import" }));
-    expect(screen.getByRole("alert").textContent).toBe("Paste the address of a recipe page first.");
+    const alert = screen.getByRole("alert");
+    expect(alert.textContent).toBe("Paste the address of a recipe page first.");
+    // A problem is never words alone: the band carries a warning icon.
+    expect(alert.querySelector("svg")).toBeTruthy();
   });
 
   it("refuses text that is not a web address", async () => {
@@ -286,9 +311,9 @@ describe("adding a recipe", () => {
   it("turns both ways off when offline, and says why", async () => {
     await renderAt("/mock/add?scene=offline");
     expect(screen.getByText(/Adding and importing need a connection/)).toBeTruthy();
-    expect((screen.getByRole("button", { name: "New recipe" }) as HTMLButtonElement).disabled).toBe(
-      true,
-    );
+    expect(
+      (screen.getByRole("button", { name: "Type a recipe" }) as HTMLButtonElement).disabled,
+    ).toBe(true);
     expect((screen.getByRole("button", { name: "Import" }) as HTMLButtonElement).disabled).toBe(
       true,
     );

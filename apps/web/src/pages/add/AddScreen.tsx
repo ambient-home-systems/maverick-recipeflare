@@ -1,5 +1,5 @@
 import { UrlImportRequest } from "@recipeflare/schema";
-import { CloudOff, Link2, PencilLine, TriangleAlert } from "lucide-react";
+import { CloudOff, Link2, PencilLine, Plus } from "lucide-react";
 import { type FormEvent, useId, useState } from "react";
 import { Button } from "../../ui/Button";
 import { FIELD } from "../../ui/field";
@@ -58,8 +58,14 @@ export function AddScreen({
           Enter a recipe from a card or from memory, with the lines written the way the card writes
           them.
         </p>
-        <Button variant="add" className="mt-4" disabled={offline} onClick={onType}>
-          New recipe
+        <Button
+          variant="add"
+          className="mt-4"
+          icon={<Plus aria-hidden="true" size="1.25rem" />}
+          disabled={offline}
+          onClick={onType}
+        >
+          Type a recipe
         </Button>
       </section>
 
@@ -91,12 +97,7 @@ export function AddScreen({
         />
         {problem ? (
           <div id={problemId} className="mt-2 max-w-[34rem]">
-            <Notice
-              problem
-              icon={<TriangleAlert aria-hidden="true" size="1.125rem" className="flex-none" />}
-            >
-              {problem}
-            </Notice>
+            <Notice problem>{problem}</Notice>
           </div>
         ) : null}
         <Button type="submit" className="mt-4" disabled={offline}>

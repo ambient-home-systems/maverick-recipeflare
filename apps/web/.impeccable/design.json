@@ -604,6 +604,11 @@
         "name": "reduced-motion",
         "value": "animation-duration and transition-duration 0.01ms, one iteration",
         "purpose": "Applied to everything when the device asks for reduced motion."
+      },
+      {
+        "name": "sheet-rise",
+        "value": "translate 0 1.5rem to 0 and opacity 0 to 1, var(--rf-motion)",
+        "purpose": "A sheet rises a little as it opens. The one authored entrance; held still under reduced motion."
       }
     ],
     "breakpoints": [
@@ -662,7 +667,8 @@
         "Link2",
         "LoaderCircle",
         "RotateCw",
-        "PencilLine"
+        "PencilLine",
+        "ArrowDownUp"
       ],
       "appIcon": "public/icon.svg is a placeholder: an index card with a buff divider tab and a red rule on ink navy. The final icon and wordmark are unresolved."
     },
@@ -733,7 +739,7 @@
       "name": "Recipe Row",
       "kind": "custom",
       "refersTo": "recipe-row",
-      "description": "One recipe in the index: a letter tile or a photo, the title, and one line of time, category, From and up to two tags.",
+      "description": "One recipe in the index: a letter tile or a photo with a stock band, the title, and one line of time, category, From and up to two tags that never wraps.",
       "html": "<ul class=\"ds-rows\"><li><a class=\"ds-row\" href=\"#\"><span class=\"ds-row-tile ds-row-tile-salmon\" aria-hidden=\"true\">S</span><span><span class=\"ds-row-title\">Sunday Beef and Bean Chili</span><span class=\"ds-row-meta\">2 hr 30 min · Dinner · <b>Freezes well</b></span></span></a></li><li><a class=\"ds-row\" href=\"#\"><span class=\"ds-row-tile ds-row-tile-sky\" aria-hidden=\"true\">C</span><span><span class=\"ds-row-title\">Cardamom Sugar Cookies</span><span class=\"ds-row-meta\">30 min · Dessert · From Aunt June</span></span></a></li><li><a class=\"ds-row\" href=\"#\"><span class=\"ds-row-tile ds-row-tile-plain\" aria-hidden=\"true\">C</span><span><span class=\"ds-row-title\">Cinnamon Toast</span></span></a></li></ul>",
       "css": ".ds-rows { list-style: none; margin: 0; padding: 0; background: var(--rf-surface); border: 1px solid var(--rf-rule); font-family: var(--rf-font); } .ds-rows li { border-bottom: 1px solid var(--rf-rule); } .ds-rows li:last-child { border-bottom: 0; } .ds-row { display: flex; min-height: 4.25rem; align-items: center; gap: 0.75rem; padding: 0.625rem 1rem; color: var(--rf-ink); text-decoration: none; transition: background-color var(--rf-motion), color var(--rf-motion), border-color var(--rf-motion); } .ds-row:hover, .ds-row:active { background: var(--rf-surface-sunk); } .ds-row:focus-visible { outline: 3px solid var(--rf-focus); outline-offset: 2px; border-radius: var(--rf-radius-sm); } .ds-row-tile { display: grid; width: 3rem; height: 3rem; flex: none; place-items: center; border-radius: var(--rf-radius-sm); font-family: var(--rf-font); font-size: var(--rf-text-lg); font-weight: 700; color: var(--rf-on-stock); } .ds-row-tile-salmon { background: var(--rf-stock-salmon); } .ds-row-tile-sky { background: var(--rf-stock-sky); } .ds-row-tile-plain { background: var(--rf-stock-plain); color: var(--rf-ink); } .ds-row-title { display: block; font-size: var(--rf-text-lg); font-weight: 600; line-height: 1.25; } .ds-row-meta { display: block; margin-top: 0.125rem; font-size: var(--rf-text-sm); line-height: 1.429; font-variant-numeric: tabular-nums; } .ds-row-meta b { font-weight: 600; }"
     },

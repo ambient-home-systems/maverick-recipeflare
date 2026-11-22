@@ -5,11 +5,12 @@
 export const LIST_SORTS = ["match", "changed", "newest", "title"] as const;
 export type ListSort = (typeof LIST_SORTS)[number];
 
+/** Short enough to stay whole beside the Filter button on a phone. */
 export const SORT_LABELS: Record<ListSort, string> = {
   match: "Best match",
-  changed: "Recently changed",
+  changed: "Last changed",
   newest: "Newest",
-  title: "Title A to Z",
+  title: "A to Z",
 };
 
 export type ListState = {

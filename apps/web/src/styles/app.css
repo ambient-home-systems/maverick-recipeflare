@@ -125,6 +125,20 @@
     background: var(--rf-scrim);
   }
 
+  /* A sheet rises a little as it opens. Reduced motion holds it still. */
+  .sheet[open] {
+    transition:
+      translate var(--rf-motion),
+      opacity var(--rf-motion);
+  }
+
+  @starting-style {
+    .sheet[open] {
+      translate: 0 1.5rem;
+      opacity: 0;
+    }
+  }
+
   /* The navigation is a navy rail from tablet width, and a white bar below it. */
   @media (min-width: 48rem) {
     .shell-rail :focus-visible {

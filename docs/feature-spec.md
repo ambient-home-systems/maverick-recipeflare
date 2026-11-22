@@ -180,8 +180,8 @@ The cook types a line the way it is written on the card. The rule-based parser (
 - Tags, tools and foods are chosen in a filter sheet opened from the "Filter" button, any number of each. The sheet offers the most used foods and a box to find any other. Each choice takes effect at once, and the sheet's button says how many recipes are left.
 - **Proposed:** every selected filter must match, together with the category and the search, so adding a filter always narrows the list. The sheet says so.
 - Filters in use are shown above the list as chips. Pressing a chip removes that filter.
-- Sort: recently changed (the default), newest, title A to Z. While searching, best match is the default, and it is offered only then.
-- A row shows the recipe's photo, or without one its first letter on its category's colour; the title; and one line with the total time, the category, "From" and up to two tags. Behind a category's divider the line leaves the category out.
+- Sort: recently changed (the default, shown as "Last changed"), newest, title A to Z. While searching, best match is the default, and it is offered only then.
+- A row shows the recipe's photo, or without one its first letter on its category's colour; the title; and one line with the total time, the category, "From" and up to two tags. The line never wraps. Behind a category's divider it leaves the category out, and on a phone it also does so for a recipe that has a source or tags to show.
 - Search text, filters and sort are in the page address, so the back button and a shared link restore them.
 - The list loads 30 recipes at a time as you scroll.
 - States: first run ("No recipes yet" with buttons for new recipe and import, and no search box or filters), no results (saying what was asked for, with a button that clears the search and filters), loading, and offline.
