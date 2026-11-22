@@ -28,7 +28,7 @@ In GitHub: **Settings** > **Secrets and variables** > **Actions** > **Secrets**.
 
 | Secret | Value |
 | --- | --- |
-| `CLOUDFLARE_API_TOKEN` | An account API token with: Workers Scripts Edit, D1 Edit, Workers R2 Storage Edit, Queues Edit, Account Settings Read, and for the zone, Workers Routes Edit |
+| `CLOUDFLARE_API_TOKEN` | An API token with: Workers Scripts Edit, D1 Edit, Workers R2 Storage Edit, Queues Edit, Account Settings Read, and for the zone, Workers Routes Edit. It needs no Access permissions |
 | `CLOUDFLARE_ACCOUNT_ID` | The Cloudflare account ID |
 
 ### 2. Choose two hostnames
@@ -41,7 +41,7 @@ One for each hostname. In the Cloudflare dashboard:
 
 1. Go to **Zero Trust** > **Access controls** > **Applications** and select **Create new application**.
 2. Select **Self-hosted and private**, then **Add public hostname**, and enter the hostname.
-3. Under **Access policies**, add an Allow policy that includes the household's email addresses.
+3. Under **Access policies**, add an Allow policy that includes the household's email addresses. One reusable policy can serve both applications.
 4. Set **Session Duration** to one month.
 5. Select **Create**.
 6. Open the application again, go to **Additional settings**, and copy the **Application Audience (AUD) Tag**. Each application has its own.
@@ -67,14 +67,14 @@ They are secrets, not variables, so that GitHub masks them in the public deploy 
 
 On the `production` environment also set:
 
-- **Required reviewers:** yourself. A production deploy then waits for your approval.
+- **Required reviewers:** yourself. A production deploy then waits for your approval. Without this setting the deploy starts as soon as the workflow is run.
 - **Deployment branches and tags:** `main` only.
 
 ### 5. First deploy
 
 Merging to `main` deploys staging. Then run the production deploy once (see below).
 
-If a deploy stops at the custom-domain step with a permission error, add **Zone** > **DNS** > **Edit** to the API token and run it again. Cloudflare's documentation does not say whether that permission is needed, so the token starts without it.
+The first deploys of both environments, on 22 Nov 2026, created their database, bucket and queue and attached the custom domain with exactly the token permissions listed in step 1. No DNS permission is needed.
 
 ## Deploying
 
