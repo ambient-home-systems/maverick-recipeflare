@@ -55,6 +55,7 @@ function LinePanel({
     <div className="py-3 pr-4 pl-1">
       <TextField
         label="Line as written"
+        verbatim
         value={row.text}
         error={error}
         hint="Kept exactly as you type it. Changing it reads the line again."
@@ -234,6 +235,8 @@ export function IngredientList({
     }
     setEntry("");
     entryRef.current?.focus();
+    // Each added line pushes the box down. Keep it clear of the action bar.
+    requestAnimationFrame(() => entryRef.current?.scrollIntoView?.({ block: "nearest" }));
   };
 
   return (
@@ -334,9 +337,12 @@ export function IngredientList({
             type="text"
             autoComplete="off"
             autoCapitalize="off"
+            // A card's "C." and "t." must reach the list as typed.
+            autoCorrect="off"
+            spellCheck={false}
             enterKeyHint="enter"
             value={entry}
-            aria-describedby="ingredient-entry-hint"
+            aria-describedby={rows.length === 0 ? "ingredient-entry-hint" : undefined}
             onChange={(event) => setEntry(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === "Enter") {
@@ -352,7 +358,7 @@ export function IngredientList({
                 add(`${entry}${pasted}`);
               }
             }}
-            className={`${FIELD} min-w-0 flex-1`}
+            className={`${FIELD} min-w-0 flex-1 scroll-mb-[calc(var(--rf-nav-height)+6rem)]`}
           />
           <Button
             variant="quiet"
@@ -363,9 +369,13 @@ export function IngredientList({
             Add
           </Button>
         </div>
-        <p id="ingredient-entry-hint" className="mt-1 text-sm">
-          Type it the way the card writes it, such as 2 1/4 C. flour, and press Enter for the next.
-        </p>
+        {/* The hint is for the first line. Once there is one, the list itself shows how it works. */}
+        {rows.length === 0 ? (
+          <p id="ingredient-entry-hint" className="mt-1 text-sm">
+            Type it the way the card writes it, such as 2 1/4 C. flour, and press Enter for the
+            next.
+          </p>
+        ) : null}
         <button
           type="button"
           className={`${SMALL_BUTTON} mt-3`}

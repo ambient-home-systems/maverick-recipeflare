@@ -218,8 +218,8 @@ The cook types a line the way it is written on the card. The rule-based parser (
 - The Add page has one box for a link, beside the button for typing a recipe in. Submitting a link returns to the list and shows the import as a row at the top with its progress.
 - Imports sit above the recipes until a person has dealt with them. They step aside while the list is searched or filtered.
 - When the import is ready the row says "Review". Opening it shows the editor in review mode, filled in from the page.
-- Review mode lists what needs attention at the top, for example "No steps were found" or "3 ingredient lines could not be read", and marks each of those with the word "check" where it is. None of them stops a save.
-- Review shows the original beside the draft: they take turns on a phone, with a switch between them, and sit side by side on a wide screen. For a link the original is the page's picture and a link to the page. From Phase 2 it is the photographed card.
+- Review mode lists what needs attention at the top, for example "No steps were found" or "3 ingredient lines could not be read", and marks each of those with the word "check" where it is. Pressing one in the list goes to it. None of them stops a save.
+- Review shows the original beside the draft: they take turns on a phone, with a switch that stays at the top of the screen and returns each to where it was left, and sit side by side on a wide screen. For a link the original is the page's picture and a link to the page. From Phase 2 it is the photographed card.
 - Nothing becomes a recipe until Save is pressed in review mode. "Discard" removes the import, and always asks first.
 - Tags and categories from the page are preselected only if the household already has them. Others are offered as unselected suggestions.
 - The page's main image becomes the cover and can be removed in review.
@@ -259,6 +259,7 @@ The cook types a line the way it is written on the card. The rule-based parser (
 - There is no trash and no version history in Phase 1.
 - If another device saved the same recipe while it was being edited, saving shows "This recipe was changed on another device" with the choice to reload or to keep editing and save over it. Nothing is overwritten without that choice.
 - Leaving the editor with unsaved changes asks first.
+- A save that is refused lists what needs fixing at the top of the editor, in the order the fields come down the page. Pressing one goes to its field or row. Each problem is also shown under its own field, and clears as it is fixed.
 
 ## 10. Accessibility and sizing
 

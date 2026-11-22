@@ -58,7 +58,7 @@ export function Sheet({
       {open ? (
         <div className={`flex max-h-[inherit] flex-col ${tall ? "h-full" : ""}`}>
           <div className="flex flex-none items-center justify-between gap-3 border-b-2 border-red-line py-1 pr-1 pl-4">
-            <h2 id={titleId} className="text-xl font-bold">
+            <h2 id={titleId} className="py-2 text-xl font-bold">
               {title}
             </h2>
             <button

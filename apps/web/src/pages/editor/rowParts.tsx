@@ -80,6 +80,7 @@ export function ClosedRow({
       <button
         type="button"
         aria-label={label}
+        data-jump
         onClick={onOpen}
         className="transition-rf flex min-h-touch w-full items-center gap-2 py-2 pr-4 pl-1 text-left hover:bg-surface-sunk"
       >

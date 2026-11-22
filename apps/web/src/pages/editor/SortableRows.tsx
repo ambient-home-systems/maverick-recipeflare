@@ -41,7 +41,7 @@ export function SortableRows<T extends { id: string }>({
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
     // A short hold keeps a swipe that starts on a handle from being taken for a drag.
-    useSensor(TouchSensor, { activationConstraint: { delay: 120, tolerance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
@@ -87,6 +87,7 @@ function SortableRow({ id, name, children }: { id: string; name: string; childre
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform), transition }}
       // The lifted row sits over its neighbours on the sunk ground, with stronger rules: no shadow.
+      data-field={`row:${id}`}
       className={`relative flex items-stretch border-t border-rule ${
         isDragging ? "z-[2] border-y border-rule-strong bg-surface-sunk" : "bg-surface"
       }`}
@@ -97,7 +98,9 @@ function SortableRow({ id, name, children }: { id: string; name: string; childre
         {...attributes}
         {...listeners}
         aria-label={`Move ${name}`}
-        className="transition-rf grid min-h-touch w-11 flex-none cursor-grab touch-none place-items-center self-stretch hover:bg-surface-sunk active:cursor-grabbing"
+        // The handle sits on the row's first line, open or closed. A finger that
+        // starts here can still scroll the page: the drag begins only after a hold.
+        className="transition-rf flex min-h-touch w-11 flex-none cursor-grab touch-manipulation items-start justify-center self-stretch pt-3 hover:bg-surface-sunk active:cursor-grabbing"
       >
         <GripVertical aria-hidden="true" size="1.25rem" />
       </button>

@@ -56,6 +56,7 @@ export function StepList({
     }
     setEntry("");
     entryRef.current?.focus();
+    requestAnimationFrame(() => entryRef.current?.scrollIntoView?.({ block: "nearest" }));
   };
 
   return (
@@ -140,7 +141,7 @@ export function StepList({
             rows={2}
             enterKeyHint="enter"
             value={entry}
-            aria-describedby="step-entry-hint"
+            aria-describedby={rows.length === 0 ? "step-entry-hint" : undefined}
             onChange={(event) => setEntry(event.target.value)}
             onKeyDown={(event) => {
               // Enter goes on to the next step, as it does for ingredients; Shift+Enter breaks the line.
@@ -156,7 +157,7 @@ export function StepList({
                 add(`${entry}${pasted}`);
               }
             }}
-            className={`${FIELD} block min-w-0 flex-1 py-2 leading-normal [field-sizing:content]`}
+            className={`${FIELD} block min-w-0 flex-1 scroll-mb-[calc(var(--rf-nav-height)+6rem)] py-2 leading-normal [field-sizing:content]`}
           />
           <Button
             variant="quiet"
@@ -167,9 +168,11 @@ export function StepList({
             Add
           </Button>
         </div>
-        <p id="step-entry-hint" className="mt-1 text-sm">
-          Press Enter for the next step. They are numbered for you.
-        </p>
+        {rows.length === 0 ? (
+          <p id="step-entry-hint" className="mt-1 text-sm">
+            Press Enter for the next step. They are numbered for you.
+          </p>
+        ) : null}
         <button
           type="button"
           className={`${SMALL_BUTTON} mt-3`}

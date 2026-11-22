@@ -30,6 +30,8 @@ type FieldProps = {
   hideLabel?: boolean;
   /** Marks the box as wrong when its problem is shown somewhere else, such as under a row of boxes. */
   invalid?: boolean;
+  /** The key a summary of problems uses to find this field and go to it. */
+  anchor?: string;
 };
 
 /** A small outlined word beside a label or a row: "check", "new", "as written". */
@@ -50,12 +52,16 @@ function Shell({
   hideLabel = false,
   children,
   flagged = false,
-}: Pick<FieldProps, "label" | "error" | "hint" | "className" | "hideLabel" | "flagged"> & {
+  anchor,
+}: Pick<
+  FieldProps,
+  "label" | "error" | "hint" | "className" | "hideLabel" | "flagged" | "anchor"
+> & {
   id: string;
   children: ReactNode;
 }) {
   return (
-    <div className={className}>
+    <div className={className} data-field={anchor}>
       <div className={hideLabel && !flagged ? "sr-only" : "mb-1 flex flex-wrap items-center gap-2"}>
         <label htmlFor={id} className={hideLabel ? "sr-only" : "text-sm font-semibold"}>
           {label}
@@ -83,8 +89,11 @@ export function TextField({
   autoComplete = "off",
   enterKeyHint,
   onEnter,
+  verbatim = false,
   ...props
 }: FieldProps & {
+  /** For text that must stay exactly as typed: the device does not correct, capitalise or check it. */
+  verbatim?: boolean;
   type?: "text" | "url";
   inputMode?: "text" | "decimal" | "numeric" | "url";
   autoComplete?: string;
@@ -99,8 +108,9 @@ export function TextField({
         type={type}
         inputMode={inputMode}
         autoComplete={autoComplete}
-        autoCapitalize={type === "url" ? "off" : undefined}
-        spellCheck={type === "url" ? false : undefined}
+        autoCapitalize={type === "url" || verbatim ? "off" : undefined}
+        autoCorrect={verbatim ? "off" : undefined}
+        spellCheck={type === "url" || verbatim ? false : undefined}
         enterKeyHint={enterKeyHint}
         value={props.value}
         aria-invalid={props.error || props.invalid ? true : undefined}

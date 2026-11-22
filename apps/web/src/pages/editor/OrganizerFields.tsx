@@ -88,8 +88,9 @@ export function OrganizerFields({
             {offered.length > 0 ? (
               <div className="mt-2">
                 <p className="text-sm">
-                  The page also names {offered.length === 1 ? "this one" : "these"}, which you do
-                  not have. Press one to create it and add it.
+                  {offered.length === 1
+                    ? "The page also names this one, which you do not have. Press it to create it and add it."
+                    : "The page also names these, which you do not have. Press one to create it and add it."}
                 </p>
                 <ul className="mt-1.5 flex flex-wrap gap-2">
                   {offered.map((name) => (

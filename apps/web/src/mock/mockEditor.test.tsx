@@ -55,6 +55,20 @@ describe("typing a new recipe", () => {
     expect(read(rowOf("a knob of something for the pan") as HTMLElement)).toBe("as written");
   });
 
+  it("shows the typing hint for the first line only", async () => {
+    await renderAt("/mock/new");
+    expect(screen.getByText(/Type it the way the card writes it/)).toBeTruthy();
+    typeLine("2 eggs");
+    expect(screen.queryByText(/Type it the way the card writes it/)).toBeNull();
+  });
+
+  it("keeps a card's abbreviations from being corrected by the device", async () => {
+    await renderAt("/mock/new");
+    const entry = screen.getByLabelText("Add an ingredient");
+    expect(entry.getAttribute("autocorrect")).toBe("off");
+    expect(entry.getAttribute("spellcheck")).toBe("false");
+  });
+
   it("makes one ingredient for each line of a paste", async () => {
     await renderAt("/mock/new");
     fireEvent.paste(screen.getByLabelText("Add an ingredient"), {
@@ -307,17 +321,42 @@ describe("editing a recipe", () => {
     expect(within(nutrition).getAllByRole("textbox")).toHaveLength(11);
   });
 
-  it("marks each problem on its own field and row", async () => {
+  it("lists what needs fixing, and marks each problem on its own field and row", async () => {
     await renderAt(`${CHICKEN}?scene=problems`);
 
     expect(screen.getByRole("alert").textContent).toContain(
       "4 things need fixing before this can be saved.",
     );
-    expect(screen.getByText("A recipe needs a title.")).toBeTruthy();
-    expect(screen.getByText(/does not look like a web address/)).toBeTruthy();
+    const list = within(screen.getByRole("list", { name: "What needs fixing" }));
+    // In the order the fields come down the page.
+    expect(list.getAllByRole("button").map((button) => button.textContent)).toEqual([
+      "Title: A recipe needs a title.",
+      "Link: This does not look like a web address. It should start with https://",
+      "Serves: Use a number above zero, such as 6 or 1 1/2.",
+      "A section title: Give this section a title, or remove it.",
+    ]);
+
+    // Each is also said where it is, tied to its box.
+    const title = screen.getByLabelText("Title");
+    expect(document.getElementById(title.getAttribute("aria-describedby") ?? "")?.textContent).toBe(
+      "A recipe needs a title.",
+    );
     expect(screen.getByText("Serves: Use a number above zero, such as 6 or 1 1/2.")).toBeTruthy();
     expect(screen.getByLabelText("Serves").getAttribute("aria-invalid")).toBe("true");
-    expect(screen.getByText("Give this section a title, or remove it.")).toBeTruthy();
+  });
+
+  it("goes to a problem's field when the problem is pressed", async () => {
+    await renderAt(`${CHICKEN}?scene=problems`);
+    const list = within(screen.getByRole("list", { name: "What needs fixing" }));
+
+    fireEvent.click(list.getByRole("button", { name: /^Link:/ }));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText("Link")));
+
+    // A row's problem leads to the row, ready to be opened.
+    fireEvent.click(list.getByRole("button", { name: /^A section title:/ }));
+    await waitFor(() =>
+      expect(document.activeElement?.getAttribute("aria-label")).toBe("Edit the section "),
+    );
   });
 
   it("asks before leaving with unsaved changes", async () => {
@@ -353,6 +392,18 @@ describe("reviewing an import", () => {
     expect(screen.getByText("No steps were found.")).toBeTruthy();
     expect(screen.getByText(/1 ingredient line could not be read/)).toBeTruthy();
     expect(screen.getByText("1 food is not among yours yet: cornmeal.")).toBeTruthy();
+  });
+
+  it("goes to what needs checking when it is pressed", async () => {
+    await renderAt("/mock/review");
+
+    fireEvent.click(screen.getByRole("button", { name: "No steps were found." }));
+    await waitFor(() => expect(document.activeElement?.id).toBe("step-entry"));
+
+    fireEvent.click(screen.getByRole("button", { name: /1 food is not among yours yet/ }));
+    await waitFor(() =>
+      expect(document.activeElement?.getAttribute("aria-label")).toBe("Edit 1 cup cornmeal"),
+    );
   });
 
   it("fills the editor from the page and marks what needs a look", async () => {
@@ -405,7 +456,10 @@ describe("reviewing an import", () => {
 
   it("says when the link is already a recipe, and still allows saving", async () => {
     await renderAt("/mock/review?scene=duplicate");
-    expect(screen.getByText(/You already have a recipe from this link/)).toBeTruthy();
+    // A standing condition, in the notice band with its own icon: not a problem, so not announced as one.
+    const notice = screen.getByText(/You already have a recipe from this link/).closest("[role]");
+    expect(notice?.getAttribute("role")).toBe("status");
+    expect(notice?.querySelector("svg")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Lemony Red Lentil Soup" })).toBeTruthy();
     expect(
       (screen.getByRole("button", { name: "Save recipe" }) as HTMLButtonElement).disabled,

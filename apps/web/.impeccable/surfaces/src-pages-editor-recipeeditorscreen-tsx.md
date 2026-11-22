@@ -32,7 +32,7 @@ DECISIONS:
 - Review is the same screen with a list of what to check, the word "check" where each is, and the original beside the draft: taking turns on a phone, side by side on a wide card.
 - Save and Cancel are the action bar. Leaving with changes asks first; discarding an import always asks.
 
-FINISH: to be reviewed by the finish reviewer; DESIGN.md is updated for the components this screen adds (form fields, marks, editor rows, picker, divider back).
+FINISH: reviewed by the finish reviewer on 22 Nov 2026, verdict "ship after fixes", eight fixes, all made: the problem summary and the review's checks became rows that go to what they name; the entry box stays clear of the action bar and takes text uncorrected; the Serves and Makes problems sit under their boxes; the time fields keep "min" on their line at tablet width; the handle no longer blocks scrolling and sits on the row's first line; the Recipe and Original switch sticks and remembers each pane's place; the duplicate message is a notice band; and three wording and spacing slips. From the ceiling notes, the entry hints show only for the first row and the photos band no longer repeats its first label. DESIGN.md is updated for the components this screen adds (form fields, marks, editor rows, picker, divider back).
 
 ## Unresolved
 

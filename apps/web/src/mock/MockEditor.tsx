@@ -309,15 +309,29 @@ export function MockReview() {
     const attention = [
       ...conversion.issues
         .filter((issue) => issue.code.startsWith("missing_"))
-        .map((issue) => `${issue.message}.`),
+        .map((issue) => ({
+          text: `${issue.message}.`,
+          field:
+            issue.code === "missing_steps"
+              ? "steps"
+              : issue.code === "missing_ingredients"
+                ? "ingredients"
+                : "title",
+        })),
       ...(unread.length > 0
         ? [
-            `${unread.length} ingredient ${unread.length === 1 ? "line" : "lines"} could not be read and ${unread.length === 1 ? "is" : "are"} kept as written.`,
+            {
+              text: `${unread.length} ingredient ${unread.length === 1 ? "line" : "lines"} could not be read and ${unread.length === 1 ? "is" : "are"} kept as written.`,
+              field: `row:${unread[0]?.id}`,
+            },
           ]
         : []),
       ...(fresh.length > 0
         ? [
-            `${fresh.length} ${fresh.length === 1 ? "food is" : "foods are"} not among yours yet: ${fresh.map((row) => row.newFood).join(", ")}.`,
+            {
+              text: `${fresh.length} ${fresh.length === 1 ? "food is" : "foods are"} not among yours yet: ${fresh.map((row) => row.newFood).join(", ")}.`,
+              field: `row:${fresh[0]?.id}`,
+            },
           ]
         : []),
     ];
