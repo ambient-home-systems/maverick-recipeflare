@@ -3,7 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#17304f" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#10233d" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <title>Recipeflare</title>
+    <script>
+      // Set the theme before the first paint, so a dark kitchen never gets a white flash.
+      (() => {
+        var theme = null;
+        try {
+          theme = localStorage.getItem("recipeflare:theme");
+        } catch {
+          // Storage can be unavailable; fall back to the device setting.
+        }
+        if (theme !== "light" && theme !== "dark") {
+          theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        }
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

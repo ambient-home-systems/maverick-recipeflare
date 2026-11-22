@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchHealth } from "./api";
+import { fetchHealth } from "../api";
 
 type ApiState = "checking" | "ok" | "unreachable";
 
@@ -9,7 +9,8 @@ const LABELS: Record<ApiState, string> = {
   unreachable: "The API is not reachable.",
 };
 
-export function App() {
+/** A line that says whether this copy of the app can reach its API. */
+export function ApiStatus() {
   const [api, setApi] = useState<ApiState>("checking");
 
   useEffect(() => {
@@ -25,12 +26,8 @@ export function App() {
   }, []);
 
   return (
-    <main>
-      <h1>Recipeflare</h1>
-      <p>Nothing to cook from yet. This page confirms that the app and its API are running.</p>
-      <p role="status" data-api-state={api}>
-        {LABELS[api]}
-      </p>
-    </main>
+    <p role="status" data-api-state={api} className="text-sm font-semibold">
+      {LABELS[api]}
+    </p>
   );
 }

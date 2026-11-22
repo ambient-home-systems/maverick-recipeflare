@@ -1,0 +1,839 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-22T00:00:00Z",
+  "title": "Design System: Recipeflare",
+  "extensions": {
+    "colorMeta": {
+      "ink": {
+        "role": "primary",
+        "displayName": "Ink Navy",
+        "canonical": "#14263f",
+        "dark": "#e8eef6",
+        "cssVar": "--rf-ink",
+        "tonalRamp": [
+          "oklch(15% 0.015 257)",
+          "oklch(26% 0.026 257)",
+          "oklch(38% 0.037 257)",
+          "oklch(49% 0.048 257)",
+          "oklch(61% 0.057 257)",
+          "oklch(72% 0.046 257)",
+          "oklch(84% 0.035 257)",
+          "oklch(95% 0.024 257)"
+        ]
+      },
+      "shell": {
+        "role": "primary",
+        "displayName": "Tin Navy",
+        "canonical": "#17304f",
+        "dark": "#10233d",
+        "cssVar": "--rf-shell",
+        "tonalRamp": [
+          "oklch(15% 0.018 255)",
+          "oklch(26% 0.031 255)",
+          "oklch(38% 0.045 255)",
+          "oklch(49% 0.058 255)",
+          "oklch(61% 0.070 255)",
+          "oklch(72% 0.056 255)",
+          "oklch(84% 0.043 255)",
+          "oklch(95% 0.029 255)"
+        ]
+      },
+      "shell-raised": {
+        "role": "primary",
+        "displayName": "Tin Navy, Raised",
+        "canonical": "#2c4a70",
+        "dark": "#23406a",
+        "cssVar": "--rf-shell-raised",
+        "tonalRamp": [
+          "oklch(15% 0.020 255)",
+          "oklch(26% 0.036 255)",
+          "oklch(38% 0.051 255)",
+          "oklch(49% 0.067 255)",
+          "oklch(61% 0.080 255)",
+          "oklch(72% 0.065 255)",
+          "oklch(84% 0.049 255)",
+          "oklch(95% 0.034 255)"
+        ]
+      },
+      "on-shell": {
+        "role": "neutral",
+        "displayName": "On Shell",
+        "canonical": "#f4f8fc",
+        "dark": "#f4f8fc",
+        "cssVar": "--rf-on-shell",
+        "tonalRamp": [
+          "oklch(15% 0.002 248)",
+          "oklch(26% 0.003 248)",
+          "oklch(38% 0.005 248)",
+          "oklch(49% 0.006 248)",
+          "oklch(61% 0.007 248)",
+          "oklch(72% 0.006 248)",
+          "oklch(84% 0.005 248)",
+          "oklch(95% 0.003 248)"
+        ]
+      },
+      "primary": {
+        "role": "primary",
+        "displayName": "Primary",
+        "canonical": "#17304f",
+        "dark": "#dce7f4",
+        "cssVar": "--rf-primary",
+        "tonalRamp": [
+          "oklch(15% 0.018 255)",
+          "oklch(26% 0.031 255)",
+          "oklch(38% 0.045 255)",
+          "oklch(49% 0.058 255)",
+          "oklch(61% 0.070 255)",
+          "oklch(72% 0.056 255)",
+          "oklch(84% 0.043 255)",
+          "oklch(95% 0.029 255)"
+        ]
+      },
+      "primary-press": {
+        "role": "primary",
+        "displayName": "Primary, Pressed",
+        "canonical": "#0f2238",
+        "dark": "#c3d3e6",
+        "cssVar": "--rf-primary-press",
+        "tonalRamp": [
+          "oklch(15% 0.013 253)",
+          "oklch(26% 0.024 253)",
+          "oklch(38% 0.034 253)",
+          "oklch(49% 0.044 253)",
+          "oklch(61% 0.053 253)",
+          "oklch(72% 0.043 253)",
+          "oklch(84% 0.033 253)",
+          "oklch(95% 0.022 253)"
+        ]
+      },
+      "on-primary": {
+        "role": "neutral",
+        "displayName": "On Primary",
+        "canonical": "#f4f8fc",
+        "dark": "#14263f",
+        "cssVar": "--rf-on-primary",
+        "tonalRamp": [
+          "oklch(15% 0.002 248)",
+          "oklch(26% 0.003 248)",
+          "oklch(38% 0.005 248)",
+          "oklch(49% 0.006 248)",
+          "oklch(61% 0.007 248)",
+          "oklch(72% 0.006 248)",
+          "oklch(84% 0.005 248)",
+          "oklch(95% 0.003 248)"
+        ]
+      },
+      "ground": {
+        "role": "neutral",
+        "displayName": "Ground",
+        "canonical": "#e9eff6",
+        "dark": "#0b1422",
+        "cssVar": "--rf-ground",
+        "tonalRamp": [
+          "oklch(15% 0.003 252)",
+          "oklch(26% 0.006 252)",
+          "oklch(38% 0.008 252)",
+          "oklch(49% 0.010 252)",
+          "oklch(61% 0.012 252)",
+          "oklch(72% 0.010 252)",
+          "oklch(84% 0.008 252)",
+          "oklch(95% 0.005 252)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Card White",
+        "canonical": "#ffffff",
+        "dark": "#152236",
+        "cssVar": "--rf-surface",
+        "tonalRamp": [
+          "oklch(15% 0.000 90)",
+          "oklch(26% 0.000 90)",
+          "oklch(38% 0.000 90)",
+          "oklch(49% 0.000 90)",
+          "oklch(61% 0.000 90)",
+          "oklch(72% 0.000 90)",
+          "oklch(84% 0.000 90)",
+          "oklch(95% 0.000 90)"
+        ]
+      },
+      "surface-sunk": {
+        "role": "neutral",
+        "displayName": "Sunk",
+        "canonical": "#f1f5fa",
+        "dark": "#0f1a2b",
+        "cssVar": "--rf-surface-sunk",
+        "tonalRamp": [
+          "oklch(15% 0.002 254)",
+          "oklch(26% 0.004 254)",
+          "oklch(38% 0.006 254)",
+          "oklch(49% 0.007 254)",
+          "oklch(61% 0.009 254)",
+          "oklch(72% 0.007 254)",
+          "oklch(84% 0.005 254)",
+          "oklch(95% 0.004 254)"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Ruling Blue",
+        "canonical": "#a9c1dc",
+        "dark": "#2d4363",
+        "cssVar": "--rf-rule",
+        "tonalRamp": [
+          "oklch(15% 0.013 251)",
+          "oklch(26% 0.023 251)",
+          "oklch(38% 0.032 251)",
+          "oklch(49% 0.042 251)",
+          "oklch(61% 0.051 251)",
+          "oklch(72% 0.041 251)",
+          "oklch(84% 0.031 251)",
+          "oklch(95% 0.021 251)"
+        ]
+      },
+      "rule-strong": {
+        "role": "neutral",
+        "displayName": "Strong Rule",
+        "canonical": "#5b7ba2",
+        "dark": "#6f8fb6",
+        "cssVar": "--rf-rule-strong",
+        "tonalRamp": [
+          "oklch(15% 0.019 254)",
+          "oklch(26% 0.034 254)",
+          "oklch(38% 0.049 254)",
+          "oklch(49% 0.064 254)",
+          "oklch(61% 0.077 254)",
+          "oklch(72% 0.062 254)",
+          "oklch(84% 0.047 254)",
+          "oklch(95% 0.032 254)"
+        ]
+      },
+      "red-fill": {
+        "role": "secondary",
+        "displayName": "Rule Red, Fill",
+        "canonical": "#c8372d",
+        "dark": "#c8372d",
+        "cssVar": "--rf-red-fill",
+        "tonalRamp": [
+          "oklch(15% 0.050 29)",
+          "oklch(26% 0.088 29)",
+          "oklch(38% 0.126 29)",
+          "oklch(49% 0.164 29)",
+          "oklch(61% 0.198 29)",
+          "oklch(72% 0.160 29)",
+          "oklch(84% 0.121 29)",
+          "oklch(95% 0.083 29)"
+        ]
+      },
+      "red-fill-press": {
+        "role": "secondary",
+        "displayName": "Rule Red, Pressed",
+        "canonical": "#a82c24",
+        "dark": "#a82c24",
+        "cssVar": "--rf-red-fill-press",
+        "tonalRamp": [
+          "oklch(15% 0.045 28)",
+          "oklch(26% 0.078 28)",
+          "oklch(38% 0.112 28)",
+          "oklch(49% 0.146 28)",
+          "oklch(61% 0.176 28)",
+          "oklch(72% 0.142 28)",
+          "oklch(84% 0.108 28)",
+          "oklch(95% 0.074 28)"
+        ]
+      },
+      "on-red": {
+        "role": "neutral",
+        "displayName": "On Red",
+        "canonical": "#ffffff",
+        "dark": "#ffffff",
+        "cssVar": "--rf-on-red",
+        "tonalRamp": [
+          "oklch(15% 0.000 90)",
+          "oklch(26% 0.000 90)",
+          "oklch(38% 0.000 90)",
+          "oklch(49% 0.000 90)",
+          "oklch(61% 0.000 90)",
+          "oklch(72% 0.000 90)",
+          "oklch(84% 0.000 90)",
+          "oklch(95% 0.000 90)"
+        ]
+      },
+      "red-line": {
+        "role": "secondary",
+        "displayName": "Rule Red, Line",
+        "canonical": "#c8372d",
+        "dark": "#e8766b",
+        "cssVar": "--rf-red-line",
+        "tonalRamp": [
+          "oklch(15% 0.050 29)",
+          "oklch(26% 0.088 29)",
+          "oklch(38% 0.126 29)",
+          "oklch(49% 0.164 29)",
+          "oklch(61% 0.198 29)",
+          "oklch(72% 0.160 29)",
+          "oklch(84% 0.121 29)",
+          "oklch(95% 0.083 29)"
+        ]
+      },
+      "stock-buff": {
+        "role": "tertiary",
+        "displayName": "Buff Stock",
+        "canonical": "#edc96b",
+        "dark": "#dcbb62",
+        "cssVar": "--rf-stock-buff",
+        "tonalRamp": [
+          "oklch(15% 0.033 89)",
+          "oklch(26% 0.058 89)",
+          "oklch(38% 0.084 89)",
+          "oklch(49% 0.109 89)",
+          "oklch(61% 0.131 89)",
+          "oklch(72% 0.106 89)",
+          "oklch(84% 0.080 89)",
+          "oklch(95% 0.055 89)"
+        ]
+      },
+      "stock-salmon": {
+        "role": "tertiary",
+        "displayName": "Salmon Stock",
+        "canonical": "#f3a892",
+        "dark": "#e39b86",
+        "cssVar": "--rf-stock-salmon",
+        "tonalRamp": [
+          "oklch(15% 0.026 37)",
+          "oklch(26% 0.046 37)",
+          "oklch(38% 0.066 37)",
+          "oklch(49% 0.085 37)",
+          "oklch(61% 0.103 37)",
+          "oklch(72% 0.083 37)",
+          "oklch(84% 0.063 37)",
+          "oklch(95% 0.043 37)"
+        ]
+      },
+      "stock-sky": {
+        "role": "tertiary",
+        "displayName": "Sky Stock",
+        "canonical": "#9fc8ea",
+        "dark": "#93b9da",
+        "cssVar": "--rf-stock-sky",
+        "tonalRamp": [
+          "oklch(15% 0.018 244)",
+          "oklch(26% 0.031 244)",
+          "oklch(38% 0.045 244)",
+          "oklch(49% 0.059 244)",
+          "oklch(61% 0.071 244)",
+          "oklch(72% 0.057 244)",
+          "oklch(84% 0.043 244)",
+          "oklch(95% 0.030 244)"
+        ]
+      },
+      "stock-mint": {
+        "role": "tertiary",
+        "displayName": "Mint Stock",
+        "canonical": "#a9dcbd",
+        "dark": "#9bcbae",
+        "cssVar": "--rf-stock-mint",
+        "tonalRamp": [
+          "oklch(15% 0.019 158)",
+          "oklch(26% 0.033 158)",
+          "oklch(38% 0.047 158)",
+          "oklch(49% 0.062 158)",
+          "oklch(61% 0.074 158)",
+          "oklch(72% 0.060 158)",
+          "oklch(84% 0.046 158)",
+          "oklch(95% 0.031 158)"
+        ]
+      },
+      "stock-lilac": {
+        "role": "tertiary",
+        "displayName": "Lilac Stock",
+        "canonical": "#cbb9e6",
+        "dark": "#bcabd6",
+        "cssVar": "--rf-stock-lilac",
+        "tonalRamp": [
+          "oklch(15% 0.018 303)",
+          "oklch(26% 0.032 303)",
+          "oklch(38% 0.045 303)",
+          "oklch(49% 0.059 303)",
+          "oklch(61% 0.071 303)",
+          "oklch(72% 0.057 303)",
+          "oklch(84% 0.044 303)",
+          "oklch(95% 0.030 303)"
+        ]
+      },
+      "stock-plain": {
+        "role": "tertiary",
+        "displayName": "Plain Stock",
+        "canonical": "#d6e2ef",
+        "dark": "#2a3d59",
+        "cssVar": "--rf-stock-plain",
+        "tonalRamp": [
+          "oklch(15% 0.006 250)",
+          "oklch(26% 0.011 250)",
+          "oklch(38% 0.015 250)",
+          "oklch(49% 0.020 250)",
+          "oklch(61% 0.024 250)",
+          "oklch(72% 0.019 250)",
+          "oklch(84% 0.015 250)",
+          "oklch(95% 0.010 250)"
+        ]
+      },
+      "on-stock": {
+        "role": "neutral",
+        "displayName": "On Stock",
+        "canonical": "#14263f",
+        "dark": "#14263f",
+        "cssVar": "--rf-on-stock",
+        "tonalRamp": [
+          "oklch(15% 0.015 257)",
+          "oklch(26% 0.026 257)",
+          "oklch(38% 0.037 257)",
+          "oklch(49% 0.048 257)",
+          "oklch(61% 0.057 257)",
+          "oklch(72% 0.046 257)",
+          "oklch(84% 0.035 257)",
+          "oklch(95% 0.024 257)"
+        ]
+      },
+      "focus": {
+        "role": "neutral",
+        "displayName": "Focus",
+        "canonical": "#1552c7",
+        "dark": "#9dc1ff",
+        "cssVar": "--rf-focus",
+        "tonalRamp": [
+          "oklch(15% 0.050 262)",
+          "oklch(26% 0.088 262)",
+          "oklch(38% 0.126 262)",
+          "oklch(49% 0.164 262)",
+          "oklch(61% 0.198 262)",
+          "oklch(72% 0.160 262)",
+          "oklch(84% 0.121 262)",
+          "oklch(95% 0.083 262)"
+        ]
+      },
+      "focus-on-shell": {
+        "role": "neutral",
+        "displayName": "Focus on Shell",
+        "canonical": "#ffffff",
+        "dark": "#ffffff",
+        "cssVar": "--rf-focus-on-shell",
+        "tonalRamp": [
+          "oklch(15% 0.000 90)",
+          "oklch(26% 0.000 90)",
+          "oklch(38% 0.000 90)",
+          "oklch(49% 0.000 90)",
+          "oklch(61% 0.000 90)",
+          "oklch(72% 0.000 90)",
+          "oklch(84% 0.000 90)",
+          "oklch(95% 0.000 90)"
+        ]
+      },
+      "notice": {
+        "role": "neutral",
+        "displayName": "Notice",
+        "canonical": "#fbefc9",
+        "dark": "#4a3d14",
+        "cssVar": "--rf-notice",
+        "tonalRamp": [
+          "oklch(15% 0.014 93)",
+          "oklch(26% 0.025 93)",
+          "oklch(38% 0.035 93)",
+          "oklch(49% 0.046 93)",
+          "oklch(61% 0.056 93)",
+          "oklch(72% 0.045 93)",
+          "oklch(84% 0.034 93)",
+          "oklch(95% 0.023 93)"
+        ]
+      },
+      "on-notice": {
+        "role": "neutral",
+        "displayName": "On Notice",
+        "canonical": "#14263f",
+        "dark": "#fbefc9",
+        "cssVar": "--rf-on-notice",
+        "tonalRamp": [
+          "oklch(15% 0.015 257)",
+          "oklch(26% 0.026 257)",
+          "oklch(38% 0.037 257)",
+          "oklch(49% 0.048 257)",
+          "oklch(61% 0.057 257)",
+          "oklch(72% 0.046 257)",
+          "oklch(84% 0.035 257)",
+          "oklch(95% 0.024 257)"
+        ]
+      },
+      "skeleton": {
+        "role": "neutral",
+        "displayName": "Skeleton",
+        "canonical": "#dfe8f2",
+        "dark": "#22334d",
+        "cssVar": "--rf-skeleton",
+        "tonalRamp": [
+          "oklch(15% 0.005 251)",
+          "oklch(26% 0.008 251)",
+          "oklch(38% 0.012 251)",
+          "oklch(49% 0.015 251)",
+          "oklch(61% 0.018 251)",
+          "oklch(72% 0.015 251)",
+          "oklch(84% 0.011 251)",
+          "oklch(95% 0.008 251)"
+        ]
+      }
+    },
+    "themes": {
+      "note": "The frontmatter colours are the light theme. Each colorMeta entry carries its dark value in `dark`. Both are defined as hex in src/styles/tokens.css, which is the source of truth and is contrast-tested.",
+      "light": {
+        "selector": ":root",
+        "colorScheme": "light",
+        "themeColor": "#17304f"
+      },
+      "dark": {
+        "selector": ":root[data-theme=\"dark\"]",
+        "colorScheme": "dark",
+        "themeColor": "#10233d",
+        "purpose": "The dim evening kitchen: designed for low glare, not derived by inverting light."
+      },
+      "selection": "data-theme is set on the root element before first paint, from localStorage key recipeflare:theme or else the device's prefers-color-scheme."
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "The page title from 768 px."
+      },
+      "title-lg": {
+        "displayName": "Title large",
+        "purpose": "The page title on a phone, and the wordmark in the header and on the rail."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "A recipe's title in a row and a list item's name; at 700, the letter on a tile and an empty state's heading."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Running text, with tabular figures. At 600, a secondary list name and a text link."
+      },
+      "body-sm": {
+        "displayName": "Body small",
+        "purpose": "The meta line under a recipe title, a list item's detail, the note beside a page title."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Divider tabs, the notice band, status lines, the tag in a meta line."
+      },
+      "label-control": {
+        "displayName": "Control label",
+        "purpose": "Button text."
+      },
+      "label-nav": {
+        "displayName": "Nav label",
+        "purpose": "The label under an icon on the phone navigation bar; 700 for the current destination. The smallest text in the system."
+      }
+    },
+    "typeScale": [
+      {
+        "name": "--rf-text-xs",
+        "value": "0.8125rem"
+      },
+      {
+        "name": "--rf-text-sm",
+        "value": "0.9375rem"
+      },
+      {
+        "name": "--rf-text-base",
+        "value": "1.0625rem"
+      },
+      {
+        "name": "--rf-text-lg",
+        "value": "1.1875rem"
+      },
+      {
+        "name": "--rf-text-cook",
+        "value": "1.375rem",
+        "status": "Defined for cook mode's step text; no shipped screen uses it yet."
+      },
+      {
+        "name": "--rf-text-xl",
+        "value": "1.4375rem"
+      },
+      {
+        "name": "--rf-text-2xl",
+        "value": "1.75rem"
+      }
+    ],
+    "font": {
+      "family": "Atkinson Hyperlegible Next Variable",
+      "weights": "200 to 800 (variable); the build uses 400, 600 and 700",
+      "source": "@fontsource-variable/atkinson-hyperlegible-next, bundled and self-hosted",
+      "numerals": "font-variant-numeric: tabular-nums on body"
+    },
+    "shadows": [
+      {
+        "name": "stock-band",
+        "value": "inset 0 5px 0 var(--rf-stock-*)",
+        "purpose": "The band of its own stock along the top of a selected divider tab. A band of colour, not elevation."
+      },
+      {
+        "name": "overlay",
+        "value": "0 10px 28px rgb(13 22 38 / 0.2), 0 2px 6px rgb(13 22 38 / 0.12)",
+        "dark": "0 10px 28px rgb(0 0 0 / 0.5), 0 2px 6px rgb(0 0 0 / 0.35)",
+        "cssVar": "--rf-overlay-shadow",
+        "purpose": "For surfaces that float over the page, such as a menu or dialog. Defined; no shipped component uses it yet."
+      }
+    ],
+    "motion": [
+      {
+        "name": "rf-motion",
+        "value": "180ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "cssVar": "--rf-motion",
+        "purpose": "Every state transition: background, text and border colour, height and box-shadow."
+      },
+      {
+        "name": "skeleton-sweep",
+        "value": "1.6s ease-in-out infinite",
+        "purpose": "The loading sweep across skeleton rows, from skeleton through surface-sunk."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "animation-duration and transition-duration 0.01ms, one iteration",
+        "purpose": "Applied to everything when the device asks for reduced motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "md",
+        "value": "48rem",
+        "purpose": "768 px: navigation moves from the bottom bar to the left rail, the phone header is removed, stack margins grow to 1.5rem, the page title steps up to 1.75rem."
+      }
+    ],
+    "focusRing": {
+      "value": "outline: 3px solid var(--rf-focus); outline-offset: 2px",
+      "onShell": "outline-color: var(--rf-focus-on-shell)",
+      "purpose": "One ring everywhere; white on the navy header and rail."
+    },
+    "layout": {
+      "pageMaxWidth": "54rem",
+      "railWidth": "14rem",
+      "stackMargin": {
+        "phone": "0.75rem",
+        "md": "1.5rem"
+      },
+      "rowMinHeight": "4.25rem",
+      "safeArea": "The header pads to env(safe-area-inset-top) and the bottom bar to at least 0.5rem or env(safe-area-inset-bottom)."
+    },
+    "states": {
+      "disabledOpacity": 0.55,
+      "tabHover": "filter: brightness(1.05) on an unselected divider tab",
+      "caret": "caret-color: var(--rf-red-line)",
+      "accent": "accent-color: var(--rf-primary)",
+      "selection": "background var(--rf-stock-sky), text var(--rf-on-stock)",
+      "scrollbar": "scrollbar-color: var(--rf-rule-strong) transparent"
+    },
+    "icons": {
+      "set": "Lucide (lucide-react), bundled",
+      "strokeWidth": 2,
+      "sizes": {
+        "navigation": "1.375rem",
+        "button": "20px",
+        "notice": "18px"
+      },
+      "inUse": [
+        "ScrollText",
+        "Plus",
+        "SlidersHorizontal",
+        "Trash2",
+        "CloudOff",
+        "TriangleAlert"
+      ],
+      "appIcon": "public/icon.svg is a placeholder: an index card with a buff divider tab and a red rule on ink navy. The final icon and wordmark are unresolved."
+    },
+    "stockAssignment": {
+      "order": [
+        "buff",
+        "salmon",
+        "sky",
+        "mint",
+        "lilac"
+      ],
+      "rule": "By the category's position in the household's list, modulo five; plain is for All and for a recipe with no category.",
+      "source": "src/ui/stock.ts assignStocks()"
+    },
+    "enforcement": [
+      {
+        "test": "src/styles/tokens.test.ts",
+        "checks": "Text pairs at 4.5 to 1 and graphic pairs at 3 to 1 in both themes; every token defined in dark; no token named soft, muted or ending -text; ink, surface, ground, rule and shell differ between themes; dark stocks stay close to light stocks."
+      },
+      {
+        "test": "src/styles/theme-classes.test.ts",
+        "checks": "Every colour class in a source file names a colour the Tailwind theme defines; the default palette is cleared."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Ink fill. Save, cook and confirm.",
+      "html": "<button class=\"ds-btn-primary\">Save recipe</button>",
+      "css": ".ds-btn-primary { display: inline-flex; min-height: var(--rf-touch); align-items: center; justify-content: center; gap: 0.5rem; padding: 0 1.25rem; border-radius: var(--rf-radius-md); font-family: var(--rf-font); font-size: var(--rf-text-base); font-weight: 600; line-height: 1.5; cursor: pointer; transition: background-color var(--rf-motion), color var(--rf-motion), border-color var(--rf-motion); background: var(--rf-primary); color: var(--rf-on-primary); border: none; } .ds-btn-primary:hover, .ds-btn-primary:active { background: var(--rf-primary-press); } .ds-btn-primary:focus-visible { outline: 3px solid var(--rf-focus); outline-offset: 2px; } .ds-btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }"
+    },
+    {
+      "name": "Add Button",
+      "kind": "button",
+      "refersTo": "button-add",
+      "description": "Rule red fill with a plus. Only for adding a recipe.",
+      "html": "<button class=\"ds-btn-add\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12h14\"/><path d=\"M12 5v14\"/></svg><span>Add a recipe</span></button>",
+      "css": ".ds-btn-add { display: inline-flex; min-height: var(--rf-touch); align-items: center; justify-content: center; gap: 0.5rem; padding: 0 1.25rem; border-radius: var(--rf-radius-md); font-family: var(--rf-font); font-size: var(--rf-text-base); font-weight: 600; line-height: 1.5; cursor: pointer; transition: background-color var(--rf-motion), color var(--rf-motion), border-color var(--rf-motion); background: var(--rf-red-fill); color: var(--rf-on-red); border: none; } .ds-btn-add:hover, .ds-btn-add:active { background: var(--rf-red-fill-press); } .ds-btn-add:focus-visible { outline: 3px solid var(--rf-focus); outline-offset: 2px; } .ds-btn-add:disabled { opacity: 0.55; cursor: not-allowed; }"
+    },
+    {
+      "name": "Quiet Button",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "Ink outline on card white. Cancel, clear filters, and delete with a bin icon.",
+      "html": "<button class=\"ds-btn-quiet\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 6h18\"/><path d=\"M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6\"/><path d=\"M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2\"/><line x1=\"10\" x2=\"10\" y1=\"11\" y2=\"17\"/><line x1=\"14\" x2=\"14\" y1=\"11\" y2=\"17\"/></svg><span>Delete</span></button>",
+      "css": ".ds-btn-quiet { display: inline-flex; min-height: var(--rf-touch); align-items: center; justify-content: center; gap: 0.5rem; padding: 0 1.25rem; border-radius: var(--rf-radius-md); font-family: var(--rf-font); font-size: var(--rf-text-base); font-weight: 600; line-height: 1.5; cursor: pointer; transition: background-color var(--rf-motion), color var(--rf-motion), border-color var(--rf-motion); background: var(--rf-surface); color: var(--rf-ink); border: 1px solid var(--rf-rule-strong); } .ds-btn-quiet:hover, .ds-btn-quiet:active { background: var(--rf-surface-sunk); } .ds-btn-quiet:focus-visible { outline: 3px solid var(--rf-focus); outline-offset: 2px; } .ds-btn-quiet:disabled { opacity: 0.55; cursor: not-allowed; }"
+    },
+    {
+      "name": "Divider Tabs",
+      "kind": "custom",
+      "refersTo": "divider-tab",
+      "description": "The signature: category dividers over the card stack. The selected tab is taller, card white, keeps a 5 px band of its stock and joins the stack.",
+      "html": "<div class=\"ds-dividers\"><div class=\"ds-dividers-row\" role=\"tablist\" aria-label=\"Categories\"><button class=\"ds-divider ds-divider-plain\" role=\"tab\" aria-selected=\"false\" tabindex=\"-1\">All</button><button class=\"ds-divider ds-divider-buff\" role=\"tab\" aria-selected=\"false\" tabindex=\"-1\">Breakfast</button><button class=\"ds-divider ds-divider-salmon\" role=\"tab\" aria-selected=\"true\">Dinner</button><button class=\"ds-divider ds-divider-sky\" role=\"tab\" aria-selected=\"false\" tabindex=\"-1\">Dessert</button><button class=\"ds-divider ds-divider-mint\" role=\"tab\" aria-selected=\"false\" tabindex=\"-1\">Soup</button><button class=\"ds-divider ds-divider-lilac\" role=\"tab\" aria-selected=\"false\" tabindex=\"-1\">Bread</button></div><div class=\"ds-dividers-stack\"><h1 class=\"ds-dividers-title\">Dinner</h1></div></div>",
+      "css": ".ds-dividers { background: var(--rf-ground); padding: 0.75rem; } .ds-dividers-row { position: relative; z-index: 1; margin-bottom: -1px; display: flex; align-items: flex-end; gap: 0.125rem; overflow-x: auto; scrollbar-width: none; } .ds-divider { flex: 0 0 auto; min-width: var(--rf-touch); height: var(--rf-touch); padding: 0 0.75rem; white-space: nowrap; border: 0; border-bottom: 1px solid var(--rf-rule); border-radius: var(--rf-radius-md) var(--rf-radius-md) 0 0; font-family: var(--rf-font); font-size: var(--rf-text-sm); font-weight: 600; color: var(--rf-on-stock); cursor: pointer; transition: background-color var(--rf-motion), color var(--rf-motion), border-color var(--rf-motion); } .ds-divider:hover { filter: brightness(1.05); } .ds-divider:focus-visible { outline: 3px solid var(--rf-focus); outline-offset: 2px; } .ds-divider-plain { background: var(--rf-stock-plain); color: var(--rf-ink); --ds-stock: var(--rf-stock-plain); } .ds-divider-buff { background: var(--rf-stock-buff); --ds-stock: var(--rf-stock-buff); } .ds-divider-salmon { background: var(--rf-stock-salmon); --ds-stock: var(--rf-stock-salmon); } .ds-divider-sky { background: var(--rf-stock-sky); --ds-stock: var(--rf-stock-sky); } .ds-divider-mint { background: var(--rf-stock-mint); --ds-stock: var(--rf-stock-mint); } .ds-divider-lilac { background: var(--rf-stock-lilac); --ds-stock: var(--rf-stock-lilac); } .ds-divider[aria-selected=\"true\"] { height: 3.25rem; background: var(--rf-surface); color: var(--rf-ink); border: 1px solid var(--rf-rule); border-bottom: 0; box-shadow: inset 0 5px 0 var(--ds-stock); filter: none; } .ds-dividers-stack { background: var(--rf-surface); border: 1px solid var(--rf-rule); } .ds-dividers-title { margin: 0; padding: 1rem 1rem 0.5rem; border-bottom: 2px solid var(--rf-red-line); font-family: var(--rf-font); font-size: var(--rf-text-xl); font-weight: 700; line-height: 1.4; color: var(--rf-ink); }"
+    },
+    {
+      "name": "Card Stack",
+      "kind": "card",
+      "refersTo": "page-stack",
+      "description": "A page's container: card white, ruling-blue border, square corners, the title on a 2 px red rule.",
+      "html": "<section class=\"ds-stack\"><div class=\"ds-stack-head\"><h1 class=\"ds-stack-title\">All recipes</h1><div class=\"ds-stack-aside\">9 recipes</div></div><div class=\"ds-stack-body\">Rows follow here, ruled in blue.</div></section>",
+      "css": ".ds-stack { background: var(--rf-surface); border: 1px solid var(--rf-rule); color: var(--rf-ink); font-family: var(--rf-font); } .ds-stack-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.25rem 1rem; padding: 1rem 1rem 0.5rem; border-bottom: 2px solid var(--rf-red-line); } .ds-stack-title { margin: 0; font-size: var(--rf-text-xl); font-weight: 700; line-height: 1.4; } .ds-stack-aside { font-size: var(--rf-text-sm); white-space: nowrap; } .ds-stack-body { padding: 0.75rem 1rem; font-size: var(--rf-text-base); line-height: 1.4; }"
+    },
+    {
+      "name": "Recipe Row",
+      "kind": "custom",
+      "refersTo": "recipe-row",
+      "description": "One recipe in the index: a ruled row with a letter tile in the category's stock, a title and one meta line. The whole row is the link.",
+      "html": "<ul class=\"ds-rows\"><li><a class=\"ds-row\" href=\"#\"><span class=\"ds-row-tile ds-row-tile-salmon\" aria-hidden=\"true\">S</span><span><span class=\"ds-row-title\">Sunday Beef and Bean Chili</span><span class=\"ds-row-meta\">2 hr 30 min · Dinner · <b>Freezes well</b></span></span></a></li><li><a class=\"ds-row\" href=\"#\"><span class=\"ds-row-tile ds-row-tile-sky\" aria-hidden=\"true\">C</span><span><span class=\"ds-row-title\">Cardamom Sugar Cookies</span><span class=\"ds-row-meta\">30 min · Dessert · From Aunt June</span></span></a></li><li><a class=\"ds-row\" href=\"#\"><span class=\"ds-row-tile ds-row-tile-plain\" aria-hidden=\"true\">C</span><span><span class=\"ds-row-title\">Cinnamon Toast</span></span></a></li></ul>",
+      "css": ".ds-rows { list-style: none; margin: 0; padding: 0; background: var(--rf-surface); border: 1px solid var(--rf-rule); font-family: var(--rf-font); } .ds-rows li { border-bottom: 1px solid var(--rf-rule); } .ds-rows li:last-child { border-bottom: 0; } .ds-row { display: flex; min-height: 4.25rem; align-items: center; gap: 0.75rem; padding: 0.625rem 1rem; color: var(--rf-ink); text-decoration: none; transition: background-color var(--rf-motion), color var(--rf-motion), border-color var(--rf-motion); } .ds-row:hover, .ds-row:active { background: var(--rf-surface-sunk); } .ds-row:focus-visible { outline: 3px solid var(--rf-focus); outline-offset: 2px; border-radius: var(--rf-radius-sm); } .ds-row-tile { display: grid; width: 3rem; height: 3rem; flex: none; place-items: center; border-radius: var(--rf-radius-sm); font-family: var(--rf-font); font-size: var(--rf-text-lg); font-weight: 700; color: var(--rf-on-stock); } .ds-row-tile-salmon { background: var(--rf-stock-salmon); } .ds-row-tile-sky { background: var(--rf-stock-sky); } .ds-row-tile-plain { background: var(--rf-stock-plain); color: var(--rf-ink); } .ds-row-title { display: block; font-size: var(--rf-text-lg); font-weight: 600; line-height: 1.25; } .ds-row-meta { display: block; margin-top: 0.125rem; font-size: var(--rf-text-sm); line-height: 1.429; font-variant-numeric: tabular-nums; } .ds-row-meta b { font-weight: 600; }"
+    },
+    {
+      "name": "Skeleton Row",
+      "kind": "custom",
+      "refersTo": "recipe-row",
+      "description": "A row's shape while recipes load: a slow sweep in the ruling blue, held still under reduced motion.",
+      "html": "<div class=\"ds-skel-row\" aria-hidden=\"true\"><span class=\"ds-skel ds-skel-tile\"></span><span class=\"ds-skel-bars\"><span class=\"ds-skel ds-skel-a\"></span><span class=\"ds-skel ds-skel-b\"></span></span></div>",
+      "css": ".ds-skel-row { display: flex; min-height: 4.25rem; align-items: center; gap: 0.75rem; padding: 0.625rem 1rem; background: var(--rf-surface); border-bottom: 1px solid var(--rf-rule); } .ds-skel { display: block; background: linear-gradient(100deg, var(--rf-skeleton) 40%, var(--rf-surface-sunk) 50%, var(--rf-skeleton) 60%); background-size: 220% 100%; animation: ds-skel-sweep 1.6s ease-in-out infinite; border-radius: var(--rf-radius-sm); } .ds-skel-tile { width: 3rem; height: 3rem; flex: none; } .ds-skel-bars { display: grid; flex: 1; gap: 0.5rem; } .ds-skel-a { height: 1rem; width: 60%; } .ds-skel-b { height: 0.75rem; width: 40%; } @keyframes ds-skel-sweep { from { background-position: 100% 0; } to { background-position: -20% 0; } } @media (prefers-reduced-motion: reduce) { .ds-skel { animation: none; } }"
+    },
+    {
+      "name": "Notice Band",
+      "kind": "custom",
+      "refersTo": "notice",
+      "description": "A band for a standing condition or a problem, with an icon. Never red.",
+      "html": "<p class=\"ds-notice\" role=\"alert\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3\"/><path d=\"M12 9v4\"/><path d=\"M12 17h.01\"/></svg><span>The recipe could not be saved. Check the connection and save again.</span></p>",
+      "css": ".ds-notice { display: flex; align-items: center; gap: 0.5rem; margin: 0; padding: 0.625rem 1rem; background: var(--rf-notice); color: var(--rf-on-notice); font-family: var(--rf-font); font-size: var(--rf-text-sm); font-weight: 600; line-height: 1.429; } .ds-notice svg { flex: none; }"
+    },
+    {
+      "name": "Bottom Navigation (phone)",
+      "kind": "nav",
+      "refersTo": "nav-item",
+      "description": "Card-white bar along the bottom on a phone. The current destination is marked by a sunk ground and a heavier weight; Add carries the only red in the shell.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Main\"><a class=\"ds-nav-item\" href=\"#\" aria-current=\"page\"><span class=\"ds-nav-icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M15 12h-5\"/><path d=\"M15 8h-5\"/><path d=\"M19 17V5a2 2 0 0 0-2-2H4\"/><path d=\"M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3\"/></svg></span><span>Recipes</span></a><a class=\"ds-nav-item\" href=\"#\"><span class=\"ds-nav-icon ds-nav-icon-add\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12h14\"/><path d=\"M12 5v14\"/></svg></span><span>Add</span></a><a class=\"ds-nav-item\" href=\"#\"><span class=\"ds-nav-icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><line x1=\"21\" x2=\"14\" y1=\"4\" y2=\"4\"/><line x1=\"10\" x2=\"3\" y1=\"4\" y2=\"4\"/><line x1=\"21\" x2=\"12\" y1=\"12\" y2=\"12\"/><line x1=\"8\" x2=\"3\" y1=\"12\" y2=\"12\"/><line x1=\"21\" x2=\"16\" y1=\"20\" y2=\"20\"/><line x1=\"12\" x2=\"3\" y1=\"20\" y2=\"20\"/><line x1=\"14\" x2=\"14\" y1=\"2\" y2=\"6\"/><line x1=\"8\" x2=\"8\" y1=\"10\" y2=\"14\"/><line x1=\"16\" x2=\"16\" y1=\"18\" y2=\"22\"/></svg></span><span>Manage</span></a></nav>",
+      "css": ".ds-nav { display: flex; gap: 0.25rem; padding: 0.375rem 0.5rem 0.5rem; background: var(--rf-surface); border-top: 1px solid var(--rf-rule); font-family: var(--rf-font); } .ds-nav-item { display: flex; flex: 1; min-height: var(--rf-touch-nav); flex-direction: column; align-items: center; justify-content: center; gap: 0.25rem; border-radius: var(--rf-radius-md); color: var(--rf-ink); font-size: var(--rf-text-xs); font-weight: 600; line-height: 1.333; text-decoration: none; transition: background-color var(--rf-motion), color var(--rf-motion), border-color var(--rf-motion); } .ds-nav-item:hover { background: var(--rf-surface-sunk); } .ds-nav-item[aria-current=\"page\"] { background: var(--rf-surface-sunk); font-weight: 700; } .ds-nav-item:focus-visible { outline: 3px solid var(--rf-focus); outline-offset: 2px; } .ds-nav-icon { display: grid; width: 3.5rem; height: 2.25rem; place-items: center; border-radius: var(--rf-radius-md); } .ds-nav-icon-add { background: var(--rf-red-fill); color: var(--rf-on-red); }"
+    },
+    {
+      "name": "Navigation Rail (from 768 px)",
+      "kind": "nav",
+      "refersTo": "nav-rail-item",
+      "description": "Ink-navy rail down the left from tablet width, with the wordmark at its top. Current and hovered items take the raised navy; the focus ring is white.",
+      "html": "<nav class=\"ds-rail\" aria-label=\"Main\"><a class=\"ds-rail-mark\" href=\"#\">Recipeflare</a><a class=\"ds-rail-item\" href=\"#\" aria-current=\"page\"><span class=\"ds-rail-icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M15 12h-5\"/><path d=\"M15 8h-5\"/><path d=\"M19 17V5a2 2 0 0 0-2-2H4\"/><path d=\"M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3\"/></svg></span><span>Recipes</span></a><a class=\"ds-rail-item\" href=\"#\"><span class=\"ds-rail-icon ds-rail-icon-add\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12h14\"/><path d=\"M12 5v14\"/></svg></span><span>Add</span></a><a class=\"ds-rail-item\" href=\"#\"><span class=\"ds-rail-icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><line x1=\"21\" x2=\"14\" y1=\"4\" y2=\"4\"/><line x1=\"10\" x2=\"3\" y1=\"4\" y2=\"4\"/><line x1=\"21\" x2=\"12\" y1=\"12\" y2=\"12\"/><line x1=\"8\" x2=\"3\" y1=\"12\" y2=\"12\"/><line x1=\"21\" x2=\"16\" y1=\"20\" y2=\"20\"/><line x1=\"12\" x2=\"3\" y1=\"20\" y2=\"20\"/><line x1=\"14\" x2=\"14\" y1=\"2\" y2=\"6\"/><line x1=\"8\" x2=\"8\" y1=\"10\" y2=\"14\"/><line x1=\"16\" x2=\"16\" y1=\"18\" y2=\"22\"/></svg></span><span>Manage</span></a></nav>",
+      "css": ".ds-rail { display: flex; width: 14rem; flex-direction: column; gap: 0.25rem; padding: 0 0.75rem 0.75rem; background: var(--rf-shell); font-family: var(--rf-font); } .ds-rail-mark { display: flex; min-height: var(--rf-touch); align-items: center; margin-bottom: 0.5rem; padding: 1rem 0.75rem; color: var(--rf-on-shell); font-size: var(--rf-text-xl); font-weight: 700; text-decoration: none; } .ds-rail-item { display: flex; min-height: var(--rf-touch-nav); align-items: center; gap: 0.75rem; padding: 0 0.75rem; border-radius: var(--rf-radius-md); color: var(--rf-on-shell); font-size: var(--rf-text-base); font-weight: 400; text-decoration: none; transition: background-color var(--rf-motion), color var(--rf-motion), border-color var(--rf-motion); } .ds-rail-item:hover { background: var(--rf-shell-raised); } .ds-rail-item[aria-current=\"page\"] { background: var(--rf-shell-raised); font-weight: 700; } .ds-rail-item:focus-visible, .ds-rail-mark:focus-visible { outline: 3px solid var(--rf-focus-on-shell); outline-offset: 2px; } .ds-rail-icon { display: grid; width: 2.5rem; height: 2.25rem; place-items: center; border-radius: var(--rf-radius-md); } .ds-rail-icon-add { background: var(--rf-red-fill); color: var(--rf-on-red); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Recipe Tin",
+    "overview": "\n**Creative North Star: \"The Recipe Tin\"**\n\nRecipeflare is the household's index-card recipe tin. It is an index you thumb through, not a gallery you browse. Most of the family's recipes come from paper and have no photograph, so the system does not use the photo-card grid; a recipe is a ruled row with a lettered tile in its category's colour. The colours are the colours of index cards, and each has a job: ink navy for the tin and all text, card white for the working surface, ruling blue for every hairline, one rule red, and five divider-stock colours for categories.\n\nIt is built for a phone propped on a kitchen counter, read at arm's length and touched with messy hands. That sets the density and the sizes: body text is 17 px, a recipe title 19 px, every control at least 44 px, and six or more recipes fit on a phone screen because rows are ruled and not boxed. One typeface, Atkinson Hyperlegible Next, is used throughout because it was drawn to be read at a distance.\n\nThe tin is evoked by colour and structure only. There is no paper texture, no handwriting font and no serif display type. The owner does not want it to read as a generic business app or as a food magazine or blog.\n\nThe source of truth is `src/styles/tokens.css`. Components use Tailwind classes generated from those tokens (`bg-surface`, `text-ink`); the default Tailwind palette is cleared, so a colour the theme does not define produces no CSS, and a test fails on any such class. No component contains a hex colour or a `dark:` variant.",
+    "keyCharacteristics": [
+      "One ink for all text; hierarchy by size and weight.",
+      "Ruled rows on card white, hairlines in ruling blue, no shadows.",
+      "Divider tabs over the card stack; a category owns one stock colour everywhere.",
+      "Rule red in two places only: the line under a page title, and adding a recipe.",
+      "Every target at least 44 by 44 CSS px.",
+      "A dark theme designed for a dim kitchen, with its own values.",
+      "Self-hosted type and icons, because the kitchen may have no network."
+    ],
+    "rules": [
+      {
+        "name": "The One Ink Rule",
+        "body": "All text is `ink` (or the matching `on-` colour on a fill). Hierarchy comes from size and weight. There is no grey, muted or \"soft\" text token, and `tokens.test.ts` fails if a token named `soft`, `muted` or ending `-text` is added. Do not lower opacity to get a second tone either; the only opacity in the system is 0.55 on a disabled button.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two Jobs Rule",
+        "body": "Rule red does two things: it is the line a title sits on, and it marks adding a recipe. Save, cook and confirm use the primary button. Delete is a quiet ink-outline button with a bin icon. Errors and warnings go in the notice band with an icon, never in red text or a red border.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Stock Rule",
+        "body": "A category keeps one stock colour wherever it appears: tab, tile, and any later chip. Get it from `assignStocks()` in `src/ui/stock.ts`; never pick a colour per screen. There are five stocks. A sixth category shares the first one's stock.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tested Pairs Rule",
+        "body": "Every text pairing is checked at 4.5 to 1 and every meaningful line or ring at 3 to 1, in both themes, by `tokens.test.ts`. A new colour token arrives with its pairings added to that test.",
+        "section": "colors"
+      },
+      {
+        "name": "The Weight, Not Grey Rule",
+        "body": "Three weights do the work: 400 for reading, 600 for names and controls, 700 for titles and the current place. Within the recipe meta line the tag is 600 and the rest 400; that is how one line carries two levels in one ink.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Face Rule",
+        "body": "No second family, no serif display, no handwriting or script face, no monospace. Labels are sentence case; nothing is set in capitals or letter-spaced.",
+        "section": "typography"
+      },
+      {
+        "name": "The 44 Rule",
+        "body": "Every link, button and tab is at least 44 by 44 CSS px (`--rf-touch`, 2.75rem). Navigation items are 52 px (`--rf-touch-nav`, 3.25rem). A row that is a link is the whole row.",
+        "section": "layout"
+      },
+      {
+        "name": "The One Index Rule",
+        "body": "The recipe list is the home screen. There is no dashboard.",
+        "section": "layout"
+      },
+      {
+        "name": "The Ruled, Not Carded Rule",
+        "body": "Rows are separated by 1 px hairlines in ruling blue. A row, a stack, a tile and a button have no shadow. The overlay shadow is for things that float over the page and for nothing else.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do take every colour, size, radius and touch size from `tokens.css` through the Tailwind theme classes. Add a token, with its contrast pairings in `tokens.test.ts`, before using a new colour.",
+      "Do set all text in ink and build hierarchy from 400, 600 and 700 and the eight sizes.",
+      "Do get a category's colour from `assignStocks()` and use it on that category's tab and tiles everywhere.",
+      "Do separate rows with a 1 px ruling-blue hairline on card white, and show hover and press by changing the ground to `surface-sunk`.",
+      "Do put a page's title on the 2 px red rule at the top of its card stack.",
+      "Do make every link, button and tab at least 44 by 44 CSS px, and make a row that leads somewhere a link across its whole width.",
+      "Do design each screen in both themes; check the dark one as a dim kitchen, not as a copy of light.",
+      "Do pair every icon with words, and use bundled Lucide icons at stroke width 2.",
+      "Do give every screen its loading (skeleton rows), empty (empty state), error and offline (notice band) states.",
+      "Do honour reduced motion: transitions and the skeleton sweep stop when the device asks."
+    ],
+    "donts": [
+      "Don't add a grey, muted or soft text colour, or fade text with opacity.",
+      "Don't use rule red for save, cook, confirm, delete, errors, links, badges or decoration. It is the title rule and adding a recipe.",
+      "Don't show a problem as red text or a red border. Use the notice band with an icon.",
+      "Don't put recipes in shadowed cards or a photo grid. Don't add a shadow to a row, stack, tile or button.",
+      "Don't add paper textures, torn or lined-paper effects, handwriting or script fonts, or serif display type.",
+      "Don't pick a category colour per screen, or add a sixth stock; colours repeat after five.",
+      "Don't write a hex colour or a `dark:` variant in a component. Don't use a default Tailwind colour such as `bg-gray-100`; it produces no CSS.",
+      "Don't load a font or an icon from a network service. The app must work offline.",
+      "Don't derive a dark value by inverting or dimming the light one without checking its pairings.",
+      "Don't build a dashboard or a second home screen. The recipe list is the index.",
+      "Don't use the word Cloudflare or its flare shapes in the name, icon or logo, and don't borrow Mealie's look or copy."
+    ]
+  }
+}
