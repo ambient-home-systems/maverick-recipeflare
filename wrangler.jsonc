@@ -1,0 +1,21 @@
+// Worker configuration for Recipeflare.
+// This file sits at the repository root because the Deploy to Cloudflare button
+// reads the Wrangler file of the directory it clones.
+// It must never contain hostnames, account IDs or resource IDs.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "recipeflare",
+  "main": "apps/worker/src/index.ts",
+  "compatibility_date": "2026-11-22",
+  // Declared so that tests and production run with the same flags.
+  "compatibility_flags": ["nodejs_compat"],
+  "upload_source_maps": true,
+  "observability": { "enabled": true },
+  "assets": {
+    "directory": "apps/web/dist",
+    "not_found_handling": "single-page-application",
+    // The API always runs the Worker, even for browser navigations such as
+    // opening an image or attachment in a new tab.
+    "run_worker_first": ["/api/*"]
+  }
+}

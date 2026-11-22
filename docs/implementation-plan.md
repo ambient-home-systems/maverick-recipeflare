@@ -167,6 +167,7 @@ One pnpm workspace. One deployed Worker.
 │  └─ schema/                @recipeflare/schema: Zod schemas, types, formatting, fixtures
 ├─ services/
 │  └─ fetch-agent/           README only until Phase 3 (yt-dlp and ffmpeg image)
+├─ scripts/                  Small Node scripts used by the root package scripts
 ├─ docs/
 └─ .github/workflows/
 ```

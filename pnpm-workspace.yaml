@@ -1,0 +1,8 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# pnpm runs install scripts only for packages listed here.
+onlyBuiltDependencies:
+  - esbuild
+  - workerd

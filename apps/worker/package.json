@@ -1,0 +1,20 @@
+{
+  "name": "@recipeflare/worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@recipeflare/schema": "workspace:*",
+    "hono": "^4.13.20"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}
