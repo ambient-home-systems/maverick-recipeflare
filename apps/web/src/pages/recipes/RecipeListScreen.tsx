@@ -7,7 +7,7 @@ import { RemovableChip } from "../../ui/Chip";
 import { type DividerTab, DividerTabs } from "../../ui/DividerTabs";
 import { EmptyState, Notice } from "../../ui/Notice";
 import { Page } from "../../ui/Page";
-import { RecipeRow, RecipeRowSkeleton } from "../../ui/RecipeRow";
+import { RecipeRow, RecipeRowSkeleton, type RowLink } from "../../ui/RecipeRow";
 import type { Stock } from "../../ui/stock";
 import { FilterSheet, type ListOption } from "./FilterSheet";
 import { ImportRow } from "./ImportRow";
@@ -43,7 +43,8 @@ type RecipeListScreenProps = {
   /** True when the device has no connection and the list is the copy saved on it. */
   offline?: boolean;
   links: ListLinks;
-  recipeHref?: (recipe: RecipeSummary) => string | undefined;
+  /** Where a row leads. Without it rows are not links. */
+  recipeLink?: (recipe: RecipeSummary) => RowLink | undefined;
   thumbnailFor?: (recipe: RecipeSummary) => string | undefined;
   onReviewImport?: (job: ImportJob) => void;
   onRetryImport?: (job: ImportJob) => void;
@@ -127,7 +128,7 @@ export function RecipeListScreen({
   imports = [],
   offline = false,
   links,
-  recipeHref,
+  recipeLink,
   thumbnailFor,
   onReviewImport,
   onRetryImport,
@@ -308,7 +309,7 @@ export function RecipeListScreen({
                 key={recipe.id}
                 recipe={recipe}
                 stock={stockBySlug.get(recipe.categories[0]?.slug ?? "") ?? "plain"}
-                href={recipeHref?.(recipe)}
+                link={recipeLink?.(recipe)}
                 thumbnailUrl={thumbnailFor?.(recipe)}
                 showCategory={!category}
               />

@@ -631,7 +631,8 @@
         "md": "1.5rem"
       },
       "rowMinHeight": "4.25rem",
-      "safeArea": "The header pads to env(safe-area-inset-top) and the bottom bar to at least 0.5rem or env(safe-area-inset-bottom)."
+      "safeArea": "The header pads to env(safe-area-inset-top) and the bottom bar to at least 0.5rem or env(safe-area-inset-bottom).",
+      "navHeight": "--rf-nav-height: calc(4.25rem + max(0.5rem, env(safe-area-inset-bottom))) on a phone, 0px from 768 px. The navigation bar's height and the action bar's offset."
     },
     "states": {
       "disabledOpacity": 0.55,
@@ -668,7 +669,12 @@
         "LoaderCircle",
         "RotateCw",
         "PencilLine",
-        "ArrowDownUp"
+        "ArrowDownUp",
+        "ChefHat",
+        "Pencil",
+        "ExternalLink",
+        "ChevronLeft",
+        "ChevronRight"
       ],
       "appIcon": "public/icon.svg is a placeholder: an index card with a buff divider tab and a red rule on ink navy. The final icon and wordmark are unresolved."
     },
@@ -822,6 +828,38 @@
       "description": "An import from a link, above the recipes until a person has dealt with it. Not a recipe yet: plain stock, no category colour.",
       "html": "<div class=\"ds-import\"><span class=\"ds-import-tile\" aria-hidden=\"true\">&#128279;</span><span class=\"ds-import-text\"><strong>Skillet Cornbread</strong><span><b>Ready to review</b> · recipes.example.com</span></span><button>Review</button></div>",
       "css": ".ds-import { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; padding: 0.625rem 1rem; background: var(--rf-surface-sunk); border-bottom: 1px solid var(--rf-rule); font-family: var(--rf-font); color: var(--rf-ink); } .ds-import-tile { display: grid; place-items: center; width: 3rem; height: 3rem; flex: none; border-radius: var(--rf-radius-sm); background: var(--rf-stock-plain); } .ds-import-text { flex: 1; min-width: 8rem; display: grid; gap: 0.125rem; font-size: var(--rf-text-sm); } .ds-import-text strong { font-size: var(--rf-text-lg); font-weight: 600; line-height: 1.25; } .ds-import-text b { font-weight: 600; } .ds-import button { min-height: var(--rf-touch); padding: 0 1.25rem; border: 0; border-radius: var(--rf-radius-md); background: var(--rf-primary); color: var(--rf-on-primary); font: inherit; font-size: var(--rf-text-base); font-weight: 600; }"
+    },
+    {
+      "name": "Divider Links",
+      "kind": "navigation",
+      "refersTo": "divider-tab",
+      "description": "On a recipe: the dividers it is filed behind, as links back to the list. None is drawn as selected.",
+      "html": "<nav class=\"ds-dlinks\"><a href=\"#\">&#8249; All recipes</a><a href=\"#\" class=\"ds-dlink-salmon\">Dinner</a></nav>",
+      "css": ".ds-dlinks { display: flex; align-items: flex-end; gap: 0.125rem; } .ds-dlinks a { display: inline-flex; align-items: center; height: var(--rf-touch); padding: 0 0.75rem; border-radius: var(--rf-radius-md) var(--rf-radius-md) 0 0; border-bottom: 1px solid var(--rf-rule); background: var(--rf-stock-plain); color: var(--rf-ink); font-family: var(--rf-font); font-size: var(--rf-text-sm); font-weight: 600; text-decoration: none; } .ds-dlinks a.ds-dlink-salmon { background: var(--rf-stock-salmon); color: var(--rf-on-stock); } .ds-dlinks a:focus-visible { outline: 3px solid var(--rf-focus); outline-offset: 2px; }"
+    },
+    {
+      "name": "Facts Row",
+      "kind": "data",
+      "refersTo": "fact",
+      "description": "Times, servings and yield as ruled cells: a small label over a title-size value.",
+      "html": "<dl class=\"ds-facts\"><div><dt>Prep</dt><dd>30 min</dd></div><div><dt>Cook</dt><dd>2 hr</dd></div><div><dt>Serves</dt><dd>8</dd></div></dl>",
+      "css": ".ds-facts { display: flex; flex-wrap: wrap; overflow: hidden; margin: 0; background: var(--rf-surface); font-family: var(--rf-font); color: var(--rf-ink); } .ds-facts div { flex: 1 1 6.5rem; margin-right: -1px; padding: 0.5rem 1rem; border-top: 1px solid var(--rf-rule); border-right: 1px solid var(--rf-rule); } .ds-facts dt { font-size: var(--rf-text-sm); } .ds-facts dd { margin: 0; font-size: var(--rf-text-lg); font-weight: 600; line-height: 1.25; }"
+    },
+    {
+      "name": "Section Head",
+      "kind": "heading",
+      "refersTo": "section-head",
+      "description": "A sunk band that opens Ingredients, Steps and Notes. A control for the section sits at its right.",
+      "html": "<div class=\"ds-sechead\"><h2>Ingredients</h2><span class=\"ds-seg\"><span>&#189;&#215;</span><span class=\"on\">1&#215;</span><span>2&#215;</span><span>3&#215;</span></span></div>",
+      "css": ".ds-sechead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 0.75rem; padding: 0.5rem 1rem; border-top: 1px solid var(--rf-rule); background: var(--rf-surface-sunk); font-family: var(--rf-font); color: var(--rf-ink); } .ds-sechead h2 { margin: 0; font-size: var(--rf-text-lg); font-weight: 700; } .ds-seg { display: flex; gap: 0.25rem; padding: 0.25rem; border: 1px solid var(--rf-rule-strong); border-radius: var(--rf-radius-md); background: var(--rf-surface); } .ds-seg span { display: grid; place-items: center; min-width: var(--rf-touch); min-height: var(--rf-touch); border-radius: var(--rf-radius-sm); font-weight: 600; } .ds-seg span.on { background: var(--rf-primary); color: var(--rf-on-primary); }"
+    },
+    {
+      "name": "Action Bar",
+      "kind": "toolbar",
+      "refersTo": "action-bar",
+      "description": "A screen's main actions, stuck to the bottom of the screen above the phone's navigation bar.",
+      "html": "<div class=\"ds-actions\"><button class=\"ds-actions-primary\">Cook</button><button class=\"ds-actions-quiet\">Edit</button></div>",
+      "css": ".ds-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0.625rem 1rem; border-top: 1px solid var(--rf-rule-strong); background: var(--rf-surface); } .ds-actions button { min-height: var(--rf-touch); padding: 0 1.25rem; border-radius: var(--rf-radius-md); font-family: var(--rf-font); font-size: var(--rf-text-base); font-weight: 600; } .ds-actions-primary { flex: 1; border: 0; background: var(--rf-primary); color: var(--rf-on-primary); } .ds-actions-quiet { border: 1px solid var(--rf-rule-strong); background: var(--rf-surface); color: var(--rf-ink); }"
     }
   ],
   "narrative": {
@@ -895,7 +933,9 @@
       "Do give every screen its loading (skeleton rows), empty (empty state), error and offline (notice band) states.",
       "Do honour reduced motion: transitions and the skeleton sweep stop when the device asks.",
       "Use a chip for a filter and only for a filter, and a sheet for a short job over the page.",
-      "Say what an empty result was asked for, and offer one button that clears it."
+      "Say what an empty result was asked for, and offer one button that clears it.",
+      "Leave out what a recipe does not state. No empty headings, and no \"none\".",
+      "Put a screen's main actions in the action bar, offset by --rf-nav-height."
     ],
     "donts": [
       "Don't add a grey, muted or soft text colour, or fade text with opacity.",
@@ -910,7 +950,8 @@
       "Don't build a dashboard or a second home screen. The recipe list is the index.",
       "Don't use the word Cloudflare or its flare shapes in the name, icon or logo, and don't borrow Mealie's look or copy.",
       "Don't grey a placeholder, a disabled label or a secondary line. A placeholder is ink at regular weight.",
-      "Don't add a second Add control to the recipe list. Adding starts from the red Add in the navigation; only the first-run state offers it in the page."
+      "Don't add a second Add control to the recipe list. Adding starts from the red Add in the navigation; only the first-run state offers it in the page.",
+      "Don't put a large photo at the top of a recipe. Pictures are thumbnails that open full screen."
     ]
   }
 }
