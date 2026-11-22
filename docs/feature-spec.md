@@ -4,17 +4,13 @@
 
 Each section ends with its decisions. A decision marked **proposed** is my default and stands unless you change it. Phase 2 appears only where it alters a Phase 1 screen.
 
-## Needs your input
-
-One thing in this spec still rests on my assumptions: **people and devices** in [§1](#1-people-and-devices). Correct the table if it is wrong.
-
 ## 1. People and devices
 
-Assumed, to be confirmed:
+Confirmed by the owner on 22 Nov 2026:
 
-| Question | Assumption |
+| Question | Answer |
 | --- | --- |
-| Who enters recipes | Two adults, mostly at a desktop for typing and on a phone for photos |
+| Who enters recipes | Two adults, the primary users, mostly at a desktop for typing and on a phone for photos |
 | Who cooks from the app | Anyone in the household |
 | Phones | Both iPhone (Safari) and Android (Chrome). The build plan's share-sheet section covers both |
 | In the kitchen | A phone propped on the counter, sometimes a tablet in landscape |
