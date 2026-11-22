@@ -44,6 +44,7 @@ const TEXT_PAIRS: [text: string, background: string][] = [
   ["--rf-ink", "--rf-ground"],
   ["--rf-ink", "--rf-stock-plain"],
   ["--rf-on-shell", "--rf-shell"],
+  ["--rf-on-shell", "--rf-shell-raised"],
   ["--rf-on-primary", "--rf-primary"],
   ["--rf-on-primary", "--rf-primary-press"],
   ["--rf-on-red", "--rf-red-fill"],

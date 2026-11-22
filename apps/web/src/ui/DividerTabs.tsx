@@ -30,7 +30,10 @@ export function DividerTabs({ label, tabs, selectedId, onSelect, panelId }: Divi
     <div
       role="tablist"
       aria-label={label}
-      className="flex items-end gap-0.5 overflow-x-auto px-3 pt-3 [scrollbar-width:none] md:px-6 md:pt-6"
+      // The whole row sits one pixel over the stack's top rule. The selected
+      // divider has no bottom edge, so it breaks the rule and joins the stack;
+      // the others draw the rule along their own bottom edge.
+      className="relative z-[1] -mb-px flex items-end gap-0.5 overflow-x-auto px-3 pt-3 [scrollbar-width:none] md:px-6 md:pt-6"
     >
       {tabs.map((tab, index) => {
         const selected = tab.id === selectedId;
@@ -58,8 +61,8 @@ export function DividerTabs({ label, tabs, selectedId, onSelect, panelId }: Divi
             }}
             className={`transition-rf min-w-touch shrink-0 grow basis-auto whitespace-nowrap rounded-t-md px-3 text-sm font-semibold md:grow-0 md:px-5 ${
               selected
-                ? "relative z-[1] -mb-px h-[calc(3.25rem+1px)] border border-b-0 border-rule bg-surface text-ink"
-                : `h-touch ${STOCK_BG[tab.stock]} ${STOCK_TEXT[tab.stock]} hover:brightness-105`
+                ? "h-[3.25rem] border border-b-0 border-rule bg-surface text-ink"
+                : `h-touch border-b border-rule ${STOCK_BG[tab.stock]} ${STOCK_TEXT[tab.stock]} hover:brightness-105`
             }`}
           >
             {tab.label}

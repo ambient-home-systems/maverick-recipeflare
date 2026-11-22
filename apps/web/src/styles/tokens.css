@@ -13,8 +13,9 @@
   /* Ink: one colour for all text. Hierarchy comes from weight and size. */
   --rf-ink: #14263f;
 
-  /* The shell: the tin itself. */
+  /* The shell: the tin itself. Raised is the current or hovered item on the rail. */
   --rf-shell: #17304f;
+  --rf-shell-raised: #2c4a70;
   --rf-on-shell: #f4f8fc;
 
   /* Primary buttons: ink on a light kitchen, and the reverse in the dark one. */
@@ -61,6 +62,7 @@
   --rf-ink: #e8eef6;
 
   --rf-shell: #10233d;
+  --rf-shell-raised: #23406a;
   --rf-on-shell: #f4f8fc;
 
   --rf-primary: #dce7f4;

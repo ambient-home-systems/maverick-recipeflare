@@ -16,6 +16,12 @@ const GROUPS: { title: string; swatches: Swatch[] }[] = [
       },
       { token: "--rf-ground", name: "Ground", job: "Behind the cards", on: "--rf-ink" },
       { token: "--rf-shell", name: "Ink navy", job: "Header and rail", on: "--rf-on-shell" },
+      {
+        token: "--rf-shell-raised",
+        name: "Ink navy, raised",
+        job: "Current item on the rail",
+        on: "--rf-on-shell",
+      },
       { token: "--rf-primary", name: "Primary", job: "Save, cook, confirm", on: "--rf-on-primary" },
     ],
   },

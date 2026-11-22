@@ -8,6 +8,7 @@
   --color-*: initial;
   --color-ink: var(--rf-ink);
   --color-shell: var(--rf-shell);
+  --color-shell-raised: var(--rf-shell-raised);
   --color-on-shell: var(--rf-on-shell);
   --color-primary: var(--rf-primary);
   --color-primary-press: var(--rf-primary-press);

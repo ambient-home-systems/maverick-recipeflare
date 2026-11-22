@@ -11,8 +11,8 @@ function NavLink({ item, current }: { item: NavItem; current: boolean }) {
   // One ink on each: the current destination is marked by a tinted ground and
   // a heavier weight, never by a second colour.
   const tone = current
-    ? "bg-surface-sunk font-bold md:bg-white/12"
-    : "font-semibold hover:bg-surface-sunk md:font-normal md:hover:bg-white/8";
+    ? "bg-surface-sunk font-bold md:bg-shell-raised"
+    : "font-semibold hover:bg-surface-sunk md:font-normal md:hover:bg-shell-raised";
   return (
     <Link
       to={item.to}
