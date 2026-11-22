@@ -13,7 +13,7 @@ export function AddPage() {
         {WAYS.map((way) => (
           <li key={way.name} className="border-b border-rule px-4 py-4 last:border-b-0">
             <span className="block text-lg font-semibold">{way.name}</span>
-            <span className="mt-0.5 block text-sm text-ink-soft">{way.detail}</span>
+            <span className="mt-0.5 block text-sm">{way.detail}</span>
           </li>
         ))}
       </ul>

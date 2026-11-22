@@ -7,10 +7,8 @@
 @theme inline {
   --color-*: initial;
   --color-ink: var(--rf-ink);
-  --color-ink-soft: var(--rf-ink-soft);
   --color-shell: var(--rf-shell);
   --color-on-shell: var(--rf-on-shell);
-  --color-on-shell-soft: var(--rf-on-shell-soft);
   --color-primary: var(--rf-primary);
   --color-primary-press: var(--rf-primary-press);
   --color-on-primary: var(--rf-on-primary);
@@ -23,7 +21,6 @@
   --color-red-fill-press: var(--rf-red-fill-press);
   --color-on-red: var(--rf-on-red);
   --color-red-line: var(--rf-red-line);
-  --color-red-text: var(--rf-red-text);
   --color-stock-buff: var(--rf-stock-buff);
   --color-stock-salmon: var(--rf-stock-salmon);
   --color-stock-sky: var(--rf-stock-sky);
@@ -34,7 +31,6 @@
   --color-focus: var(--rf-focus);
   --color-notice: var(--rf-notice);
   --color-on-notice: var(--rf-on-notice);
-  --color-ok-text: var(--rf-ok-text);
   --color-skeleton: var(--rf-skeleton);
   --color-transparent: transparent;
 
@@ -146,7 +142,8 @@
       background-color var(--rf-motion),
       color var(--rf-motion),
       border-color var(--rf-motion),
-      transform var(--rf-motion);
+      height var(--rf-motion),
+      box-shadow var(--rf-motion);
   }
 }
 

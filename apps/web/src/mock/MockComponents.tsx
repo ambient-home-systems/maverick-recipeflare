@@ -1,6 +1,6 @@
 import { toRecipeSummary } from "@recipeflare/schema";
 import { beefChili, cardamomCookies, cinnamonToast } from "@recipeflare/schema/fixtures";
-import { CloudOff, Plus, Trash2 } from "lucide-react";
+import { CloudOff, Plus, Trash2, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../ui/Button";
 import { type DividerTab, DividerTabs } from "../ui/DividerTabs";
@@ -30,7 +30,7 @@ export function MockComponents() {
             Add a recipe
           </Button>
           <Button variant="quiet">Cancel</Button>
-          <Button variant="danger" icon={<Trash2 aria-hidden="true" size={20} />}>
+          <Button variant="quiet" icon={<Trash2 aria-hidden="true" size={20} />}>
             Delete
           </Button>
         </div>
@@ -76,9 +76,11 @@ export function MockComponents() {
         >
           Nothing is filed under Soup with the tag Holiday. Clear a filter to see more.
         </EmptyState>
-        <p role="alert" className="border-t border-rule px-4 py-4 font-semibold text-red-text">
-          The recipe could not be saved. Check the connection and save again.
-        </p>
+        <div className="border-t border-rule">
+          <Notice problem icon={<TriangleAlert aria-hidden="true" size={18} />}>
+            The recipe could not be saved. Check the connection and save again.
+          </Notice>
+        </div>
       </Page>
     </>
   );

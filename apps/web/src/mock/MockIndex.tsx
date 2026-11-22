@@ -39,14 +39,14 @@ export function MockIndex() {
                 className="transition-rf block min-h-touch px-4 py-3 no-underline hover:bg-surface-sunk"
               >
                 <span className="block text-lg font-semibold">{screen.name}</span>
-                <span className="block text-sm text-ink-soft">{screen.detail}</span>
+                <span className="block text-sm">{screen.detail}</span>
               </Link>
             </li>
           ))}
           {COMING.map((name) => (
             <li key={name} className="border-b border-rule px-4 py-3 last:border-b-0">
               <span className="block font-semibold">{name}</span>
-              <span className="block text-sm text-ink-soft">Not drawn yet.</span>
+              <span className="block text-sm">Not drawn yet.</span>
             </li>
           ))}
         </ul>

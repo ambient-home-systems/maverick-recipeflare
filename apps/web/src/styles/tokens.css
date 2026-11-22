@@ -12,12 +12,10 @@
 
   /* Ink: one colour for all text. Hierarchy comes from weight and size. */
   --rf-ink: #14263f;
-  --rf-ink-soft: #3f536e;
 
   /* The shell: the tin itself. */
   --rf-shell: #17304f;
   --rf-on-shell: #f4f8fc;
-  --rf-on-shell-soft: #c5d4e6;
 
   /* Primary buttons: ink on a light kitchen, and the reverse in the dark one. */
   --rf-primary: #17304f;
@@ -33,12 +31,11 @@
   --rf-rule: #a9c1dc;
   --rf-rule-strong: #5b7ba2;
 
-  /* Rule red: the line a title sits on, and the Add action. */
+  /* Rule red has two jobs only: the line a title sits on, and adding a recipe. */
   --rf-red-fill: #c8372d;
   --rf-red-fill-press: #a82c24;
   --rf-on-red: #ffffff;
   --rf-red-line: #c8372d;
-  --rf-red-text: #b02a21;
 
   /* Divider stock: one colour per category, the same wherever it appears. */
   --rf-stock-buff: #edc96b;
@@ -54,7 +51,6 @@
   --rf-focus-on-shell: #ffffff;
   --rf-notice: #fbefc9;
   --rf-on-notice: #14263f;
-  --rf-ok-text: #1b6e45;
   --rf-skeleton: #dfe8f2;
   --rf-overlay-shadow: 0 10px 28px rgb(13 22 38 / 0.2), 0 2px 6px rgb(13 22 38 / 0.12);
 }
@@ -63,11 +59,9 @@
   color-scheme: dark;
 
   --rf-ink: #e8eef6;
-  --rf-ink-soft: #b3c3d8;
 
   --rf-shell: #10233d;
   --rf-on-shell: #f4f8fc;
-  --rf-on-shell-soft: #b9cbe0;
 
   --rf-primary: #dce7f4;
   --rf-primary-press: #c3d3e6;
@@ -84,7 +78,6 @@
   --rf-red-fill-press: #a82c24;
   --rf-on-red: #ffffff;
   --rf-red-line: #e8766b;
-  --rf-red-text: #f3958b;
 
   --rf-stock-buff: #dcbb62;
   --rf-stock-salmon: #e39b86;
@@ -98,7 +91,6 @@
   --rf-focus-on-shell: #ffffff;
   --rf-notice: #4a3d14;
   --rf-on-notice: #fbefc9;
-  --rf-ok-text: #7fd3a6;
   --rf-skeleton: #22334d;
   --rf-overlay-shadow: 0 10px 28px rgb(0 0 0 / 0.5), 0 2px 6px rgb(0 0 0 / 0.35);
 }

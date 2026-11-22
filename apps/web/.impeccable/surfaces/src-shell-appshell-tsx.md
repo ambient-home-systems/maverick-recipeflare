@@ -37,6 +37,12 @@ FORM: the index-card recipe tin, position 4 of 7 on the ordered list; seed:f0b15
 
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
 
+## Amendments
+
+- The header's full-width search field arrives with the recipe-list screen (task T0.7). Until then the phone header carries the wordmark only.
+- Rule red has exactly two jobs: the rule a title sits on, and adding a recipe. Save, cook and confirm use the ink primary button. Delete is a quiet ink-outline button with an icon. Problems are shown in the notice band with an icon.
+- Colours repeat after five categories: a sixth category shares the first one's stock.
+
 ## Unresolved
 
 - The final icon and wordmark. The icon in this build is a placeholder.

@@ -58,7 +58,7 @@ export function DividerTabs({ label, tabs, selectedId, onSelect, panelId }: Divi
             }}
             className={`transition-rf min-w-touch shrink-0 grow basis-auto whitespace-nowrap rounded-t-md px-3 text-sm font-semibold md:grow-0 md:px-5 ${
               selected
-                ? "h-[3.25rem] border border-b-0 border-rule bg-surface text-ink"
+                ? "relative z-[1] -mb-px h-[calc(3.25rem+1px)] border border-b-0 border-rule bg-surface text-ink"
                 : `h-touch ${STOCK_BG[tab.stock]} ${STOCK_TEXT[tab.stock]} hover:brightness-105`
             }`}
           >

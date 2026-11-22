@@ -19,7 +19,7 @@ export function ManagePage() {
           {LISTS.map((list) => (
             <li key={list.name} className="border-b border-rule px-4 py-3 last:border-b-0">
               <span className="block font-semibold">{list.name}</span>
-              <span className="block text-sm text-ink-soft">{list.detail}</span>
+              <span className="block text-sm">{list.detail}</span>
             </li>
           ))}
         </ul>

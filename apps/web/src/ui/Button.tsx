@@ -1,16 +1,15 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
-type Variant = "primary" | "add" | "quiet" | "danger";
+type Variant = "primary" | "add" | "quiet";
 
 const VARIANTS: Record<Variant, string> = {
   // Ink: save, cook, confirm.
   primary: "bg-primary text-on-primary hover:bg-primary-press active:bg-primary-press",
   // Rule red: reserved for adding a recipe.
   add: "bg-red-fill text-on-red hover:bg-red-fill-press active:bg-red-fill-press",
+  // Everything else, delete included: an ink outline. Delete is told apart by its icon and its words.
   quiet:
     "bg-surface text-ink border border-rule-strong hover:bg-surface-sunk active:bg-surface-sunk",
-  danger:
-    "bg-surface text-red-text border border-red-line hover:bg-surface-sunk active:bg-surface-sunk",
 };
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {

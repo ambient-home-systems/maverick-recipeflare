@@ -26,11 +26,7 @@ export function ApiStatus() {
   }, []);
 
   return (
-    <p
-      role="status"
-      data-api-state={api}
-      className={`text-sm font-semibold ${api === "ok" ? "text-ok-text" : api === "unreachable" ? "text-red-text" : "text-ink-soft"}`}
-    >
+    <p role="status" data-api-state={api} className="text-sm font-semibold">
       {LABELS[api]}
     </p>
   );

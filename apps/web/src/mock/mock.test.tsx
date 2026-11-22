@@ -80,7 +80,16 @@ describe("the fixture recipes screen", () => {
     const titles = rowTitles();
     expect(titles).toHaveLength(9);
     expect(titles.slice(0, 3)).toEqual(["Chocolate Chip Pan Cookies", "Meat Loaf", "Pancakes"]);
-    expect(screen.getByText("9 recipes")).toBeTruthy();
+    expect(screen.getByText("9 sample recipes")).toBeTruthy();
+  });
+
+  it("sets a recipe's tag in a heavier weight, and nothing else on the line", async () => {
+    await renderAt("/mock/fixtures");
+    const line = screen
+      .getAllByTestId("recipe-meta")
+      .find((meta) => meta.textContent === "25 min · Breakfast · Family favorite");
+    const strong = [...(line?.querySelectorAll(".font-semibold") ?? [])].map((s) => s.textContent);
+    expect(strong).toEqual([" · Family favorite"]);
   });
 
   it("has a divider for All and for each category", async () => {
@@ -103,7 +112,7 @@ describe("the fixture recipes screen", () => {
 
     expect(rowTitles()).toEqual(["Chocolate Chip Pan Cookies", "Cardamom Sugar Cookies"]);
     expect(screen.getByRole("heading", { level: 1, name: "Dessert" })).toBeTruthy();
-    expect(screen.getByText("2 recipes")).toBeTruthy();
+    expect(screen.getByText("2 sample recipes")).toBeTruthy();
     expect(screen.getByRole("tabpanel").getAttribute("aria-labelledby")).toBe(
       screen.getByRole("tab", { name: "Dessert" }).id,
     );
@@ -124,8 +133,9 @@ describe("the fixture recipes screen", () => {
 
   it("credits a recipe's source on its row", async () => {
     await renderAt("/mock/fixtures");
-    expect(screen.getByText("30 min · Dessert · From Aunt June")).toBeTruthy();
-    expect(screen.getByText("40 min · Soup · From Example Kitchen")).toBeTruthy();
+    const metaLines = screen.getAllByTestId("recipe-meta").map((line) => line.textContent);
+    expect(metaLines).toContain("30 min · Dessert · From Aunt June");
+    expect(metaLines).toContain("40 min · Soup · From Example Kitchen");
   });
 });
 
@@ -145,6 +155,9 @@ describe("the specimen screens", () => {
     expect(busy.getAttribute("aria-busy")).toBe("true");
     expect((busy as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByRole("alert").textContent).toContain("could not be saved");
+    expect(screen.getByRole("status").textContent).toContain("You are offline");
+    // Delete is a quiet button told apart by its words, not by a red outline.
+    expect(screen.getByRole("button", { name: "Delete" }).className).not.toContain("red");
     expect(screen.getAllByTestId("recipe-row-skeleton")).toHaveLength(2);
   });
 });

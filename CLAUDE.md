@@ -86,7 +86,8 @@ Not here yet:
 
 - Colours, type sizes, radii and touch sizes come from the tokens in `apps/web/src/styles/tokens.css`, through Tailwind classes such as `bg-surface` and `text-ink`. Do not write a hex colour or a `dark:` variant in a component; the tokens switch with the theme.
 - A new colour token needs its pairings added to `tokens.test.ts`, which checks WCAG contrast in both themes.
-- Rule red as a fill is for adding a recipe only. Save, cook and confirm use the primary button. Errors and delete use red text or a red outline.
+- One ink for all text. Hierarchy comes from size and weight; there is no grey or "soft" text token, and a test fails if one is added.
+- Rule red has two jobs: the line a title sits on, and adding a recipe. Save, cook and confirm use the primary button. Delete is a quiet button with an icon. Problems go in the `Notice` band with an icon, never in red text.
 - A category keeps one divider colour wherever it appears. Get it from `stock.ts`; do not pick colours per screen.
 - Rows are ruled, not carded: hairlines in ruling blue, no shadows. No paper textures, handwriting fonts or serif display type.
 - Every link, button and tab is at least 44 by 44 CSS pixels. Use `min-h-touch` and `min-w-touch`.

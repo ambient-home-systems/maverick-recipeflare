@@ -43,19 +43,11 @@ const TEXT_PAIRS: [text: string, background: string][] = [
   ["--rf-ink", "--rf-surface-sunk"],
   ["--rf-ink", "--rf-ground"],
   ["--rf-ink", "--rf-stock-plain"],
-  ["--rf-ink-soft", "--rf-surface"],
-  ["--rf-ink-soft", "--rf-surface-sunk"],
-  ["--rf-ink-soft", "--rf-ground"],
   ["--rf-on-shell", "--rf-shell"],
-  ["--rf-on-shell-soft", "--rf-shell"],
   ["--rf-on-primary", "--rf-primary"],
   ["--rf-on-primary", "--rf-primary-press"],
   ["--rf-on-red", "--rf-red-fill"],
   ["--rf-on-red", "--rf-red-fill-press"],
-  ["--rf-red-text", "--rf-surface"],
-  ["--rf-red-text", "--rf-surface-sunk"],
-  ["--rf-ok-text", "--rf-surface"],
-  ["--rf-ok-text", "--rf-ground"],
   ["--rf-on-notice", "--rf-notice"],
   ["--rf-on-stock", "--rf-stock-buff"],
   ["--rf-on-stock", "--rf-stock-salmon"],
@@ -92,6 +84,8 @@ describe.each([
       expect(theme.has(token), token).toBe(true);
     }
     expect(light.size).toBeGreaterThanOrEqual(25);
+    // One ink: no second text tone may come back.
+    expect([...light.keys()].filter((token) => /soft|muted|-text$/.test(token))).toEqual([]);
   });
 
   it.each(TEXT_PAIRS)("%s on %s is readable (4.5 to 1)", (text, background) => {

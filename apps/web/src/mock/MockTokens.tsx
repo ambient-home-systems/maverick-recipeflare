@@ -7,7 +7,6 @@ const GROUPS: { title: string; swatches: Swatch[] }[] = [
     title: "Ink and surfaces",
     swatches: [
       { token: "--rf-ink", name: "Ink", job: "All text", on: "--rf-surface" },
-      { token: "--rf-ink-soft", name: "Ink, soft", job: "Second lines", on: "--rf-surface" },
       { token: "--rf-surface", name: "Card white", job: "Working surface", on: "--rf-ink" },
       {
         token: "--rf-surface-sunk",
@@ -53,10 +52,8 @@ const GROUPS: { title: string; swatches: Swatch[] }[] = [
   {
     title: "States",
     swatches: [
-      { token: "--rf-notice", name: "Notice", job: "Offline, out of date", on: "--rf-on-notice" },
+      { token: "--rf-notice", name: "Notice", job: "Offline, and problems", on: "--rf-on-notice" },
       { token: "--rf-focus", name: "Focus", job: "Keyboard focus ring", on: "--rf-surface" },
-      { token: "--rf-ok-text", name: "Confirmed", job: "Saved, reachable", on: "--rf-surface" },
-      { token: "--rf-red-text", name: "Problem", job: "Errors and delete", on: "--rf-surface" },
     ],
   },
 ];
@@ -128,7 +125,7 @@ export function MockTokens() {
                   Aa 1½
                 </div>
                 <span className="mt-2 block font-semibold">{swatch.name}</span>
-                <span className="block text-sm text-ink-soft">{swatch.job}</span>
+                <span className="block text-sm">{swatch.job}</span>
               </li>
             ))}
           </ul>
@@ -139,7 +136,7 @@ export function MockTokens() {
         <ul>
           {TYPE.map((step) => (
             <li key={step.token} className="border-b border-rule px-4 py-3 last:border-b-0">
-              <span className="block text-sm text-ink-soft">
+              <span className="block text-sm">
                 {step.name} · {step.px} px
               </span>
               <span
@@ -157,7 +154,7 @@ export function MockTokens() {
         <ul className="px-4 py-3">
           {SPACE.map((step) => (
             <li key={step} className="flex items-center gap-3 py-1">
-              <span className="w-12 text-sm text-ink-soft">{step * 4} px</span>
+              <span className="w-12 text-sm">{step * 4} px</span>
               <span className="h-3 bg-rule-strong" style={{ width: `var(--rf-space-${step})` }} />
             </li>
           ))}

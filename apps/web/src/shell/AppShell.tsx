@@ -8,23 +8,23 @@ function isCurrent(item: NavItem, pathname: string): boolean {
 function NavLink({ item, current }: { item: NavItem; current: boolean }) {
   const Icon = item.icon;
   // The bar on a phone is card white; the rail from tablet width is ink navy.
-  const tone = item.emphasis
-    ? "text-red-text md:text-on-shell"
-    : current
-      ? "bg-surface-sunk text-ink md:bg-white/12 md:text-on-shell"
-      : "text-ink-soft hover:text-ink md:text-on-shell-soft md:hover:text-on-shell";
+  // One ink on each: the current destination is marked by a tinted ground and
+  // a heavier weight, never by a second colour.
+  const tone = current
+    ? "bg-surface-sunk font-bold md:bg-white/12"
+    : "font-semibold hover:bg-surface-sunk md:font-normal md:hover:bg-white/8";
   return (
     <Link
       to={item.to}
       aria-current={current ? "page" : undefined}
-      className={`transition-rf flex min-h-touch-nav flex-1 flex-col items-center justify-center gap-1 rounded-md text-xs font-semibold no-underline md:flex-none md:flex-row md:justify-start md:gap-3 md:px-3 md:text-base ${tone}`}
+      className={`transition-rf flex min-h-touch-nav flex-1 flex-col items-center justify-center gap-1 rounded-md text-xs text-ink no-underline md:flex-none md:flex-row md:justify-start md:gap-3 md:px-3 md:text-base md:text-on-shell ${tone}`}
     >
       <span
-        className={`grid h-9 w-14 place-items-center rounded-md md:w-10 ${
+        className={`grid h-[2.25rem] w-[3.5rem] place-items-center rounded-md md:w-[2.5rem] ${
           item.emphasis ? "bg-red-fill text-on-red" : ""
         }`}
       >
-        <Icon aria-hidden="true" size={22} strokeWidth={2} />
+        <Icon aria-hidden="true" size="1.375rem" strokeWidth={2} />
       </span>
       <span>{item.label}</span>
     </Link>

@@ -25,6 +25,14 @@ describe("the app shell", () => {
     );
   });
 
+  it("marks Add as current on the Add page, like any other destination", async () => {
+    await renderAt("/add");
+    const nav = screen.getByRole("navigation", { name: "Main" });
+    expect(within(nav).getByRole("link", { name: "Add" }).getAttribute("aria-current")).toBe(
+      "page",
+    );
+  });
+
   it("keeps Recipes current only on the list itself", async () => {
     await renderAt("/mock/tokens");
     const nav = screen.getByRole("navigation", { name: "Main" });

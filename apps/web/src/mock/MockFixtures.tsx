@@ -45,7 +45,7 @@ export function MockFixtures() {
         labelledBy={`divider-${selected}`}
         joined
         title={selected === ALL ? "All recipes" : (selectedTab?.label ?? "Recipes")}
-        aside={`${shown.length} ${shown.length === 1 ? "recipe" : "recipes"}`}
+        aside={`${shown.length} sample ${shown.length === 1 ? "recipe" : "recipes"}`}
       >
         {shown.length > 0 ? (
           <ul>
@@ -58,7 +58,7 @@ export function MockFixtures() {
             ))}
           </ul>
         ) : (
-          <p className="px-4 py-8 text-ink-soft">No sample recipes are filed here.</p>
+          <p className="px-4 py-8">No sample recipes are filed here.</p>
         )}
       </Page>
     </>
