@@ -228,7 +228,7 @@ describe("the list's other states", () => {
 
     expect(screen.getByRole("heading", { name: "No recipes yet" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Type a recipe" }).getAttribute("href")).toBe(
-      "/mock/add",
+      "/mock/new",
     );
     expect(screen.getByRole("link", { name: "Import from a link" }).getAttribute("href")).toBe(
       "/mock/add",

@@ -220,6 +220,32 @@ components:
     backgroundColor: "{colors.shell}"
     textColor: "{colors.on-shell}"
     typography: "{typography.title}"
+  field-problem:
+    backgroundColor: "{colors.notice}"
+    textColor: "{colors.on-notice}"
+    typography: "{typography.label}"
+    rounded: "{rounded.sm}"
+    padding: "0.5rem 0.75rem"
+  mark:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink}"
+    typography: "{typography.label}"
+    rounded: "{rounded.sm}"
+    padding: "0.125rem 0.375rem"
+  editor-row:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink}"
+    typography: "{typography.body}"
+    padding: "0.5rem 1rem 0.5rem 0.25rem"
+  editor-row-dragging:
+    backgroundColor: "{colors.surface-sunk}"
+  small-button:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink}"
+    typography: "{typography.label}"
+    rounded: "{rounded.md}"
+    padding: "0 0.75rem"
+    height: "{spacing.touch}"
   import-row:
     backgroundColor: "{colors.surface-sunk}"
     textColor: "{colors.ink}"
@@ -398,6 +424,9 @@ Categories are index dividers standing over the card stack.
 - **Behaviour:** a real tab list. Left and right arrow keys move and select; only the selected tab is in the tab order. The stack below is its tab panel.
 - The first tab is "All", in plain stock.
 
+### Divider back
+On a screen that may hold unsaved work, the way back is a divider-shaped button in plain stock with a chevron and the name of where it leads. Being a button, it can ask before it lets go.
+
 ### Divider links
 On a recipe, the dividers it is filed behind, standing over its card as they do over the list.
 - **Style:** the unselected divider tab: the category's stock, `on-stock` text, 2.75rem tall, top corners rounded. None is drawn as selected, because the page is one card and not a category.
@@ -447,12 +476,31 @@ The one search box, on the recipe list only.
 ### Text field and select
 A text box or a native select on card white: at least 2.75rem tall, 10 px radius, 1 px `rule-strong` outline, 0.75rem inside. A visible label sits above a text box in body small. A select has a 20 px chevron at its right end and its value in 600. The sort select has no visible label, so it leads with a sort icon and its options are short enough to stay whole on a phone: "Last changed", "Newest", "A to Z", and "Best match" while searching. A field's problem is a notice band directly under it, tied to the field for assistive technology; the field itself does not turn red.
 
+### Form fields
+- **Label:** always visible, above the box, in label weight. No placeholder stands in for it. A line of help may sit under the box in body small.
+- **Problem:** a small notice band directly under the box (`notice` ground, `on-notice` text, label weight, a warning icon, 6 px corners), tied to the box for assistive technology. The box itself does not change colour. When a save is refused, a notice band at the top of the card says how many things need fixing, and under it each is a ruled row, at least 2.75rem tall, naming the field in 600 and then the problem, with a down arrow at its right. Pressing a row goes to the field or the row it names, opening anything folded over it. Problems clear as they are fixed, without another press of Save. A review's "things to check" are listed the same way.
+- **Mark:** a small outlined word (body small, 600, `rule-strong` outline, 6 px corners) beside a label or on a row: "check" for something an import wants looked at, "new" for a food that will be created at save, "as written" for a line kept as typed, "cover" on the cover photo. A mark is a word, never a colour.
+- **Small button:** a quiet button at label size, 2.75rem tall with 0.75rem inside, for actions inside a row or a block: Up, Down, Delete, Add a note, Choose tags. Its icon is 18 px.
+- **Duration:** two short boxes with "hr" and "min" after them under one legend.
+
+### Editor rows
+Ingredients and steps in the editor: one flat list in which a section is a titled row.
+- **Closed row:** a drag handle (six dots, 2.75rem wide, the full height of the row, with the dots on the row's first line) and then the row itself as one button. An ingredient shows the words as typed and, under them in body small and 600, what the app read: amount, unit, food and note, separated by dots, with a "new" or "as written" mark where it applies. A step shows its number in the recipe view's style. A section title is in 700.
+- **Open row:** pressing a row opens it in place, one at a time: its fields, then Up, Down, Delete and Done (Done is primary). An ingredient's fields are the line as written, then amount, unit, food and note.
+- **Dragging:** the lifted row takes the sunk ground and strong rules above and below. It has no shadow. Dragging starts from the handle only, after a finger has held it for a fifth of a second; a swipe that begins on a handle scrolls the page as usual.
+- **Entry:** under the list, a labelled box and an Add button. Enter adds the row, keeps the box ready for the next and keeps it clear of the action bar. A line of help shows only until the first row is added. The box takes text exactly as typed: the device does not correct or capitalise it.
+- **Original beside the draft (review):** on a phone a two-way switch, Recipe and Original, sticks to the top of the screen under the summary and returns each pane to where it was left. On a wide card the original is a 20rem column at the left that stays in view.
+
+### Picker
+A sheet at its full height with a labelled search box at the top, so the box stays clear of the on-screen keyboard. Under it, a ruled list of rows at least 2.75rem tall; the chosen row has a tick and 600 weight. A name that is not in the list is offered as "Create the unit “handful”". A picker for one value closes when a row is pressed; a picker for several stays open, each row switching on and off, until Done.
+
 ### Chips
 Filters, and nothing else. A tag or a tool on a recipe is a chip too, because pressing it opens the list filtered to it.
 - **Shape:** a pill at least 2.75rem tall with 1rem inside and a label-weight name.
 - **Choice chip** (in the filter sheet): card white with a `rule-strong` outline. Chosen, it is filled `primary` with `on-primary` text and gains a tick, so the state does not rest on colour.
 - **Chip in use** (above the list): `surface-sunk` with a `rule-strong` outline and a cross. Pressing it anywhere removes the filter.
 - **Link chip** (on a recipe): the choice chip's resting look, as a link.
+- **In the editor** a chosen category, tag or tool is a chip in use, pressed to take it off. A category's chip is filled with its divider stock, the same colour as its tab and tiles.
 
 ### Sheet
 A panel over the page for one short job, such as choosing filters. It is a native modal dialog.
@@ -496,6 +544,8 @@ A group of options in one `rule-strong` outline on card white, 0.25rem inside pa
 - **Do** use a chip for a filter and only for a filter, and a sheet for a short job over the page.
 - **Do** say what an empty result was asked for, and offer one button that clears it.
 - **Do** draw a loading state in the page's own shape (a recipe's facts row, band and ruled lines), so the content does not jump when it arrives.
+- **Do** keep a label above every box, and show a problem in the notice colours under the box it belongs to.
+- **Do** mark state with a word: "check", "new", "as written", "cover".
 - **Do** leave out what a recipe does not state. No empty headings, and no "none".
 - **Do** put a screen's main actions in the action bar, offset by `--rf-nav-height`.
 - **Do** honour reduced motion: transitions and the skeleton sweep stop when the device asks.

@@ -142,12 +142,12 @@ The cook types a line the way it is written on the card. The rule-based parser (
 
 **Typing**
 
-- Each ingredient is one text box. Typing `2 cups flour, sifted` and pressing Enter parses the line and moves to a new one, so a list can be typed without touching anything else.
+- There is one box for typing, under the list. Typing `2 cups flour, sifted` and pressing Enter reads the line, adds it to the list and leaves the box ready for the next, so a list can be typed without touching anything else.
 - Pasting several lines at once makes one ingredient per line.
-- Under each line the editor shows the parse as four chips: quantity `2`, unit `cup`, food `flour`, note `sifted`.
-- Tapping a chip opens a picker to change that field. The unit and food pickers search as you type and offer "create" for a name that does not exist.
+- Each line in the list shows the words as typed and, under them, what the app read: amount `2`, unit `cup`, food `flour`, note `sifted`.
+- Pressing a line opens it, one line at a time. Open, it shows the typed words and the four things read, each of which can be changed. Unit and food are chosen from a list that searches as you type and offers "create" for a name that does not exist. Changing the typed words reads the line again.
 - A food the household does not have yet is shown with a "new" mark. Nothing is created while typing.
-- "Keep as written" turns a line back into free text. Free-text lines are valid, display exactly as typed, and do not scale.
+- "Keep as written" on an open line turns it back into free text. Free-text lines are valid, display exactly as typed, and do not scale.
 - A line the parser cannot read at all stays free text, with no error.
 
 **Saving**
@@ -157,9 +157,11 @@ The cook types a line the way it is written on the card. The rule-based parser (
 
 **Sections and order**
 
-- "Add section" inserts a titled divider. Lines belong to the divider above them.
-- Lines and dividers are reordered by dragging a handle. Each also has "move up" and "move down" in its menu, for keyboard and screen-reader use.
-- Deleting a divider keeps its lines and joins them to the section above.
+- "Add a section title" adds a titled row at the end of the list. Lines belong to the title above them.
+- Lines and titles are reordered by dragging the handle at the left of the row, with a finger, a mouse or the keyboard. An open row also has "Up" and "Down" buttons, for a screen reader or for moving one place.
+- Removing a title keeps its lines, which join the section above.
+- A title with nothing under it is not saved. A title left empty must be filled in or removed before saving.
+- Steps work the same way: one box under the list, Enter for the next step, a handle to reorder, and titles for sections. Steps are numbered for the cook, starting again after each title.
 
 **Display**
 
@@ -216,8 +218,9 @@ The cook types a line the way it is written on the card. The rule-based parser (
 - The Add page has one box for a link, beside the button for typing a recipe in. Submitting a link returns to the list and shows the import as a row at the top with its progress.
 - Imports sit above the recipes until a person has dealt with them. They step aside while the list is searched or filtered.
 - When the import is ready the row says "Review". Opening it shows the editor in review mode, filled in from the page.
-- Review mode lists what needs attention at the top, for example "No steps were found" or "3 ingredient lines could not be read", and marks those fields.
-- Nothing becomes a recipe until Save is pressed in review mode. "Discard" removes the import.
+- Review mode lists what needs attention at the top, for example "No steps were found" or "3 ingredient lines could not be read", and marks each of those with the word "check" where it is. Pressing one in the list goes to it. None of them stops a save.
+- Review shows the original beside the draft: they take turns on a phone, with a switch that stays at the top of the screen and returns each to where it was left, and sit side by side on a wide screen. For a link the original is the page's picture and a link to the page. From Phase 2 it is the photographed card.
+- Nothing becomes a recipe until Save is pressed in review mode. "Discard" removes the import, and always asks first.
 - Tags and categories from the page are preselected only if the household already has them. Others are offered as unselected suggestions.
 - The page's main image becomes the cover and can be removed in review.
 - If a recipe with the same link exists, review mode says so and links to it. The import can still be saved.
@@ -256,6 +259,7 @@ The cook types a line the way it is written on the card. The rule-based parser (
 - There is no trash and no version history in Phase 1.
 - If another device saved the same recipe while it was being edited, saving shows "This recipe was changed on another device" with the choice to reload or to keep editing and save over it. Nothing is overwritten without that choice.
 - Leaving the editor with unsaved changes asks first.
+- A save that is refused lists what needs fixing at the top of the editor, in the order the fields come down the page. Pressing one goes to its field or row. Each problem is also shown under its own field, and clears as it is fixed.
 
 ## 10. Accessibility and sizing
 

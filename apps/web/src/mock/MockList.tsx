@@ -57,8 +57,9 @@ export function MockList() {
         libraryCount={loading ? null : firstRun ? 0 : mockLibraryCount}
         imports={scene === "imports" ? fixtureImportJobs : []}
         offline={scene === "offline"}
-        links={{ newRecipe: "/mock/add", importLink: "/mock/add" }}
+        links={{ newRecipe: "/mock/new", importLink: "/mock/add" }}
         thumbnailFor={placeholderThumbnail}
+        onReviewImport={() => navigate({ to: "/mock/review", search: {} })}
         recipeLink={(recipe) => ({ to: "/mock/recipe/$slug", params: { slug: recipe.slug } })}
       />
 
@@ -68,8 +69,8 @@ export function MockList() {
       >
         <h2 className="text-base font-bold">Mock controls</h2>
         <p className="mt-1 text-sm">
-          Not part of the screen. Sample data only; the four photos are placeholder drawings. Review
-          and Try again lead to screens that are not drawn yet.
+          Not part of the screen. Sample data only; the four photos are placeholder drawings. Try
+          again and Remove do nothing here.
         </p>
         <ul className="mt-3 flex flex-wrap gap-2">
           {LIST_SCENES.map((option) => (

@@ -6,7 +6,7 @@ Guidance for Claude Code working in this repository.
 
 Maverick Recipeflare (Recipeflare for short) is a household recipe app on Cloudflare: one TypeScript Worker serving a React PWA and a JSON API, with D1, R2, Queues and, in later phases, Workers AI and Durable Objects. One household per install. Licensed AGPL-3.0-only.
 
-**Status: Phase 0, through T0.8.** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, and the recipe list and recipe view drawn as mock screens exist. No product screen is connected to data, and there are no database tables and no auth yet. When a pull request changes a command or path below, it updates this file in the same pull request.
+**Status: Phase 0, through T0.9.** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, and the recipe list, recipe view and recipe editor drawn as mock screens exist. No product screen is connected to data, and there are no database tables and no auth yet. When a pull request changes a command or path below, it updates this file in the same pull request.
 
 ## Read first
 
@@ -32,7 +32,7 @@ apps/worker/          Hono API, queue consumer, auth, Drizzle schema, migrations
 apps/web/             Vite React PWA; builds to apps/web/dist, served as static assets
   src/styles/         tokens.css (the design tokens) and app.css (Tailwind theme, base styles)
   src/shell/          The frame every screen sits in: header and navigation
-  src/ui/             Shared components: Button, DividerTabs, RecipeRow, Page, Notice, Sheet, Chip
+  src/ui/             Shared components: Button, DividerTabs, RecipeRow, Page, Notice, Sheet, Chip, Field, Picker
   src/pages/          Product screens. A screen is given its data as props and fetches nothing itself
   src/mock/           The /mock harness: the same screens fed from fixtures, for design review
 packages/schema/      @recipeflare/schema: Zod schemas, types, formatting, fixtures
@@ -96,6 +96,14 @@ Not here yet:
 - Text boxes have no grey placeholder. A placeholder is ink at regular weight; a label above the box is better.
 - A panel over the page is the `Sheet` component, a native modal dialog. It is the only thing that casts a shadow.
 - A screen's main actions go in a bar that sticks to the bottom at `bottom-[var(--rf-nav-height)]`, so it sits on top of the phone's navigation bar. The navigation takes its height from the same token; change one only through the token.
+
+### Recipe editor
+
+- The editor's value is `EditorValue` in `apps/web/src/pages/editor/editorState.ts`. It is not the saved shape: numbers are the text typed, and ingredients and steps are flat lists in which a section is a divider row. `checkEditorValue()` turns it into `RecipeInput` and ties every problem to a field or a row. Validation rules stay in the shared schema; the editor only adds what the schema cannot see, such as "lots" typed for servings.
+- There is no form library. Do not add one for a single field.
+- Rows are reordered with dnd-kit through `SortableRows`. Dragging starts from the handle only, so a row scrolls the page as usual.
+- A food the household does not have is a name on the line (`newFood`) until the cook confirms it at save. Typing never creates a food. Units are created only from the unit picker.
+- `src/mock/mockParser.ts` is a stand-in for the line parser and is used by mock screens only. The real parser is T1.5, in the shared package, with the same result shape (`ParsedLine`).
 
 ### Database (D1)
 

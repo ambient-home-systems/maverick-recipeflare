@@ -8,7 +8,7 @@ function target(item: NavItem, pathname: string): NavItem["to"] | NonNullable<Na
 
 function isCurrent(item: NavItem, pathname: string): boolean {
   const to = target(item, pathname);
-  if (item.mockAlso && pathname.startsWith(item.mockAlso)) {
+  if (item.mockAlso?.some((path) => pathname.startsWith(path))) {
     return true;
   }
   return to === "/" ? pathname === "/" : pathname.startsWith(to);

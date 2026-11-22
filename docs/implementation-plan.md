@@ -102,7 +102,7 @@ Svelte 5 is the choice if you expect to write much of the UI by hand, or if old,
 | Styling | Tailwind CSS 4 with design tokens as CSS variables |
 | Components | Components owned in the repo, built on headless accessible primitives |
 | Type and icons | Atkinson Hyperlegible Next, self-hosted so it works offline; Lucide icons |
-| Forms | react-hook-form with the shared Zod schemas |
+| Forms | The editor holds its own value and checks it with the shared Zod schemas when Save is pressed. This replaces react-hook-form, the first choice here, and was decided while drawing the editor (T0.9): ingredients and steps are flat sortable lists with one row open at a time, and numbers are kept as the text typed, neither of which fits a form library's field arrays. Nothing else in the plan depended on the library |
 | Reordering | dnd-kit |
 | PWA | vite-plugin-pwa (Workbox) with a hand-written service worker |
 

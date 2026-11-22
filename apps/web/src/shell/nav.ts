@@ -5,7 +5,7 @@ export type NavItem = {
   /** Where the item leads inside the mock harness, so a design review stays among the mock screens. */
   mockTo?: "/mock/list" | "/mock/add";
   /** Another mock address that belongs to this destination: a recipe is part of Recipes. */
-  mockAlso?: string;
+  mockAlso?: readonly string[];
   label: string;
   icon: LucideIcon;
   /** The Add action is the one thing in the shell drawn in rule red. */
@@ -17,7 +17,20 @@ export type NavItem = {
  * bar and the rail are built to take five.
  */
 export const NAV_ITEMS: readonly NavItem[] = [
-  { to: "/", mockTo: "/mock/list", label: "Recipes", icon: ScrollText, mockAlso: "/mock/recipe" },
-  { to: "/add", mockTo: "/mock/add", label: "Add", icon: Plus, emphasis: true },
+  {
+    to: "/",
+    mockTo: "/mock/list",
+    label: "Recipes",
+    icon: ScrollText,
+    mockAlso: ["/mock/recipe", "/mock/edit", "/mock/review"],
+  },
+  {
+    to: "/add",
+    mockTo: "/mock/add",
+    label: "Add",
+    icon: Plus,
+    emphasis: true,
+    mockAlso: ["/mock/new"],
+  },
   { to: "/manage", label: "Manage", icon: SlidersHorizontal },
 ];

@@ -676,7 +676,14 @@
         "Pencil",
         "ExternalLink",
         "ChevronLeft",
-        "ChevronRight"
+        "ChevronRight",
+        "GripVertical",
+        "ArrowUp",
+        "ArrowDown",
+        "Save",
+        "ImagePlus",
+        "Star",
+        "Rows3"
       ],
       "appIcon": "public/icon.svg is a placeholder: an index card with a buff divider tab and a red rule on ink navy. The final icon and wordmark are unresolved."
     },
@@ -862,6 +869,38 @@
       "description": "A screen's main actions, stuck to the bottom of the screen above the phone's navigation bar.",
       "html": "<div class=\"ds-actions\"><button class=\"ds-actions-primary\">Cook</button><button class=\"ds-actions-quiet\">Edit</button></div>",
       "css": ".ds-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0.625rem 1rem; border-top: 1px solid var(--rf-rule-strong); background: var(--rf-surface); } .ds-actions button { min-height: var(--rf-touch); padding: 0 1.25rem; border-radius: var(--rf-radius-md); font-family: var(--rf-font); font-size: var(--rf-text-base); font-weight: 600; } .ds-actions-primary { flex: 1; border: 0; background: var(--rf-primary); color: var(--rf-on-primary); } .ds-actions-quiet { border: 1px solid var(--rf-rule-strong); background: var(--rf-surface); color: var(--rf-ink); }"
+    },
+    {
+      "name": "Field Problem",
+      "kind": "feedback",
+      "refersTo": "field-problem",
+      "description": "What is wrong with one field, under the box it belongs to. Notice colours and a warning icon, never red.",
+      "html": "<p class=\"ds-problem\"><span aria-hidden=\"true\">&#9888;</span><span>A recipe needs a title.</span></p>",
+      "css": ".ds-problem { display: flex; align-items: flex-start; gap: 0.5rem; margin: 0.375rem 0 0; padding: 0.5rem 0.75rem; border-radius: var(--rf-radius-sm); background: var(--rf-notice); color: var(--rf-on-notice); font-family: var(--rf-font); font-size: var(--rf-text-sm); font-weight: 600; }"
+    },
+    {
+      "name": "Mark",
+      "kind": "badge",
+      "refersTo": "mark",
+      "description": "A small outlined word for state: check, new, as written, cover.",
+      "html": "<span class=\"ds-mark\">as written</span>",
+      "css": ".ds-mark { padding: 0.125rem 0.375rem; border: 1px solid var(--rf-rule-strong); border-radius: var(--rf-radius-sm); font-family: var(--rf-font); font-size: var(--rf-text-sm); font-weight: 600; color: var(--rf-ink); }"
+    },
+    {
+      "name": "Editor Row",
+      "kind": "row",
+      "refersTo": "editor-row",
+      "description": "An ingredient in the editor, closed: a drag handle, the words as typed, and what the app read.",
+      "html": "<div class=\"ds-erow\"><span class=\"ds-erow-handle\" aria-hidden=\"true\">&#8942;&#8942;</span><span class=\"ds-erow-text\"><span>2 1/4 C. flour</span><span class=\"ds-erow-read\">2&#188; &#183; cup &#183; all-purpose flour</span></span></div>",
+      "css": ".ds-erow { display: flex; align-items: stretch; border-top: 1px solid var(--rf-rule); background: var(--rf-surface); font-family: var(--rf-font); color: var(--rf-ink); } .ds-erow-handle { display: grid; place-items: center; width: 2.75rem; min-height: var(--rf-touch); } .ds-erow-text { display: grid; gap: 0.125rem; padding: 0.5rem 1rem 0.5rem 0.25rem; font-size: var(--rf-text-base); } .ds-erow-read { font-size: var(--rf-text-sm); font-weight: 600; }"
+    },
+    {
+      "name": "Small Button",
+      "kind": "button",
+      "refersTo": "small-button",
+      "description": "A quiet button at label size for actions inside a row or a block.",
+      "html": "<button class=\"ds-small\">Keep as written</button>",
+      "css": ".ds-small { display: inline-flex; align-items: center; gap: 0.375rem; min-height: var(--rf-touch); padding: 0 0.75rem; border: 1px solid var(--rf-rule-strong); border-radius: var(--rf-radius-md); background: var(--rf-surface); color: var(--rf-ink); font-family: var(--rf-font); font-size: var(--rf-text-sm); font-weight: 600; cursor: pointer; } .ds-small:hover { background: var(--rf-surface-sunk); } .ds-small:focus-visible { outline: 3px solid var(--rf-focus); outline-offset: 2px; }"
     }
   ],
   "narrative": {
@@ -937,7 +976,9 @@
       "Use a chip for a filter and only for a filter, and a sheet for a short job over the page.",
       "Say what an empty result was asked for, and offer one button that clears it.",
       "Leave out what a recipe does not state. No empty headings, and no \"none\".",
-      "Put a screen's main actions in the action bar, offset by --rf-nav-height."
+      "Put a screen's main actions in the action bar, offset by --rf-nav-height.",
+      "Keep a label above every box, and show a problem in the notice colours under the box it belongs to.",
+      "Mark state with a word: check, new, as written, cover."
     ],
     "donts": [
       "Don't add a grey, muted or soft text colour, or fade text with opacity.",
