@@ -6,7 +6,7 @@ Guidance for Claude Code working in this repository.
 
 Maverick Recipeflare (Recipeflare for short) is a household recipe app on Cloudflare: one TypeScript Worker serving a React PWA and a JSON API, with D1, R2, Queues and, in later phases, Workers AI and Durable Objects. One household per install. Licensed AGPL-3.0-only.
 
-**Status: Phase 0, through T0.9.** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, and the recipe list, recipe view and recipe editor drawn as mock screens exist. No product screen is connected to data, and there are no database tables and no auth yet. When a pull request changes a command or path below, it updates this file in the same pull request.
+**Status: Phase 0, through T0.10.** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, and all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens exist. No product screen is connected to data, and there are no database tables and no auth yet. When a pull request changes a command or path below, it updates this file in the same pull request.
 
 ## Read first
 
@@ -104,6 +104,13 @@ Not here yet:
 - Rows are reordered with dnd-kit through `SortableRows`. Dragging starts from the handle only, so a row scrolls the page as usual.
 - A food the household does not have is a name on the line (`newFood`) until the cook confirms it at save. Typing never creates a food. Units are created only from the unit picker.
 - `src/mock/mockParser.ts` is a stand-in for the line parser and is used by mock screens only. The real parser is T1.5, in the shared package, with the same result shape (`ParsedLine`).
+
+### Cook mode
+
+- Cook mode fills the screen. `isFullScreen()` in `apps/web/src/shell/nav.ts` decides which addresses have no header and no navigation: one that ends in `/cook`.
+- Ticks and the scale live on the device, not on the server, in `localStorage` under `recipeflare:cook:<recipe id>` (`cookSession.ts`). They expire twelve hours after the last change and are cleared by Done. Do not send them to the API.
+- A hidden input inside a scrolling list needs a `relative` parent. Without it the input is placed against the page, does not scroll with the list, and makes the whole page scroll. `CheckRow` and the scale switch do this.
+- A done step is never faded. It takes the sunk ground and the ordinary text size.
 
 ### Database (D1)
 

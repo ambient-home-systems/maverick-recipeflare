@@ -231,14 +231,16 @@ The cook types a line the way it is written on the card. The rule-based parser (
 
 **Decisions**
 
-- Opened with "Cook" on the recipe view. It fills the screen and hides navigation; "Done" returns to the recipe.
-- The screen stays on while cook mode is open. If the browser cannot keep it on, cook mode says so once.
-- On a phone: steps in large type, one after another, each with a checkbox. Ingredients are in a sheet pulled up from the bottom, each with a checkbox.
-- On a tablet in landscape: ingredients on the left, steps on the right.
-- Scaling: half, 1, 2 and 3 times, or a servings number when the recipe has servings. Parsed quantities change; free-text lines are shown as typed with a mark that they are not scaled.
-- Checked boxes and the scale are kept on the device for that recipe. They survive a reload, a locked phone and a closed app, and are cleared by "Done" or after 12 hours.
-- Section titles are shown, and a checked step is dimmed, not hidden.
-- Cook mode reads from the device's copy of the recipe, so it works offline and with an expired session.
+- Opened with "Cook" on the recipe view, at the scale the recipe was showing. It fills the screen and hides navigation; "Done" returns to the recipe.
+- The screen stays on while cook mode is open, and the header says so. If the browser cannot keep it on, the header says the screen may turn off, and a note says so once, with what to do about it.
+- On a phone: steps in large type, one after another. The whole of a step is its checkbox. Ingredients are in a sheet pulled up from a bar at the bottom of the screen, which is there whichever step is showing and says how many are out. Each ingredient is a checkbox too.
+- On a tablet in landscape: ingredients on the left, steps on the right, each scrolling on its own.
+- Scaling: half, 1, 2 and 3 times, or a servings number when the recipe has servings. Parsed quantities change; free-text lines are shown as typed with a mark that they are not scaled. The scale control is with the ingredients.
+- Checked boxes and the scale are kept on the device for that recipe. They survive a reload, a locked phone and a closed app, and are cleared by "Done", or twelve hours after the last change.
+- Progress is shown three ways: a count and a bar in the header ("3 of 7 steps done"), a count on each section title, and a line when every step is done.
+- Section titles are shown. A checked step steps back and is not hidden: it takes a quieter ground and the ordinary text size, and stays readable, because a cook often looks back at the step before. The steps still to do stay large.
+- Ticking a step brings the next one that is not done into view.
+- Cook mode reads from the device's copy of the recipe, so it works offline and with an expired session. Each is said in a band under the header; a signed-out cook is offered "Sign in again" and can carry on without it.
 - No timers in Phase 1. Phase 2's step details adds each step's ingredients and stated times to this screen.
 
 ## 8. Offline

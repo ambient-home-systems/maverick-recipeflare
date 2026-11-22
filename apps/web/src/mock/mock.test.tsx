@@ -33,7 +33,6 @@ describe("the mock index", () => {
     expect(screen.getByRole("link", { name: /Fixture recipes/ }).getAttribute("href")).toBe(
       "/mock/fixtures",
     );
-    expect(screen.getByText("Cook mode")).toBeTruthy();
     expect(screen.getByRole("link", { name: /Recipe list and search/ }).getAttribute("href")).toBe(
       "/mock/list",
     );
@@ -43,7 +42,11 @@ describe("the mock index", () => {
     expect(screen.getByRole("link", { name: /Reviewing an import/ }).getAttribute("href")).toBe(
       "/mock/review",
     );
-    expect(screen.getAllByText("Not drawn yet.")).toHaveLength(1);
+    expect(screen.getByRole("link", { name: /Cook mode/ }).getAttribute("href")).toBe(
+      "/mock/cook/roast-chicken-with-lemon-and-thyme",
+    );
+    // All four core screens are drawn.
+    expect(screen.queryByText("Not drawn yet.")).toBeNull();
   });
 
   it("reports that the API is reachable", async () => {

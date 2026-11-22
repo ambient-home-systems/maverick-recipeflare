@@ -57,6 +57,11 @@ typography:
     fontSize: "0.9375rem"
     fontWeight: 400
     lineHeight: 1.429
+  cook:
+    fontFamily: "Atkinson Hyperlegible Next Variable, Atkinson Hyperlegible Next, system-ui, sans-serif"
+    fontSize: "1.375rem"
+    fontWeight: 400
+    lineHeight: 1.375
   label:
     fontFamily: "Atkinson Hyperlegible Next Variable, Atkinson Hyperlegible Next, system-ui, sans-serif"
     fontSize: "0.9375rem"
@@ -246,6 +251,19 @@ components:
     rounded: "{rounded.md}"
     padding: "0 0.75rem"
     height: "{spacing.touch}"
+  check-row:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink}"
+    typography: "{typography.cook}"
+    padding: "1rem"
+  check-row-ticked:
+    backgroundColor: "{colors.surface-sunk}"
+    typography: "{typography.body}"
+  cook-header:
+    backgroundColor: "{colors.shell}"
+    textColor: "{colors.on-shell}"
+    typography: "{typography.title}"
+    padding: "0.5rem 1rem 0.625rem"
   import-row:
     backgroundColor: "{colors.surface-sunk}"
     textColor: "{colors.ink}"
@@ -351,7 +369,7 @@ The face is self-hosted through `@fontsource-variable/atkinson-hyperlegible-next
 - **Control label** (600, 1.0625rem): button text.
 - **Nav label** (600, 0.8125rem, line-height 1.333): the label under an icon on the phone navigation bar; 700 for the current destination. This is the smallest text in the system.
 
-A further size, `--rf-text-cook` (1.375rem), is defined for cook mode's step text. No shipped screen uses it yet.
+A further size, **Cook** (`--rf-text-cook`, 1.375rem, line-height 1.375), is the text of a step still to do in cook mode, read from the counter at arm's length.
 
 ### Named Rules
 
@@ -466,6 +484,16 @@ Stands in for a photo. The recipe's first letter, 700 weight, on its category's 
 - **Thumbnail:** a square picture with 6 px corners and a hairline border, 4rem on a phone with its name (600) and count beside it, 6rem from 768 px with them below. One for the recipe's photos and one for its original card. The whole thing is the button.
 - **Viewer:** a full-screen modal on tin navy with `on-shell` text and no shadow. A bar at the top names what is showing ("Original card · 1 of 2") beside Close; the picture is fitted to the space between; Previous and Next sit in a bar at the bottom when there is more than one, and the arrow keys do the same. At the first or last picture the spent button is dimmed and takes no hover, but stays focusable so the arrow keys go on working. The focus ring is white, as on the shell.
 
+### Cook mode
+The recipe for the counter. It fills the screen: no shell header, no navigation.
+- **Header:** tin navy with `on-shell` text. The recipe's title (title size, 700, one line) and a Done button in reverse, `on-shell` fill with `shell` text. Under them, in body small, the count of steps done and whether the screen stays on, each with its words; then a progress bar 0.375rem tall, `on-shell` on a `shell-raised` track, with pill ends. The bar repeats the count and is hidden from assistive technology.
+- **Check row:** a step or an ingredient is one label across the full width with a 1.75rem box at its left (2 px `rule-strong` outline, 6 px corners). Ticked, the box is filled `primary` with an `on-primary` tick and the row takes `surface-sunk`. The whole row is the target.
+- **Step:** its number in 700 and its text at the Cook size, at most 40 characters a line, with 1rem above and below. **A ticked step steps back**: it drops to body size on the sunk ground and stays fully readable. Nothing is faded or struck through.
+- **Section title:** a sunk band with the title in title size, 700, and the section's count at the right.
+- **Ingredients:** on a phone, a bar along the bottom with one quiet button, "Ingredients, 3 of 9 out", that opens the list in a full-height sheet. From 60rem wide (a tablet on its side) the list is a 24rem column at the left under its own title on the red rule, and the bar is gone. Each column scrolls on its own. An ingredient is at title size with its amount in 600.
+- **Scale:** the four-way switch and, when the recipe says how many it serves, a short "Serves" box beside it. A number typed there sets the scale, and the switch then shows none chosen.
+- **Conditions:** signed out, offline and "cannot keep the screen on" are notice bands under the header, each with its own icon. Something to press in a band sits beside the words where there is room and under them where there is not.
+
 ### Search field
 The one search box, on the recipe list only.
 - **Style:** 3rem tall, card white, 10 px radius, 1 px `rule-strong` outline, a 20 px search icon, then the text. The placeholder is "Search recipes" in ink at 400; typed text is 600. When there is text, a cross at the right end clears it.
@@ -546,6 +574,8 @@ A group of options in one `rule-strong` outline on card white, 0.25rem inside pa
 - **Do** draw a loading state in the page's own shape (a recipe's facts row, band and ruled lines), so the content does not jump when it arrives.
 - **Do** keep a label above every box, and show a problem in the notice colours under the box it belongs to.
 - **Do** mark state with a word: "check", "new", "as written", "cover".
+- **Do** show that something is done by ground, size and a tick. A done step stays readable.
+- **Do** give a hidden input inside a scrolling list a positioned parent, so it scrolls with the list.
 - **Do** leave out what a recipe does not state. No empty headings, and no "none".
 - **Do** put a screen's main actions in the action bar, offset by `--rf-nav-height`.
 - **Do** honour reduced motion: transitions and the skeleton sweep stop when the device asks.
