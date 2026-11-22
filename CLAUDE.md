@@ -6,7 +6,7 @@ Guidance for Claude Code working in this repository.
 
 Maverick Recipeflare (Recipeflare for short) is a household recipe app on Cloudflare: one TypeScript Worker serving a React PWA and a JSON API, with D1, R2, Queues and, in later phases, Workers AI and Durable Objects. One household per install. Licensed AGPL-3.0-only.
 
-**Status: planning.** There is no application code yet. The commands and paths below are targets that task T0.1 creates. When a pull request changes one of them, it updates this file in the same pull request.
+**Status: Phase 0, scaffold only (T0.1).** The workspace, a Worker with a health route and an empty React app exist. There are no features, no database, no auth and no tests yet. When a pull request changes a command or path below, it updates this file in the same pull request.
 
 ## Read first
 
@@ -29,26 +29,34 @@ wrangler.jsonc        Worker config at the repo root (the Deploy button needs it
 apps/worker/          Hono API, queue consumer, auth, Drizzle schema, migrations
 apps/web/             Vite React PWA; builds to apps/web/dist, served as static assets
 packages/schema/      @recipeflare/schema: Zod schemas, types, formatting, fixtures
+scripts/              Small Node scripts used by the root package scripts
 services/fetch-agent/ Placeholder until Phase 3 (yt-dlp and ffmpeg Docker image)
 docs/                 Build plan, implementation plan, feature spec
 ```
 
 ## Commands
 
-Run from the repository root with pnpm.
+Run from the repository root. Needs Node 22.12 or later and pnpm 10 (`corepack enable` picks the pinned version).
 
 | Command | Does |
 | --- | --- |
-| `pnpm dev` | Worker (`wrangler dev`) and web app (Vite) together; Vite proxies `/api` |
-| `pnpm test` | All Vitest projects: `schema`, `worker`, `web` |
-| `pnpm test --project worker` | One project |
-| `pnpm lint` / `pnpm typecheck` | Lint and format check; TypeScript |
-| `pnpm db:generate` | Write a migration from the Drizzle schema |
-| `pnpm db:migrate:local` | Apply migrations to the local D1 |
-| `pnpm build` | Build the web app |
-| `pnpm run deploy:staging` / `pnpm run deploy` | Build, apply remote migrations, deploy. Use `pnpm run`; bare `pnpm deploy` is a different pnpm command |
+| `pnpm install` | Install dependencies |
+| `pnpm dev` | Worker (`wrangler dev`, port 8787) and web app (Vite, port 5173) together. Open `http://localhost:5173`; Vite proxies `/api` to the Worker |
+| `pnpm build` | Build the web app into `apps/web/dist` |
+| `pnpm lint` | Biome lint and format check. `pnpm format` applies fixes. Markdown is not formatted |
+| `pnpm typecheck` | Regenerate the Worker's types, then run TypeScript in every package |
+| `pnpm types` | Regenerate `apps/worker/worker-configuration.d.ts` from `wrangler.jsonc`. The file is git-ignored; run this after changing bindings |
 
-Local sign-in uses `.dev.vars` (copy `.dev.vars.example`), which sets `AUTH_MODE=dev` and `DEV_MEMBER_EMAIL`.
+To see the built app served by the Worker alone, as in production: `pnpm build`, then `pnpm dev:worker`, then open `http://localhost:8787`.
+
+Not here yet:
+
+| Command | Arrives with |
+| --- | --- |
+| `pnpm test`, `pnpm test --project worker` | T0.2 |
+| `pnpm run deploy:staging`, `pnpm run deploy` (use `pnpm run`; bare `pnpm deploy` is a different pnpm command) | T0.5 |
+| `pnpm db:generate`, `pnpm db:migrate:local` | T0.11 |
+| Local sign-in through `.dev.vars` (`AUTH_MODE=dev`, `DEV_MEMBER_EMAIL`) | T0.12 |
 
 ## Rules that are easy to break
 
