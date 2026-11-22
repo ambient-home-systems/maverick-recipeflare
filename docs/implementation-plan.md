@@ -604,7 +604,7 @@ Drizzle table definitions stay in the Worker and are not generated from Zod, nor
 - **Unit.** The next word or two, matched against the household's units by name, plural, abbreviation and alias.
 - **Food.** The remaining text up to a comma or parenthesis, matched against the household's foods by name, plural and alias.
 - **Note.** Whatever follows.
-- **Result.** The fields it is sure of, and a list of what it could not match. An unmatched food is offered as "create this food" in the editor and is never created silently. A line it cannot read at all stays a free-text line.
+- **Result.** The fields it is sure of, and a list of what it could not match. An unmatched food is marked as new in the editor and is created only when the cook confirms at save; nothing is created silently. A line it cannot read at all stays a free-text line.
 - **It never alters `originalText`.**
 
 Phase 2 adds the AI fallback for lines the rules cannot read, behind the same function signature. The Mealie-compatible `parser/ingredient` endpoint in Phase 4 calls the same code.
@@ -811,12 +811,12 @@ T0.5 comes before the mockups so that they can be reviewed on phones. T0.11 and 
 | --- | --- | --- | --- |
 | T1.1 | **Recipe repository.** Save, load and delete as in [§4.6](#46-one-batch-recipe-save), slug handling, search-text building | Round-trip, size-cap, version-conflict and rollback tests pass; a save issues at most two reads and one batch | 4 |
 | T1.2 | **Recipes API.** Create, read by ID or slug, update, delete, list with paging and sort; typed client export | Requests are validated by the shared schema; errors use the shared error body; conflict returns 409 with the current recipe | 3 |
-| T1.3 | **Organizers, foods, units and labels API** | Create, rename, list and delete for each; duplicate names are rejected; deleting something in use is refused with a usage count; a rename updates search text | 3.5 |
+| T1.3 | **Organizers, foods, units and labels API** | Create, rename, list and delete for each; duplicate names are rejected; deleting a food or unit in use is refused with a usage count; deleting a category, tag, tool or label asks first and removes it from whatever used it; a rename updates search text | 3.5 |
 | T1.4 | **Search and filters** | The search tests in [§8.1](#81-tests) pass; hostile input (quotes, operators, emoji) never errors; filters combine with search | 3 |
 | T1.5 | **Ingredient line parser.** The rule-based parser in [§5.1](#51-rule-based-ingredient-parser), in the shared package, and its use in `draftToInput` | The parser corpus test passes; a line it cannot read comes back unchanged as free text; it never creates a food or unit; it runs in the browser with no network | 5 |
 | T1.6 | **Web data layer and recipe list.** API client, query cache, session-expiry handling, error states; the list screen on real data | The list matches its mockup with real data; search, filters and sort are in the URL; an expired session shows "sign in again" and recovers | 4 |
 | T1.7 | **Recipe view** | Matches its mockup; scaling changes parsed quantities and leaves free-text lines alone; delete asks first | 3 |
-| T1.8 | **Recipe editor** | A recipe with sections, notes and organizers can be created and edited on a phone; a typed ingredient line is parsed as it is entered and each parsed field can be corrected; inline creation of foods, units and organizers works; validation errors appear on their fields; a conflict is shown, not overwritten; leaving with unsaved changes warns | 8 |
+| T1.8 | **Recipe editor** | A recipe with sections, notes and organizers can be created and edited on a phone; a typed ingredient line is parsed as it is entered and each parsed field can be corrected; new foods are confirmed once at save; units and organizers can be created from their pickers; validation errors appear on their fields; a conflict is shown, not overwritten; leaving with unsaved changes warns | 8 |
 | T1.9 | **Manage screens** for organizers, foods, units and labels | Each can be listed, renamed and deleted from the app; labels can be ordered | 3 |
 | T1.10 | **Images and attachments.** Upload to R2, variants, serving, cover choice, the original-card role | A phone photo uploads and shows as thumbnail and cover; the original card photo opens full size; a failed variant still serves the original; uploads over the size limit are refused clearly | 5 |
 | T1.11 | **Import job infrastructure.** Table access, producer, consumer, dead-letter handling, job API, progress UI | The queue tests in [§8.1](#81-tests) pass; a job's progress shows in the app without a reload; a failed job explains itself and can be retried | 4 |
