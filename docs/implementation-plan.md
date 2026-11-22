@@ -4,10 +4,13 @@
 
 No application code exists yet. Everything below is specification.
 
+Updated the same day with the owner's answers to the first five open questions; see [Decisions since the build plan](#decisions-since-the-build-plan).
+
 ## Contents
 
 - [What was checked, and what it changed](#what-was-checked-and-what-it-changed)
 - [Conflicts with the build plan](#conflicts-with-the-build-plan)
+- [Decisions since the build plan](#decisions-since-the-build-plan)
 - [1. Frontend framework](#1-frontend-framework)
 - [2. Phase 0 design work](#2-phase-0-design-work)
 - [3. Repository layout](#3-repository-layout)
@@ -38,7 +41,7 @@ Platform facts below were read from the live Cloudflare docs and from the publis
 | Workers AI JSON mode takes a JSON Schema and can fail with `JSON Mode couldn't be met`; no streaming | [JSON mode](https://developers.cloudflare.com/workers-ai/features/json-mode/) | The draft schema in [§5](#5-shared-recipe-schema) stays plain enough to export as JSON Schema |
 | aiomealie 2.1.4 (latest on PyPI) calls 29 distinct paths; its models were read field by field | `aiomealie-2.1.4` source from PyPI | Mapping table in [§4.7](#47-mapping-to-aiomealie) |
 
-Not verified in this session: Cloudflare Images binding pricing and its included transformations, Drizzle 1.0's release date, and what the Deploy button requires as placeholder resource IDs. Each is listed in [§10](#10-open-questions).
+Not verified in this session: Cloudflare Images binding pricing and its included transformations, Drizzle 1.0's stable release date, and what the Deploy button requires as placeholder resource IDs. The first and last are in [§10](#10-open-questions); the Drizzle version is pinned and checked in T0.11.
 
 ## Conflicts with the build plan
 
@@ -54,6 +57,17 @@ Four places where this plan reads the build plan in a particular way, so you can
 - **Default units.** A fixed list of about 25 common units ships in a migration. The out-of-scope list excludes "data seeders"; that is read as Mealie's seeding feature, not as a ban on a starting unit list.
 - **Search index columns.** The FTS index covers title, description, ingredients and the names of all organizers (tags, categories and tools), a superset of the "title, description, ingredients and tags" in the architecture table.
 - **Contract-test pin.** "Pinned to an aiomealie version" should mean the version your Home Assistant release pins, not the latest. The newest Home Assistant wheel installable in this session (2026.2.3) pins aiomealie 1.2.0, while PyPI is at 2.1.4.
+
+## Decisions since the build plan
+
+Made by the owner on 22 Nov 2026 in answer to this plan's open questions. The second one amends the build plan's roadmap; the build plan's text has not been edited.
+
+| Decision | Choice | What it changes |
+| --- | --- | --- |
+| Hostnames and identifiers | The repository is public. The household's domain, hostnames, Zero Trust team domain, Access audience tags and account ID never appear in it | Hostnames are CI variables passed at deploy time; the Access settings are Worker secrets ([§8.4](#84-environments-and-deploys)) |
+| Ingredient parser | The rule-based half moves from Phase 2 to Phase 1. The AI fallback stays in Phase 2 | New task T1.5; about 5 hours move from Phase 2's budget to Phase 1's ([§5.1](#51-rule-based-ingredient-parser)) |
+| Core screens | List and search, recipe view, editor with review mode, cook mode, as a starting set | [§2.2](#22-the-four-core-screens) stands; the gate review can add a screen |
+| Drizzle | Start on 1.0 (currently a release candidate) | Folder-per-migration layout with Wrangler's `migrations_pattern` ([§8.3](#83-d1-migrations)) |
 
 ## 1. Frontend framework
 
@@ -96,7 +110,7 @@ Svelte 5 is the choice if you expect to write much of the UI by hand, or if old,
 
 1. **People and devices.** Who cooks, who enters recipes, which phones and tablets, where the device sits while cooking.
 2. **Recipe content.** Every field, with examples from three real family cards: title, description, yield and servings, times, ingredient sections, instruction sections, notes, nutrition, source, photos, the original card photo, attachments. What is required (only the title).
-3. **Entering ingredients.** How a line is typed: structured fields, free-text fallback, how units and foods are picked or created inline, how sections are added and reordered. This section decides the question in [§10](#10-open-questions) about pulling the rule-based parser forward.
+3. **Entering ingredients.** How a line is typed: structured fields, free-text fallback, how units and foods are picked or created inline, how sections are added and reordered. The cook types a line and the rule-based parser fills the structured fields ([§5.1](#51-rule-based-ingredient-parser)); this section decides how the result is shown and corrected.
 4. **Organizers.** Categories, tags and tools; foods, units and labels; creating inline, renaming, deleting something in use.
 5. **Finding recipes.** Search behaviour, filters and how they combine, sorts, empty and no-result states.
 6. **Import from a URL.** Entry point, progress, the review step, failure messages, duplicates.
@@ -116,7 +130,7 @@ Each mockup is a real route in the web app (`/mock/...`), rendered from fixture 
 | --- | --- |
 | **1. Recipe list and search** | Search box with live results; filter chips for category, tag, tool and food, and how several combine; sort control; recipe cards with thumbnail, title, total time and tags; entry points for "new recipe" and "import from URL"; an import in progress; states for loading, first run with no recipes, no results, and offline |
 | **2. Recipe view** | Cover photo; title and description; times, servings and yield; scaling control and its effect on quantities; ingredients grouped by section, including an unparsed free-text line next to parsed ones; steps grouped by section; notes; nutrition; organizers; source link; the original card photo and how it opens; actions for cook, edit and delete; a long recipe (25 ingredients, 15 steps) and a minimal one (title only) |
-| **3. Recipe editor** | Every field from spec section 2; the ingredient line editor in both structured and free-text form; adding, renaming and reordering sections and lines by touch; unit and food pickers with create-inline; organizer pickers; photo upload and cover choice; field-level validation errors; the unsaved-changes guard; the "someone else changed this recipe" message; **review mode** after a URL import, with flagged fields, and how the same layout will put the original photo beside the draft in Phase 2 (toggle on phones, side by side on tablets) |
+| **3. Recipe editor** | Every field from spec section 2; the ingredient line editor: a typed line, what the parser made of it, and how to correct a field or leave the line as free text; adding, renaming and reordering sections and lines by touch; unit and food pickers with create-inline; organizer pickers; photo upload and cover choice; field-level validation errors; the unsaved-changes guard; the "someone else changed this recipe" message; **review mode** after a URL import, with flagged fields, and how the same layout will put the original photo beside the draft in Phase 2 (toggle on phones, side by side on tablets) |
 | **4. Cook mode** | Large-type steps with checkboxes; ingredient checklist and how it is reached from a step; scaling; the screen-on indicator; progress through sections; phone portrait and tablet landscape; behaviour when offline or when the session has expired |
 
 Alongside the screens, T0.6 fixes the design tokens (colour in light and dark, type scale, spacing, radius), a placeholder icon that stays clear of Cloudflare's flare shapes, and the app shell (navigation and page frame).
@@ -259,7 +273,7 @@ Indexes: `UNIQUE(slug)`, `(updated_at)`, `(created_at)`, `(title COLLATE NOCASE)
 
 `CHECK (original_text IS NOT NULL OR food_id IS NOT NULL OR note <> '')`. Indexes: `UNIQUE(recipe_id, position)`, `(food_id)`, `(unit_id)`.
 
-A line with only `original_text` is valid. It displays as written, does not scale, and is what a URL import produces in Phase 1. The Phase 2 parser fills the structured fields beside it and never overwrites it.
+A line with only `original_text` is valid. It displays as written and does not scale. It is what remains when the rule-based parser cannot read a line. A parser, rule-based in Phase 1 or AI in Phase 2, fills the structured fields beside the original text and never overwrites it.
 
 **`recipe_steps`**
 
@@ -442,7 +456,7 @@ END;
 - **Filters** use `recipe_organizers` and `recipe_ingredients.food_id` with `EXISTS`, and combine with search. Proposed rule: every selected filter narrows the list.
 - **Renaming or deleting an organizer or food** rewrites `recipe_search` for the affected recipes in the same batch as the change, through the same function the save uses.
 - **Deleting a recipe** deletes its `recipe_search` row explicitly in the batch, before the recipe, so the index does not depend on whether a cascaded delete fires triggers. A test asserts that a deleted recipe leaves search.
-- **Migrations.** drizzle-kit does not model virtual tables or triggers, so this SQL lives in a hand-written migration. T0.10 must show that a migration containing `BEGIN … END` trigger bodies applies through Wrangler and through the test setup.
+- **Migrations.** drizzle-kit does not model virtual tables or triggers, so this SQL lives in a hand-written migration. T0.11 must show that a migration containing `BEGIN … END` trigger bodies applies through Wrangler and through the test setup.
 - **Rebuild.** `INSERT INTO recipes_fts (recipes_fts) VALUES ('rebuild')` re-derives the index from `recipe_search`. It belongs in the operations notes for restores.
 
 ### 4.5 Version guard
@@ -574,12 +588,27 @@ Design rules:
 - **Sections are nested in the schema and flat in the database.** Nesting makes grouping unambiguous for the editor and for a model. One pair of functions converts between the two forms, with a round-trip test.
 - **The draft schema stays exportable.** Zod 4's built-in JSON Schema export turns `RecipeDraft` into the schema handed to Workers AI JSON mode in Phase 2, so the model is asked for the same shape the code validates. `RecipeDraft` therefore uses only plain objects, arrays, strings, numbers and nullables. Cross-field checks live in a separate `checkDraft()` function.
 - **Missing content is reported, not guessed.** `checkDraft()` returns issues such as `missing_ingredients`, `missing_steps` and `unmatched_unit`, each with a path. The review screen shows them. This is the build plan's "validate" stage, and it exists in Phase 1 for URL imports.
-- **One conversion from draft to input.** `draftToInput(draft, lists)` assigns IDs, matches unit, food and organizer names against the household's lists, and returns the input and the issues. Phase 1 matches exact names and aliases only.
+- **One conversion from draft to input.** `draftToInput(draft, lists)` assigns IDs, matches unit, food and organizer names against the household's lists, and returns the input and the issues. Ingredient lines that arrive as text only go through the rule-based parser on the way.
 - **Caps are part of the schema**: 100 ingredient lines, 100 steps, 20 notes, 50 organizers, 4,000 characters per step. They are what make the save's size provable in [§4.6](#46-one-batch-recipe-save).
 - **Formatting is shared.** `formatQuantity`, `formatIngredient`, scaling and duration helpers live here, so the viewer, cook mode, the search text and later the Mealie `display` field agree.
 - **Fixtures live here too.** At least eight recipes, three of them transcribed from real family cards, cover sections, free-text lines, long and minimal recipes. They feed the mock screens and the tests.
 
 Drizzle table definitions stay in the Worker and are not generated from Zod, nor the reverse. The API shapes are nested documents and the tables are rows; one repository module maps between them, and a save-then-load test guards the mapping.
+
+### 5.1 Rule-based ingredient parser
+
+`parseIngredientLine(text, lists)` lives in the shared package. It is a pure function with no network or model call, so it runs in the editor as the cook types, offline included, and in the Worker for imported lines.
+
+- **Quantity.** A leading integer, decimal, fraction, mixed number or Unicode fraction ("1 1/2", "1½", "0.5"). For a range it takes the first number.
+- **Unit.** The next word or two, matched against the household's units by name, plural, abbreviation and alias.
+- **Food.** The remaining text up to a comma or parenthesis, matched against the household's foods by name, plural and alias.
+- **Note.** Whatever follows.
+- **Result.** The fields it is sure of, and a list of what it could not match. An unmatched food is offered as "create this food" in the editor and is never created silently. A line it cannot read at all stays a free-text line.
+- **It never alters `originalText`.**
+
+Phase 2 adds the AI fallback for lines the rules cannot read, behind the same function signature. The Mealie-compatible `parser/ingredient` endpoint in Phase 4 calls the same code.
+
+### 5.2 Other exports
 
 The package also exports the smaller schemas: organizer, food, unit, label, member, asset, import job, and the error body `{ error: { code, message, issues? } }`.
 
@@ -656,7 +685,7 @@ One table (`import_jobs`, [§4.3](#43-tables)) and one mechanism (Queues) for ev
 
 - Fetch the page with a size cap and a timeout; accept only `http` and `https` and reject IP-literal hosts.
 - Collect every `application/ld+json` block with `HTMLRewriter`, and find a `Recipe` node, including inside `@graph`, arrays and multi-typed nodes.
-- Map to a draft: name, description, yield, ISO 8601 durations to seconds, ingredient strings to lines with `originalText` only, instructions (strings, `HowToStep`, `HowToSection`) to step sections, nutrition, keywords and categories as suggested organizers, and the first usable image.
+- Map to a draft: name, description, yield, ISO 8601 durations to seconds, ingredient strings to lines with `originalText` (the rule-based parser fills the rest when the draft becomes input), instructions (strings, `HowToStep`, `HowToSection`) to step sections, nutrition, keywords and categories as suggested organizers, and the first usable image.
 - Download the image into R2 as an asset owned by the job.
 - Warn on review when a recipe with the same source URL exists.
 - If there is no structured data, fail with a message that says so. The fallbacks (AI on the page text, paste the page, a browser-rendered fetch) are Phase 2 and later, as the build plan has them.
@@ -694,6 +723,7 @@ Tests that must exist before Phase 1 ends:
 
 - Save then load returns an equal recipe, at the size caps as well as at the minimum.
 - A stale `version` returns 409 and changes nothing.
+- The ingredient parser reads a corpus of at least 150 lines written for the tests, covering fractions, ranges, abbreviations, plurals, parentheses and lines it must leave alone.
 - A statement failing mid-batch leaves no partial recipe.
 - Search finds a recipe by title, ingredient, food name and tag; stops finding it after delete; reflects a renamed tag.
 - A missing, expired, wrong-audience or wrong-issuer Access token is rejected; the dev provider is refused off localhost.
@@ -712,19 +742,19 @@ GitHub Actions, on every pull request and on pushes to `main`:
 5. Run the three test projects.
 6. Build the web app.
 
-A red check blocks merge. The Playwright run joins once T1.14 lands.
+A red check blocks merge. The Playwright run joins once T1.15 lands.
 
 ### 8.3 D1 migrations
 
-- **Source.** `drizzle-kit generate` writes SQL from the Drizzle schema into `apps/worker/migrations`. Virtual tables, triggers and seed data are hand-written migrations in the same folder.
-- **Applied by Wrangler.** `wrangler d1 migrations apply DB` with `--local` or `--remote`, by binding name as the build plan specifies, because other installs will have different database names. The binding is called `DB` and is never renamed.
+- **Source.** Drizzle 1.0's `drizzle-kit generate` writes each migration into its own folder under `apps/worker/migrations`. Virtual tables, triggers and seed data are hand-written migrations created with `drizzle-kit generate --custom`, in the same layout.
+- **Applied by Wrangler.** The D1 binding sets `migrations_pattern` to `apps/worker/migrations/*/migration.sql`, the setting Wrangler provides for this layout. `wrangler d1 migrations apply DB` runs with `--local` or `--remote`, by binding name as the build plan specifies, because other installs will have different database names. The binding is called `DB` and is never renamed.
 - **Forward only.** No down migrations. An applied migration is never edited; a mistake is fixed by a new one.
 - **Never `drizzle-kit push`.** It bypasses the migration history and would see the FTS shadow tables as drift.
 - **Additive by default.** The deploy applies migrations and then uploads code, so for a moment the old code runs on the new schema. A migration must therefore work with the previous release. Removing or renaming a column takes two releases.
 - **Avoid rebuilding parent tables.** If one is unavoidable, follow D1's deferred-foreign-key procedure and test on a copy of production data, checking child row counts.
 - **Recovery.** Time Travel keeps 30 days of point-in-time restore. The production deploy prints the current bookmark before it applies migrations. `wrangler d1 export` cannot be used once the FTS table exists.
 
-The migration folder layout is fixed for good once the first migration is applied, because Wrangler records each migration by file name. See the Drizzle question in [§10](#10-open-questions).
+The folder layout is fixed for good once the first migration is applied, because Wrangler records each migration by its path. Drizzle 1.0 is a release candidate today; T0.11 pins the exact version and confirms that Wrangler and the test setup both read the layout.
 
 ### 8.4 Environments and deploys
 
@@ -738,13 +768,21 @@ The migration folder layout is fixed for good once the first migration is applie
 
 Both deploy jobs run the same root script: build, apply migrations to the remote database, then `wrangler deploy`. That script is also what Workers Builds will run for Deploy-button installs in Phase 6, so it must not depend on anything GitHub-specific.
 
+**Nothing that identifies the household is committed.** The repository is public, so:
+
+- The Wrangler file names resources (`recipeflare`, `recipeflare-staging`) and carries no resource IDs; Wrangler provisions and links by name.
+- Production and staging hostnames are GitHub environment variables, passed with `wrangler deploy --domain`.
+- The Access team domain and each application's audience tag are Worker secrets (`ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`), set once per environment with `wrangler secret put`.
+- The Cloudflare account ID and API token are GitHub secrets.
+- The operations note describes the steps and names the variables, without values.
+
 Our install deploys from GitHub Actions rather than Workers Builds because the test run gates the deploy and production needs an approval step. The Workers Builds path is exercised in Phase 6 by the fresh-account test the build plan already requires.
 
 Mock screens and all Phase 0 review happen on staging. Production stays empty until Phase 1 work is ready for real recipes, and the gate's ten recipes are entered there.
 
 ## 9. Task list
 
-Each task is one pull request. Hours are my estimates and sum to about 29 for Phase 0 and 59 for Phase 1, inside the roadmap's ranges. Tasks marked "needs you" include steps in the Cloudflare dashboard or a decision.
+Each task is one pull request. Hours are my estimates and sum to about 29 for Phase 0 and 64 for Phase 1, inside the roadmap's ranges. Phase 1 includes the 5 hours moved from Phase 2 with the rule-based parser. Tasks marked "needs you" include steps in the Cloudflare dashboard or a decision.
 
 ### Phase 0 — gate: mockups approved and schema reviewed
 
@@ -754,7 +792,7 @@ Each task is one pull request. Hours are my estimates and sum to about 29 for Ph
 | T0.2 | **CI.** The workflow in [§8.2](#82-ci), with a first test in each Vitest project | A pull request shows all checks; a deliberately failing test blocks merge | 1.5 |
 | T0.3 | **Feature spec.** `docs/feature-spec.md` following [§2.1](#21-feature-spec-outline) (needs you) | Every section ends with its decisions; the offline, delete and ingredient-entry questions are answered; three real cards are described field by field | 3 |
 | T0.4 | **Shared schema.** The package in [§5](#5-shared-recipe-schema) with fixtures and tests | Fixtures, including the three real cards, validate; section round trip passes; `RecipeDraft` exports to JSON Schema without loss; caps are enforced | 3 |
-| T0.5 | **Deploy pipeline and Access.** Staging and production Workers, databases, buckets and queues; deploy scripts and workflows; Access applications on both hostnames (needs you) | A merge to `main` deploys staging; staging opens on a phone only after Access login; a request without a token is refused; production deploys by hand with approval; an operations note records the manual steps | 3 |
+| T0.5 | **Deploy pipeline and Access.** Staging and production Workers, databases, buckets and queues; deploy scripts and workflows; Access applications on both hostnames (needs you) | A merge to `main` deploys staging; staging opens on a phone only after Access login; a request without a token is refused; production deploys by hand with approval; no hostname, team domain, audience tag or account ID is in the repository; an operations note records the manual steps | 3 |
 | T0.6 | **App shell and design tokens.** Navigation, page frame, tokens, placeholder icon, the `/mock` harness | Shell renders at 390 px and tablet width in light and dark; fixtures load in a mock route; contrast and touch-target minimums from the spec hold | 2 |
 | T0.7 | **Mockup: recipe list and search** | Everything in the screen's row of [§2.2](#22-the-four-core-screens) is visible on staging | 2 |
 | T0.8 | **Mockup: recipe view** | As above, including the long and the minimal recipe | 2 |
@@ -774,36 +812,33 @@ T0.5 comes before the mockups so that they can be reviewed on phones. T0.11 and 
 | T1.2 | **Recipes API.** Create, read by ID or slug, update, delete, list with paging and sort; typed client export | Requests are validated by the shared schema; errors use the shared error body; conflict returns 409 with the current recipe | 3 |
 | T1.3 | **Organizers, foods, units and labels API** | Create, rename, list and delete for each; duplicate names are rejected; deleting something in use is refused with a usage count; a rename updates search text | 3.5 |
 | T1.4 | **Search and filters** | The search tests in [§8.1](#81-tests) pass; hostile input (quotes, operators, emoji) never errors; filters combine with search | 3 |
-| T1.5 | **Web data layer and recipe list.** API client, query cache, session-expiry handling, error states; the list screen on real data | The list matches its mockup with real data; search, filters and sort are in the URL; an expired session shows "sign in again" and recovers | 4 |
-| T1.6 | **Recipe view** | Matches its mockup; scaling changes parsed quantities and leaves free-text lines alone; delete asks first | 3 |
-| T1.7 | **Recipe editor** | A recipe with sections, free-text and structured lines, notes and organizers can be created and edited on a phone; inline creation of foods, units and organizers works; validation errors appear on their fields; a conflict is shown, not overwritten; leaving with unsaved changes warns | 8 |
-| T1.8 | **Manage screens** for organizers, foods, units and labels | Each can be listed, renamed and deleted from the app; labels can be ordered | 3 |
-| T1.9 | **Images and attachments.** Upload to R2, variants, serving, cover choice, the original-card role | A phone photo uploads and shows as thumbnail and cover; the original card photo opens full size; a failed variant still serves the original; uploads over the size limit are refused clearly | 5 |
-| T1.10 | **Import job infrastructure.** Table access, producer, consumer, dead-letter handling, job API, progress UI | The queue tests in [§8.1](#81-tests) pass; a job's progress shows in the app without a reload; a failed job explains itself and can be retried | 4 |
-| T1.11 | **URL import** | The fixture set maps correctly; an import from three real recipe sites lands in review with its image; a page with no structured data fails with a clear message; a duplicate source URL warns; confirming creates the recipe and completes the job | 5 |
-| T1.12 | **PWA and offline** | Installs on Android and iOS behind Access; the shell loads offline; recipes and viewed images are available offline as the spec defines; the login redirect is never cached | 4 |
-| T1.13 | **Cook mode** | Matches its mockup; the screen stays on; checkboxes and scale survive a reload and a locked phone; works in airplane mode | 4 |
-| T1.14 | **End-to-end run and polish.** Playwright main path, accessibility pass, load-time check on a mid-range phone | The Playwright run is in CI; no blocking accessibility findings on the four screens; issues found are fixed or filed | 3 |
-| T1.15 | **Gate run** (needs you) | Ten family recipes entered on production by the people who will use it, on phones and a desktop. Every workaround is written down as an issue. The gate passes when ten recipes in a row go in and are edited with none | 2.5 plus fixes |
+| T1.5 | **Ingredient line parser.** The rule-based parser in [§5.1](#51-rule-based-ingredient-parser), in the shared package, and its use in `draftToInput` | The parser corpus test passes; a line it cannot read comes back unchanged as free text; it never creates a food or unit; it runs in the browser with no network | 5 |
+| T1.6 | **Web data layer and recipe list.** API client, query cache, session-expiry handling, error states; the list screen on real data | The list matches its mockup with real data; search, filters and sort are in the URL; an expired session shows "sign in again" and recovers | 4 |
+| T1.7 | **Recipe view** | Matches its mockup; scaling changes parsed quantities and leaves free-text lines alone; delete asks first | 3 |
+| T1.8 | **Recipe editor** | A recipe with sections, notes and organizers can be created and edited on a phone; a typed ingredient line is parsed as it is entered and each parsed field can be corrected; inline creation of foods, units and organizers works; validation errors appear on their fields; a conflict is shown, not overwritten; leaving with unsaved changes warns | 8 |
+| T1.9 | **Manage screens** for organizers, foods, units and labels | Each can be listed, renamed and deleted from the app; labels can be ordered | 3 |
+| T1.10 | **Images and attachments.** Upload to R2, variants, serving, cover choice, the original-card role | A phone photo uploads and shows as thumbnail and cover; the original card photo opens full size; a failed variant still serves the original; uploads over the size limit are refused clearly | 5 |
+| T1.11 | **Import job infrastructure.** Table access, producer, consumer, dead-letter handling, job API, progress UI | The queue tests in [§8.1](#81-tests) pass; a job's progress shows in the app without a reload; a failed job explains itself and can be retried | 4 |
+| T1.12 | **URL import** | The fixture set maps correctly; an import from three real recipe sites lands in review with its image and with parsed ingredient lines; a page with no structured data fails with a clear message; a duplicate source URL warns; confirming creates the recipe and completes the job | 5 |
+| T1.13 | **PWA and offline** | Installs on Android and iOS behind Access; the shell loads offline; recipes and viewed images are available offline as the spec defines; the login redirect is never cached | 4 |
+| T1.14 | **Cook mode** | Matches its mockup; the screen stays on; checkboxes and scale survive a reload and a locked phone; works in airplane mode | 4 |
+| T1.15 | **End-to-end run and polish.** Playwright main path, accessibility pass, load-time check on a mid-range phone | The Playwright run is in CI; no blocking accessibility findings on the four screens; issues found are fixed or filed | 3 |
+| T1.16 | **Gate run** (needs you) | Ten family recipes entered on production by the people who will use it, on phones and a desktop. Every workaround is written down as an issue. The gate passes when ten recipes in a row go in and are edited with none | 2.5 plus fixes |
 
 Suggested mix for the gate's ten: at least one with ingredient sections, one with instruction sections, one with a card photo, one imported from a URL and then edited, and one cooked from cook mode with the network off.
 
 ## 10. Open questions
 
-Decisions I could not settle from the build plan. Each has the default this plan assumes, so work can start; the first five affect Phase 0.
+Questions 1 to 5 of the first version were answered on 22 Nov 2026 and are recorded in [Decisions since the build plan](#decisions-since-the-build-plan). What remains, each with the default this plan assumes so that work can start:
 
-1. **Hostnames and Access.** Which zone, which production and staging hostnames, and what is the Zero Trust team name? Needed for T0.5.
-2. **Is the repository public yet, and may your hostname appear in it?** The build plan says the LICENSE file dates "from the first public commit". Resource IDs can stay out of the Wrangler file, since Wrangler provisions by name. The hostname can be passed by CI with `wrangler deploy --domain` instead of being committed. Default: keep the hostname in a CI variable.
-3. **The four screens.** The build plan does not name them. Default: list and search, recipe view, editor with review mode, cook mode.
-4. **Should the rule-based half of the ingredient parser move into Phase 1?** The roadmap puts the parser in Phase 2, but the Phase 1 gate is typing ten recipes "without workarounds", and typing ingredients through unit and food pickers may fail that. Default: keep the roadmap, offer free-text lines beside structured fields, and decide at the gate. Moving it costs roughly 4–6 hours of Phase 2's budget.
-5. **Drizzle version.** npm's stable tag is 0.45, 1.0 is at release candidate 6, and Drizzle's docs now describe 1.0. The two write different migration folder layouts, and the layout cannot change later without editing Wrangler's migration records. Default: start on the 1.0 release candidate with its folder-per-migration layout and Wrangler's `migrations_pattern` setting, and confirm in T0.11. I did not verify 1.0's stable release date.
-6. **Members.** Which emails are in the household, and should anyone Access admits become a member automatically? Default: yes, with the first sign-in as owner.
-7. **Drafts on the job, not in `recipes`.** See [Conflicts](#conflicts-with-the-build-plan). Say so if you want imported drafts to appear in the recipe list before review.
-8. **Units.** Is a starting list of about 25 US and metric units right, and should quantities default to fractions?
-9. **What "works offline" covers.** Default: all recipe data syncs to the device, images once viewed. Settled in the spec (T0.3).
-10. **Quantity ranges** ("2 to 3 cups"). Mealie has a single quantity. Default: the first number goes in `quantity` and the original text keeps the range. A second column can be added later without a rebuild.
-11. **Images binding cost.** I did not verify its pricing or included transformations. Two variants per upload should be small at household scale. If it is not, the fallback is resizing in the browser before upload.
-12. **NoteFlare.** The build plan says Access works "as NoteFlare does". If NoteFlare has auth or UI code worth sharing, or uses a different frontend framework that you would rather match, that could change [§1](#1-frontend-framework) and T0.12.
-13. **aiomealie pin for Phase 4.** Which Home Assistant version runs at home decides the version to pin. Nothing to do until Phase 4.
-14. **Deploy button placeholders.** The docs ask for default resource names and IDs in the Wrangler file. What it accepts when IDs are omitted needs the Phase 6 fresh-account test.
-15. **`cf` and `cloudflare.config.ts`.** Cloudflare has a new CLI and a typed config file at release-candidate stage. This plan stays on Wrangler and `wrangler.jsonc`, which the Deploy button and the test plugin both read today. Revisit before Phase 6.
+1. **Access team domain and hostnames for T0.5.** The team domain is the subdomain in `<team>.cloudflareaccess.com`, which is not always the team's display name. It, the two hostnames and the two audience tags are entered as secrets and CI variables during T0.5 and are not needed before then.
+2. **Members.** Which emails are in the household, and should anyone Access admits become a member automatically? Default: yes, with the first sign-in as owner.
+3. **Drafts on the job, not in `recipes`.** See [Conflicts](#conflicts-with-the-build-plan). Say so if you want imported drafts to appear in the recipe list before review.
+4. **Units.** Is a starting list of about 25 US and metric units right, and should quantities default to fractions?
+5. **What "works offline" covers.** Default: all recipe data syncs to the device, images once viewed. Settled in the spec (T0.3).
+6. **Quantity ranges** ("2 to 3 cups"). Mealie has a single quantity. Default: the first number goes in `quantity` and the original text keeps the range. A second column can be added later without a rebuild.
+7. **Images binding cost.** I did not verify its pricing or included transformations. Two variants per upload should be small at household scale. If it is not, the fallback is resizing in the browser before upload.
+8. **NoteFlare.** The build plan says Access works "as NoteFlare does". If NoteFlare has auth or UI code worth sharing, or uses a different frontend framework that you would rather match, that could change [§1](#1-frontend-framework) and T0.12.
+9. **aiomealie pin for Phase 4.** Which Home Assistant version runs at home decides the version to pin. Nothing to do until Phase 4.
+10. **Deploy button placeholders.** The docs ask for default resource names and IDs in the Wrangler file. What it accepts when IDs are omitted needs the Phase 6 fresh-account test.
+11. **`cf` and `cloudflare.config.ts`.** Cloudflare has a new CLI and a typed config file at release-candidate stage. This plan stays on Wrangler and `wrangler.jsonc`, which the Deploy button and the test plugin both read today. Revisit before Phase 6.

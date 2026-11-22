@@ -11,7 +11,7 @@ Maverick Recipeflare (Recipeflare for short) is a household recipe app on Cloudf
 ## Read first
 
 - `docs/build-plan.md` is the design doc: scope, architecture, roadmap, phase gates and the nine decisions. **Its decisions are made. Do not reopen them.** If something in it conflicts with a fact you can verify, stop and say so; do not work around it quietly.
-- `docs/implementation-plan.md` covers Phases 0 and 1: framework, repo layout, data model, shared schema, auth, import jobs, testing and deploys, and the task list (T0.1–T0.13, T1.1–T1.15).
+- `docs/implementation-plan.md` covers Phases 0 and 1: framework, repo layout, data model, shared schema, auth, import jobs, testing and deploys, and the task list (T0.1–T0.13, T1.1–T1.16). Its "Decisions since the build plan" section records later decisions by the owner; where one amends the build plan, it wins.
 - `docs/feature-spec.md` (from T0.3) decides screen behaviour.
 
 ## How to work
@@ -57,6 +57,7 @@ Local sign-in uses `.dev.vars` (copy `.dev.vars.example`), which sets `AUTH_MODE
 - Every recipe shape comes from `@recipeflare/schema`. The API validates with it, the editor uses it as its form resolver, and import output is validated with it. Do not define a second recipe type anywhere.
 - `RecipeDraft` must stay exportable to JSON Schema: plain objects, arrays, strings, numbers and nullables only. Cross-field checks go in `checkDraft()`.
 - An ingredient line keeps its `originalText`. Parsing fills the structured fields beside it and never overwrites it.
+- The ingredient parser in the shared package is rules only in Phase 1 and must run in the browser with no network. It never creates foods or units.
 
 ### Database (D1)
 
@@ -71,7 +72,8 @@ Local sign-in uses `.dev.vars` (copy `.dev.vars.example`), which sets `AUTH_MODE
 ### Migrations
 
 - Forward only. Never edit a migration that has been applied; add a new one.
-- Generate with `pnpm db:generate`. Virtual tables, triggers and seed data are hand-written migrations.
+- Generate with `pnpm db:generate` (Drizzle 1.0, one folder per migration). Virtual tables, triggers and seed data are hand-written migrations in the same layout.
+- Never rename or move a migration folder; Wrangler records migrations by path.
 - Never run `drizzle-kit push`.
 - A migration must work with the previously deployed code, because it is applied before the new code goes live. Dropping or renaming a column takes two releases.
 - Do not rebuild a parent table without the procedure in the plan's migration section.
@@ -99,7 +101,8 @@ Local sign-in uses `.dev.vars` (copy `.dev.vars.example`), which sets `AUTH_MODE
 ### Secrets and privacy
 
 - No secrets in the repository, in `wrangler.jsonc` or in CI logs. Local secrets go in `.dev.vars`; deployed ones are Wrangler secrets.
-- Do not commit the household's hostnames, email addresses or real recipe pages fetched from other sites. Test fixtures for URL import are synthetic.
+- The repository is public. Do not commit the household's domain, hostnames, Zero Trust team domain, Access audience tags, Cloudflare account or resource IDs, or email addresses. Hostnames are CI variables; Access settings are Worker secrets. This applies to docs, tests, commit messages and pull requests too.
+- Do not commit real recipe pages fetched from other sites. Test fixtures for URL import are synthetic.
 
 ## Testing
 
