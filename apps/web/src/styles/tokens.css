@@ -132,5 +132,16 @@
   --rf-touch: 2.75rem;
   --rf-touch-nav: 3.25rem;
 
+  /* How tall the navigation bar along the bottom of a phone is. A screen's own
+     action bar sits this far up, so the two never overlap. */
+  --rf-nav-height: calc(4.25rem + max(0.5rem, env(safe-area-inset-bottom)));
+
   --rf-motion: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* From tablet width the navigation is a rail down the side, so nothing sits at the bottom. */
+@media (min-width: 48rem) {
+  :root {
+    --rf-nav-height: 0px;
+  }
 }

@@ -8,6 +8,9 @@ function target(item: NavItem, pathname: string): NavItem["to"] | NonNullable<Na
 
 function isCurrent(item: NavItem, pathname: string): boolean {
   const to = target(item, pathname);
+  if (item.mockAlso && pathname.startsWith(item.mockAlso)) {
+    return true;
+  }
   return to === "/" ? pathname === "/" : pathname.startsWith(to);
 }
 
@@ -64,7 +67,7 @@ export function AppShell() {
 
       <nav
         aria-label="Main"
-        className="shell-rail sticky bottom-0 z-10 order-last flex gap-1 border-t border-rule bg-surface px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:top-0 md:order-first md:h-dvh md:w-56 md:flex-none md:flex-col md:border-t-0 md:bg-shell md:px-3 md:pt-0"
+        className="shell-rail sticky bottom-0 z-10 order-last box-border flex h-[var(--rf-nav-height)] gap-1 border-t border-rule bg-surface px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:top-0 md:order-first md:h-dvh md:w-56 md:flex-none md:flex-col md:border-t-0 md:bg-shell md:px-3 md:pt-0"
       >
         <Link
           to="/"

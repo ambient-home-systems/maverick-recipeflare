@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { Check, X } from "lucide-react";
 
 const CHIP =
@@ -45,5 +46,29 @@ export function RemovableChip({ label, onRemove }: { label: string; onRemove: ()
       {label}
       <X aria-hidden="true" size="1.125rem" />
     </button>
+  );
+}
+
+/**
+ * A tag or a tool on a recipe. It is a filter too: pressing it opens the list
+ * narrowed to that tag or tool.
+ */
+export function LinkChip({
+  label,
+  to,
+  search,
+}: {
+  label: string;
+  to: "/mock/list";
+  search: { tags?: string; tools?: string };
+}) {
+  return (
+    <Link
+      to={to}
+      search={search}
+      className={`${CHIP} border-rule-strong bg-surface text-ink no-underline hover:bg-surface-sunk`}
+    >
+      {label}
+    </Link>
   );
 }

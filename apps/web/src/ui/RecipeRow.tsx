@@ -1,4 +1,5 @@
 import { formatDuration, type RecipeSummary } from "@recipeflare/schema";
+import { Link } from "@tanstack/react-router";
 import { LetterTile } from "./LetterTile";
 import { STOCK_BG, type Stock } from "./stock";
 
@@ -72,11 +73,16 @@ function MetaLine({
   );
 }
 
+/** A recipe's own page. The mock harness has its own copy of the route. */
+export type RowLink = { to: "/mock/recipe/$slug"; params: { slug: string } };
+
 type RecipeRowProps = {
   recipe: RecipeSummary;
   stock: Stock;
-  /** Where the row leads. Without it the row is plain content, not a link. */
+  /** Where the row leads, as a plain address. Without this or `link` the row is plain content. */
   href?: string;
+  /** Where the row leads inside the app. */
+  link?: RowLink;
   /** The address of the recipe's photo at thumbnail size. Without it the row shows a letter tile. */
   thumbnailUrl?: string;
   /** False behind a category's divider, where naming the category again adds nothing. */
@@ -90,6 +96,7 @@ export function RecipeRow({
   recipe,
   stock,
   href,
+  link,
   thumbnailUrl,
   showCategory = true,
 }: RecipeRowProps) {
@@ -141,7 +148,15 @@ export function RecipeRow({
   );
   return (
     <li className="border-b border-rule last:border-b-0">
-      {href ? (
+      {link ? (
+        <Link
+          to={link.to}
+          params={link.params}
+          className={`transition-rf ${ROW} no-underline hover:bg-surface-sunk active:bg-surface-sunk`}
+        >
+          {content}
+        </Link>
+      ) : href ? (
         <a
           href={href}
           className={`transition-rf ${ROW} no-underline hover:bg-surface-sunk active:bg-surface-sunk`}

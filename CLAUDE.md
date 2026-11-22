@@ -6,7 +6,7 @@ Guidance for Claude Code working in this repository.
 
 Maverick Recipeflare (Recipeflare for short) is a household recipe app on Cloudflare: one TypeScript Worker serving a React PWA and a JSON API, with D1, R2, Queues and, in later phases, Workers AI and Durable Objects. One household per install. Licensed AGPL-3.0-only.
 
-**Status: Phase 0, through T0.7.** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, and the recipe list drawn as a mock screen exist. No product screen is connected to data, and there are no database tables and no auth yet. When a pull request changes a command or path below, it updates this file in the same pull request.
+**Status: Phase 0, through T0.8.** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, and the recipe list and recipe view drawn as mock screens exist. No product screen is connected to data, and there are no database tables and no auth yet. When a pull request changes a command or path below, it updates this file in the same pull request.
 
 ## Read first
 
@@ -95,6 +95,7 @@ Not here yet:
 - Mock screens live under `/mock`, load on demand, and are the only code that imports fixtures. A mock screen renders the product screen from `src/pages/` with fixture data; do not draw a second copy of a screen for the mock. `src/mock/scenes.ts` loads with the router, so it must not import fixtures.
 - Text boxes have no grey placeholder. A placeholder is ink at regular weight; a label above the box is better.
 - A panel over the page is the `Sheet` component, a native modal dialog. It is the only thing that casts a shadow.
+- A screen's main actions go in a bar that sticks to the bottom at `bottom-[var(--rf-nav-height)]`, so it sits on top of the phone's navigation bar. The navigation takes its height from the same token; change one only through the token.
 
 ### Database (D1)
 

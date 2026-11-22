@@ -1,3 +1,5 @@
+import { Link } from "@tanstack/react-router";
+import { ChevronLeft } from "lucide-react";
 import { STOCK_BG, STOCK_TEXT, STOCK_VAR, type Stock } from "./stock";
 
 export type DividerTab = { id: string; label: string; stock: Stock };
@@ -70,5 +72,42 @@ export function DividerTabs({ label, tabs, selectedId, onSelect, panelId }: Divi
         );
       })}
     </div>
+  );
+}
+
+export type DividerLink = { key: string; label: string; stock: Stock; category?: string };
+
+/**
+ * The dividers a recipe is filed behind, standing over its card. Each leads
+ * back to the list at that category; the first leads to every recipe.
+ */
+export function DividerLinks({
+  label,
+  to,
+  links,
+}: {
+  label: string;
+  to: "/mock/list";
+  links: readonly DividerLink[];
+}) {
+  return (
+    <nav
+      aria-label={label}
+      className="relative z-[1] -mb-px flex items-end gap-0.5 overflow-x-auto px-3 pt-3 [scrollbar-width:none] md:px-6 md:pt-6"
+    >
+      {links.map((link, index) => (
+        <Link
+          key={link.key}
+          to={to}
+          search={link.category ? { category: link.category } : {}}
+          className={`transition-rf inline-flex h-touch min-w-touch shrink-0 items-center gap-1 whitespace-nowrap rounded-t-md border-b border-rule px-3 text-sm font-semibold no-underline hover:brightness-105 md:px-5 ${STOCK_BG[link.stock]} ${STOCK_TEXT[link.stock]}`}
+        >
+          {index === 0 ? (
+            <ChevronLeft aria-hidden="true" size="1.125rem" className="-ml-1" />
+          ) : null}
+          {link.label}
+        </Link>
+      ))}
+    </nav>
   );
 }

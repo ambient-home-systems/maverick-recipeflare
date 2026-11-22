@@ -1,3 +1,4 @@
+import { parseScale } from "../pages/recipe/recipeFacts";
 import { type ListSearch, parseListSearch, toListSearch } from "../pages/recipes/listState";
 
 /**
@@ -25,6 +26,31 @@ export function parseScene(value: unknown): ListScene {
 export function validateMockListSearch(raw: Record<string, unknown>): MockListSearch {
   const scene = parseScene(raw.scene);
   return { ...toListSearch(parseListSearch(raw)), ...(scene === "library" ? {} : { scene }) };
+}
+
+/** The states of the recipe view that a fixture recipe alone cannot reach. */
+export const RECIPE_SCENES = ["view", "loading", "offline", "error"] as const;
+export type RecipeScene = (typeof RECIPE_SCENES)[number];
+
+export const RECIPE_SCENE_LABELS: Record<RecipeScene, string> = {
+  view: "Recipe",
+  loading: "Loading",
+  offline: "Offline",
+  error: "Could not load",
+};
+
+export type MockRecipeSearch = { scale?: 0.5 | 2 | 3; scene?: Exclude<RecipeScene, "view"> };
+
+/** Tidies the address of a mock recipe: the scale, and the scene, when they are not the defaults. */
+export function validateMockRecipeSearch(raw: Record<string, unknown>): MockRecipeSearch {
+  const scale = parseScale(raw.scale);
+  const scene = (RECIPE_SCENES as readonly unknown[]).includes(raw.scene)
+    ? (raw.scene as RecipeScene)
+    : "view";
+  return {
+    ...(scale === 1 ? {} : { scale }),
+    ...(scene === "view" ? {} : { scene }),
+  };
 }
 
 export function validateMockAddSearch(raw: Record<string, unknown>): { scene?: "offline" } {

@@ -37,7 +37,10 @@ describe("the mock index", () => {
     expect(screen.getByRole("link", { name: /Recipe list and search/ }).getAttribute("href")).toBe(
       "/mock/list",
     );
-    expect(screen.getAllByText("Not drawn yet.")).toHaveLength(3);
+    expect(screen.getByRole("link", { name: /Recipe view/ }).getAttribute("href")).toBe(
+      "/mock/recipe/sunday-beef-and-bean-chili",
+    );
+    expect(screen.getAllByText("Not drawn yet.")).toHaveLength(2);
   });
 
   it("reports that the API is reachable", async () => {

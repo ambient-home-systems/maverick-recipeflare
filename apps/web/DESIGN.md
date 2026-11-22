@@ -202,6 +202,24 @@ components:
     textColor: "{colors.ink}"
     typography: "{typography.title-lg}"
     rounded: "{rounded.md}"
+  section-head:
+    backgroundColor: "{colors.surface-sunk}"
+    textColor: "{colors.ink}"
+    typography: "{typography.title}"
+    padding: "0.5rem 1rem"
+  fact:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink}"
+    typography: "{typography.title}"
+    padding: "0.5rem 1rem"
+  action-bar:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.ink}"
+    padding: "0.625rem 1rem"
+  photo-viewer:
+    backgroundColor: "{colors.shell}"
+    textColor: "{colors.on-shell}"
+    typography: "{typography.title}"
   import-row:
     backgroundColor: "{colors.surface-sunk}"
     textColor: "{colors.ink}"
@@ -325,6 +343,9 @@ Mobile first at 390 px, with one breakpoint at 48rem (768 px).
 - **Inside a stack:** horizontal padding is 1rem throughout. The heading bar is padded 1rem top and 0.5rem bottom, with the title on the left and an optional short note on the right, baseline-aligned. Rows are at least 4.25rem tall with 0.625rem vertical padding and a 0.75rem gap between tile and text. Plain list items use 0.75rem or 1rem vertical padding. An empty state is padded 2.5rem top and bottom.
 - **Rhythm:** a 4 px step (`--rf-space-1` to `--rf-space-12`). Groups of buttons are separated by 0.75rem.
 - **Recipe list:** search band, divider tabs, then the stack: title and count on the red rule, one toolbar row (Filter, then Sort, 0.5rem apart, padded 0.625rem by 1rem, with a hairline below), a row of chips for the filters in use when there are any, imports, then recipe rows. The toolbar wraps when text is enlarged.
+- **Recipe view:** divider links, then the stack: the title on the red rule; description, "From" and the pictures; a row of facts; then Ingredients, Steps and Notes, each opened by a sunk heading band; Nutrition folded away; tags and tools; delete. Reading text is capped near 62 characters a line. Only what the recipe states takes any room.
+- **Action bar:** a screen's main actions sit in a card-white bar with a `rule-strong` top hairline that sticks to the bottom of the screen: directly above the navigation bar on a phone, at the bottom edge from 768 px. Its offset is `--rf-nav-height`, the same token the navigation bar takes its height from (4.25rem plus the bottom inset), so the two cannot overlap. On a phone the first action fills the width left by the others. It sticks only when the screen is at least 36rem tall; on a phone held sideways, or with very large text, it rests at the end of the page so that it and the navigation do not take the screen.
+- **Two columns on a wide card:** when the recipe's card is at least 44rem wide (a tablet on its side), Ingredients takes a 23rem column with a hairline at its right and Steps takes the rest, so the amounts stay in view beside the method. This follows the card's width, not the screen's.
 - **Density:** six or more recipe rows on a phone screen. Do not add space between rows; the hairline is the separator.
 
 **The 44 Rule.** Every link, button and tab is at least 44 by 44 CSS px (`--rf-touch`, 2.75rem). Navigation items are 52 px (`--rf-touch-nav`, 3.25rem). A row that is a link is the whole row.
@@ -377,6 +398,12 @@ Categories are index dividers standing over the card stack.
 - **Behaviour:** a real tab list. Left and right arrow keys move and select; only the selected tab is in the tab order. The stack below is its tab panel.
 - The first tab is "All", in plain stock.
 
+### Divider links
+On a recipe, the dividers it is filed behind, standing over its card as they do over the list.
+- **Style:** the unselected divider tab: the category's stock, `on-stock` text, 2.75rem tall, top corners rounded. None is drawn as selected, because the page is one card and not a category.
+- **First link:** "All recipes" in plain stock, with a chevron pointing back. Then one link for each of the recipe's categories.
+- **Behaviour:** links, not tabs. Each opens the list at that category. This is the recipe view's way back.
+
 ### Card stack (Page)
 The container for a page's content.
 - **Style:** card white, 1 px ruling-blue border, square corners, no shadow.
@@ -399,6 +426,17 @@ Stands in for a photo. The recipe's first letter, 700 weight, on its category's 
 - **Notice:** a full-width band in `notice` with `on-notice` text at label weight, an 18 px icon and one or two sentences, padded 0.625rem by 1rem. A problem always has a warning triangle, supplied by the component; a standing condition brings its own icon. The same band serves a standing condition (offline) and a problem (a save that failed); a problem is announced at once to assistive technology. It is not red.
 - **Empty state:** a 700 title, a paragraph of at most 38ch saying what goes here, and one or two buttons, padded 2.5rem top and bottom. No illustration.
 
+### Section head and facts
+- **Section head:** a `surface-sunk` band with a hairline above and a title-size heading in 700, padded 0.5rem by 1rem. It opens Ingredients, Steps and Notes, and is the closed face of Nutrition, which adds a chevron and opens on a press. A control that belongs to the section sits at the right of the band: the scale switch on Ingredients.
+- **Sub-head:** a section's own title ("For the gravy") in body size, 700, on card white with a hairline above.
+- **Facts:** times, servings and yield as cells in one ruled row: a body-small label over a title-size value in 600. Cells are at least 6.5rem wide, share the row equally and wrap; a hairline separates each from its neighbour.
+- **Ingredient line:** body text in a ruled row, 0.5rem above and below, with the amount ("2 tbsp") in 600 and the rest in 400, so a glance down the list finds the numbers. While the recipe is scaled, a line kept as typed carries an outlined "as written" tag (body small, 600, `rule-strong` outline, 6 px corners), and a note under the band counts those lines. The note never says such a line has no amount: "6 cups water or stock" is one.
+- **Step:** a title-size numeral in 700 in a 1.5rem column, then the text at line-height 1.5. A hairline between steps.
+
+### Photo thumbnails and viewer
+- **Thumbnail:** a square picture with 6 px corners and a hairline border, 4rem on a phone with its name (600) and count beside it, 6rem from 768 px with them below. One for the recipe's photos and one for its original card. The whole thing is the button.
+- **Viewer:** a full-screen modal on tin navy with `on-shell` text and no shadow. A bar at the top names what is showing ("Original card · 1 of 2") beside Close; the picture is fitted to the space between; Previous and Next sit in a bar at the bottom when there is more than one, and the arrow keys do the same. At the first or last picture the spent button is dimmed and takes no hover, but stays focusable so the arrow keys go on working. The focus ring is white, as on the shell.
+
 ### Search field
 The one search box, on the recipe list only.
 - **Style:** 3rem tall, card white, 10 px radius, 1 px `rule-strong` outline, a 20 px search icon, then the text. The placeholder is "Search recipes" in ink at 400; typed text is 600. When there is text, a cross at the right end clears it.
@@ -410,10 +448,11 @@ The one search box, on the recipe list only.
 A text box or a native select on card white: at least 2.75rem tall, 10 px radius, 1 px `rule-strong` outline, 0.75rem inside. A visible label sits above a text box in body small. A select has a 20 px chevron at its right end and its value in 600. The sort select has no visible label, so it leads with a sort icon and its options are short enough to stay whole on a phone: "Last changed", "Newest", "A to Z", and "Best match" while searching. A field's problem is a notice band directly under it, tied to the field for assistive technology; the field itself does not turn red.
 
 ### Chips
-Filters, and nothing else.
+Filters, and nothing else. A tag or a tool on a recipe is a chip too, because pressing it opens the list filtered to it.
 - **Shape:** a pill at least 2.75rem tall with 1rem inside and a label-weight name.
 - **Choice chip** (in the filter sheet): card white with a `rule-strong` outline. Chosen, it is filled `primary` with `on-primary` text and gains a tick, so the state does not rest on colour.
 - **Chip in use** (above the list): `surface-sunk` with a `rule-strong` outline and a cross. Pressing it anywhere removes the filter.
+- **Link chip** (on a recipe): the choice chip's resting look, as a link.
 
 ### Sheet
 A panel over the page for one short job, such as choosing filters. It is a native modal dialog.
@@ -440,7 +479,7 @@ An import from a link, listed above the recipes until a person has dealt with it
 - A "Skip to the page" link appears on keyboard focus.
 
 ### Segmented switch
-A group of options in one `rule-strong` outline on card white, 0.25rem inside padding. Each option is at least 2.75rem tall and 4rem wide with a label-weight name and 6 px corners; the chosen one is filled `primary`. Shipped once, as the theme switch in the mock harness.
+A group of options in one `rule-strong` outline on card white, 0.25rem inside padding. Each option is at least 2.75rem tall and wide with a 600-weight name and 6 px corners; the chosen one is filled `primary`. It is a radio group, so arrow keys move between options. Shipped twice: the scale switch on a recipe (½×, 1×, 2×, 3×, each with a spoken name such as "Double"), and the theme switch in the mock harness. It wraps when text is enlarged.
 
 ## Do's and Don'ts
 
@@ -456,13 +495,16 @@ A group of options in one `rule-strong` outline on card white, 0.25rem inside pa
 - **Do** give every screen its loading (skeleton rows), empty (empty state), error and offline (notice band) states.
 - **Do** use a chip for a filter and only for a filter, and a sheet for a short job over the page.
 - **Do** say what an empty result was asked for, and offer one button that clears it.
+- **Do** draw a loading state in the page's own shape (a recipe's facts row, band and ruled lines), so the content does not jump when it arrives.
+- **Do** leave out what a recipe does not state. No empty headings, and no "none".
+- **Do** put a screen's main actions in the action bar, offset by `--rf-nav-height`.
 - **Do** honour reduced motion: transitions and the skeleton sweep stop when the device asks.
 
 ### Don't:
 - **Don't** add a grey, muted or soft text colour, or fade text with opacity.
 - **Don't** use rule red for save, cook, confirm, delete, errors, links, badges or decoration. It is the title rule and adding a recipe.
 - **Don't** show a problem as red text or a red border. Use the notice band with an icon.
-- **Don't** grey a placeholder, a disabled label or a secondary line. A placeholder is ink at regular weight.
+- **Don't** grey a placeholder or a secondary line. A placeholder is ink at regular weight. The one faded thing is a control that cannot be used, at opacity 0.55.
 - **Don't** add a second Add control to the recipe list. Adding starts from the red Add in the navigation; only the first-run state offers it in the page.
 - **Don't** put recipes in shadowed cards or a photo grid. Don't add a shadow to a row, stack, tile or button.
 - **Don't** add paper textures, torn or lined-paper effects, handwriting or script fonts, or serif display type.
@@ -470,5 +512,6 @@ A group of options in one `rule-strong` outline on card white, 0.25rem inside pa
 - **Don't** write a hex colour or a `dark:` variant in a component. Don't use a default Tailwind colour such as `bg-gray-100`; it produces no CSS.
 - **Don't** load a font or an icon from a network service. The app must work offline.
 - **Don't** derive a dark value by inverting or dimming the light one without checking its pairings.
+- **Don't** put a large photo at the top of a recipe. Pictures are thumbnails that open full screen; most recipes here have a card, not a dish photo.
 - **Don't** build a dashboard or a second home screen. The recipe list is the index.
 - **Don't** use the word Cloudflare or its flare shapes in the name, icon or logo, and don't borrow Mealie's look or copy.

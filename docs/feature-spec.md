@@ -114,6 +114,28 @@ Three sample cards supplied by the owner on 22 Nov 2026. Every piece of writing 
 - A recipe has at most one cover. If none is chosen, the first photo is used; if there are no photos, the list shows a plain tile with the title's first letter.
 - A recipe has an optional "From" field for where it came from. URL import fills it with the page's author or site name when the page states one, and the cook can change it. (Decided by the owner, 22 Nov 2026.)
 
+### 2.4 The recipe view
+
+How one recipe is shown for reading. Drawn as a mock screen in T0.8.
+
+**Decisions**
+
+- The recipe stands behind its category's divider tab, in that category's colour. The tab leads back to the list at that category, and "All recipes" beside it leads back to the whole list. A recipe in two categories shows both tabs.
+- Order on the page: title; description; "From" and the source link; photos and the original card; times, servings and yield; ingredients; steps; notes; nutrition; tags and tools; delete.
+- Only what the recipe states is shown. An empty field leaves no heading, no gap and no "none". A recipe that is only a title says so and points to Edit.
+- Times, servings and yield are a row of short facts. With no total time stated, prep and cook are added.
+- Photos and the original card are small pictures under the description, each with its name and count. Pressing one opens it full screen, where the browser's pinch zoom works, with Previous and Next when there is more than one. The recipe view has no large photo at the top.
+- Scaling is a four-way switch on the Ingredients heading: half, as written, double, triple. Parsed amounts, servings and yield change; times do not. A line kept as typed is not changed, even when its text holds a number, and is marked "as written" while the recipe is scaled. A note under the switch counts those lines and says that amounts inside the steps are not changed either. The scale is kept in the page address.
+- Each ingredient line's amount is set heavier than the rest of the line.
+- Steps are numbered, and the numbering restarts in each section.
+- Nutrition is folded away under its heading and lists only the values that were entered.
+- Tags and tools are shown as filters: pressing one opens the list narrowed to it.
+- "Cook" and "Edit" stay at the bottom of the screen, above the navigation, within reach of a thumb. On a short screen, such as a phone held sideways or one set to very large text, the bar stays at the end of the page instead, so it does not crowd out the recipe. "Cook" is absent from a recipe with nothing to cook from, and Edit is then the main action.
+- On a wide screen, such as a tablet on its side, the ingredients stay beside the steps.
+- "Delete recipe" is at the end of the page. It asks first, naming the recipe and saying that its photos go too ([§9](#9-deleting-and-undoing)).
+- Offline, the recipe is shown from the device's copy with a band saying so. Cook still works; Edit and Delete are turned off.
+- An address that leads to no recipe says the recipe may have been renamed or deleted and links to the list. A recipe that could not be loaded says so once and offers "Try again".
+
 ## 3. Entering ingredients
 
 The cook types a line the way it is written on the card. The rule-based parser ([implementation plan §5.1](implementation-plan.md#51-rule-based-ingredient-parser)) reads it and the editor shows what it understood.

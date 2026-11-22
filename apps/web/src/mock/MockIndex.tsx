@@ -28,7 +28,7 @@ const READY = [
   },
 ] as const;
 
-const COMING = ["Recipe view", "Recipe editor and review", "Cook mode"];
+const COMING = ["Recipe editor and review", "Cook mode"];
 
 /**
  * The mock harness: screens drawn from fixture recipes, for reviewing the
@@ -54,6 +54,19 @@ export function MockIndex() {
               </Link>
             </li>
           ))}
+          <li className="border-b border-rule">
+            <Link
+              to="/mock/recipe/$slug"
+              params={{ slug: "sunday-beef-and-bean-chili" }}
+              className="transition-rf block min-h-touch px-4 py-3 no-underline hover:bg-surface-sunk"
+            >
+              <span className="block text-lg font-semibold">Recipe view</span>
+              <span className="block text-sm">
+                A long recipe, with links to a title-only one and the loading, offline and error
+                states.
+              </span>
+            </Link>
+          </li>
           {COMING.map((name) => (
             <li key={name} className="border-b border-rule px-4 py-3 last:border-b-0">
               <span className="block font-semibold">{name}</span>

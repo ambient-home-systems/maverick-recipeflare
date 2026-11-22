@@ -1,9 +1,17 @@
-import { type Recipe, type RecipeSummary, slugify, toRecipeSummary } from "@recipeflare/schema";
+import {
+  type Asset,
+  type Recipe,
+  type RecipeSummary,
+  slugify,
+  toRecipeSummary,
+} from "@recipeflare/schema";
 import { fixtureOrganizers, fixtureRecipes } from "@recipeflare/schema/fixtures";
 import type { ListOption } from "../pages/recipes/FilterSheet";
 import { effectiveSort, type ListState } from "../pages/recipes/listState";
 import type { ListCategory } from "../pages/recipes/RecipeListScreen";
 import { assignStocks } from "../ui/stock";
+import cardBack from "./placeholders/card-back.svg";
+import cardFront from "./placeholders/card-front.svg";
 import chicken from "./placeholders/chicken.svg";
 import chili from "./placeholders/chili.svg";
 import cookies from "./placeholders/cookies.svg";
@@ -183,4 +191,34 @@ const placeholderById = new Map(
 /** A placeholder drawing for a recipe that has a cover photo. Not a photograph of anything. */
 export function placeholderThumbnail(recipe: RecipeSummary): string | undefined {
   return placeholderById.get(recipe.id);
+}
+
+/** The fixture recipe at a mock address, if there is one. */
+export function mockRecipe(slug: string): Recipe | undefined {
+  return fixtureRecipes.find((recipe) => recipe.slug === slug);
+}
+
+/** The divider colour of a category, by its slug. */
+export function mockStockFor(categorySlug: string) {
+  return mockCategories.find((category) => category.key === categorySlug)?.stock ?? "plain";
+}
+
+/**
+ * A placeholder drawing for any photo on a fixture recipe: a dish for a cover
+ * or a photo, an index card for the original card. The same drawing serves as
+ * thumbnail and full size.
+ */
+export function placeholderPhoto(recipe: Recipe, asset: Asset): string | undefined {
+  if (asset.role === "attachment") {
+    return undefined;
+  }
+  const siblings = recipe.assets
+    .filter((other) => (other.role === "original") === (asset.role === "original"))
+    .sort((a, b) => a.position - b.position);
+  const index = Math.max(0, siblings.indexOf(asset));
+  if (asset.role === "original") {
+    return index === 0 ? cardFront : cardBack;
+  }
+  const first = PLACEHOLDERS.indexOf(placeholderById.get(recipe.id) ?? pancakes);
+  return PLACEHOLDERS[(first + index) % PLACEHOLDERS.length];
 }
