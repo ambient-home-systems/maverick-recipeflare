@@ -1,0 +1,382 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`recipeDraftJsonSchema > has not changed without review 1`] = `
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "cookTimeSeconds": {
+      "anyOf": [
+        {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer",
+        },
+        {
+          "type": "null",
+        },
+      ],
+      "default": null,
+    },
+    "description": {
+      "default": "",
+      "type": "string",
+    },
+    "imageUrl": {
+      "default": null,
+      "type": [
+        "string",
+        "null",
+      ],
+    },
+    "ingredientSections": {
+      "default": [],
+      "items": {
+        "properties": {
+          "items": {
+            "default": [],
+            "items": {
+              "properties": {
+                "foodName": {
+                  "default": null,
+                  "type": [
+                    "string",
+                    "null",
+                  ],
+                },
+                "note": {
+                  "default": "",
+                  "type": "string",
+                },
+                "originalText": {
+                  "type": "string",
+                },
+                "quantity": {
+                  "default": null,
+                  "type": [
+                    "number",
+                    "null",
+                  ],
+                },
+                "unitName": {
+                  "default": null,
+                  "type": [
+                    "string",
+                    "null",
+                  ],
+                },
+              },
+              "required": [
+                "originalText",
+              ],
+              "type": "object",
+            },
+            "type": "array",
+          },
+          "title": {
+            "default": null,
+            "type": [
+              "string",
+              "null",
+            ],
+          },
+        },
+        "type": "object",
+      },
+      "type": "array",
+    },
+    "notes": {
+      "default": [],
+      "items": {
+        "properties": {
+          "text": {
+            "type": "string",
+          },
+          "title": {
+            "default": "",
+            "type": "string",
+          },
+        },
+        "required": [
+          "text",
+        ],
+        "type": "object",
+      },
+      "type": "array",
+    },
+    "nutrition": {
+      "anyOf": [
+        {
+          "properties": {
+            "calories": {
+              "anyOf": [
+                {
+                  "maxLength": 60,
+                  "type": "string",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+            },
+            "carbohydrateContent": {
+              "anyOf": [
+                {
+                  "maxLength": 60,
+                  "type": "string",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+            },
+            "cholesterolContent": {
+              "anyOf": [
+                {
+                  "maxLength": 60,
+                  "type": "string",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+            },
+            "fatContent": {
+              "anyOf": [
+                {
+                  "maxLength": 60,
+                  "type": "string",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+            },
+            "fiberContent": {
+              "anyOf": [
+                {
+                  "maxLength": 60,
+                  "type": "string",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+            },
+            "proteinContent": {
+              "anyOf": [
+                {
+                  "maxLength": 60,
+                  "type": "string",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+            },
+            "saturatedFatContent": {
+              "anyOf": [
+                {
+                  "maxLength": 60,
+                  "type": "string",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+            },
+            "sodiumContent": {
+              "anyOf": [
+                {
+                  "maxLength": 60,
+                  "type": "string",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+            },
+            "sugarContent": {
+              "anyOf": [
+                {
+                  "maxLength": 60,
+                  "type": "string",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+            },
+            "transFatContent": {
+              "anyOf": [
+                {
+                  "maxLength": 60,
+                  "type": "string",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+            },
+            "unsaturatedFatContent": {
+              "anyOf": [
+                {
+                  "maxLength": 60,
+                  "type": "string",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+            },
+          },
+          "type": "object",
+        },
+        {
+          "type": "null",
+        },
+      ],
+      "default": null,
+    },
+    "prepTimeSeconds": {
+      "anyOf": [
+        {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer",
+        },
+        {
+          "type": "null",
+        },
+      ],
+      "default": null,
+    },
+    "servings": {
+      "default": null,
+      "type": [
+        "number",
+        "null",
+      ],
+    },
+    "sourceName": {
+      "default": null,
+      "type": [
+        "string",
+        "null",
+      ],
+    },
+    "sourceUrl": {
+      "default": null,
+      "type": [
+        "string",
+        "null",
+      ],
+    },
+    "stepSections": {
+      "default": [],
+      "items": {
+        "properties": {
+          "steps": {
+            "default": [],
+            "items": {
+              "properties": {
+                "durationSeconds": {
+                  "anyOf": [
+                    {
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer",
+                    },
+                    {
+                      "type": "null",
+                    },
+                  ],
+                  "default": null,
+                },
+                "ingredientIndexes": {
+                  "default": [],
+                  "items": {
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer",
+                  },
+                  "type": "array",
+                },
+                "text": {
+                  "type": "string",
+                },
+              },
+              "required": [
+                "text",
+              ],
+              "type": "object",
+            },
+            "type": "array",
+          },
+          "title": {
+            "default": null,
+            "type": [
+              "string",
+              "null",
+            ],
+          },
+        },
+        "type": "object",
+      },
+      "type": "array",
+    },
+    "suggestedCategories": {
+      "default": [],
+      "items": {
+        "type": "string",
+      },
+      "type": "array",
+    },
+    "suggestedTags": {
+      "default": [],
+      "items": {
+        "type": "string",
+      },
+      "type": "array",
+    },
+    "suggestedTools": {
+      "default": [],
+      "items": {
+        "type": "string",
+      },
+      "type": "array",
+    },
+    "title": {
+      "default": "",
+      "type": "string",
+    },
+    "totalTimeSeconds": {
+      "anyOf": [
+        {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer",
+        },
+        {
+          "type": "null",
+        },
+      ],
+      "default": null,
+    },
+    "yieldQuantity": {
+      "default": null,
+      "type": [
+        "number",
+        "null",
+      ],
+    },
+    "yieldUnit": {
+      "default": null,
+      "type": [
+        "string",
+        "null",
+      ],
+    },
+  },
+  "type": "object",
+}
+`;

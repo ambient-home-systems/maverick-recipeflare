@@ -67,6 +67,7 @@ Made by the owner on 22 Nov 2026 in answer to this plan's open questions. The se
 | Hostnames and identifiers | The repository is public. The household's domain, hostnames, Zero Trust team domain, Access audience tags and account ID never appear in it | Hostnames are CI variables passed at deploy time; the Access settings are Worker secrets ([§8.4](#84-environments-and-deploys)) |
 | Ingredient parser | The rule-based half moves from Phase 2 to Phase 1. The AI fallback stays in Phase 2 | New task T1.5; about 5 hours move from Phase 2's budget to Phase 1's ([§5.1](#51-rule-based-ingredient-parser)) |
 | Core screens | List and search, recipe view, editor with review mode, cook mode, as a starting set | [§2.2](#22-the-four-core-screens) stands; the gate review can add a screen |
+| "From" field | Recipes get an optional source name, for a relative, a cookbook or a social-media account | New `recipes.source_name` column and `sourceName` in the schema; searchable |
 | Drizzle | Start on 1.0 (currently a release candidate) | Folder-per-migration layout with Wrangler's `migrations_pattern` ([§8.3](#83-d1-migrations)) |
 
 ## 1. Frontend framework
@@ -251,6 +252,7 @@ All fifteen Phase 1 objects. "FK" columns reference the named table's `id`.
 | `cook_time_seconds` | INTEGER | yes | |
 | `total_time_seconds` | INTEGER | yes | Stored as given; the UI sums prep and cook when it is null |
 | `nutrition` | TEXT | yes | JSON object of schema.org nutrition keys with string values as printed |
+| `source_name` | TEXT | yes | "From": who or where the recipe came from, such as a relative, a cookbook or a social-media account |
 | `source_url` | TEXT | yes | Canonicalized: fragment and tracking parameters removed, host lowercased |
 | `version` | INTEGER | no | Default 1; optimistic concurrency ([§4.5](#45-version-guard)) |
 | `created_by`, `updated_by` | TEXT | no | FK `members`, restrict |
@@ -422,7 +424,7 @@ The index text comes from several tables (the recipe, its ingredient lines and f
 | `doc_id` | INTEGER | Primary key. An explicit integer key, because FTS5 addresses content by rowid and implicit rowids are not guaranteed stable |
 | `recipe_id` | TEXT | `UNIQUE`, FK `recipes`, cascade |
 | `title` | TEXT | |
-| `description` | TEXT | |
+| `description` | TEXT | The description, followed by the recipe's source name so that "Grandma" finds her recipes |
 | `ingredients` | TEXT | One line per ingredient: the food name if set, then the original text or note |
 | `organizers` | TEXT | Names of the recipe's tags, categories and tools |
 
@@ -488,7 +490,7 @@ A save is: up to two reads, then one `batch()`.
 
 | # | Statement | Bound parameters |
 | --- | --- | --- |
-| 1 | `UPDATE recipes SET … , version = :loaded + 1 WHERE id = :id` | about 18 |
+| 1 | `UPDATE recipes SET … , version = :loaded + 1 WHERE id = :id` | about 19 |
 | 2–5 | `DELETE` the recipe's ingredients, steps, notes and organizer links | 1 each |
 | 6… | `INSERT` ingredients, 11 rows per statement | 9 columns × 11 = 99 |
 | … | `INSERT` steps, 14 rows per statement | 7 × 14 = 98 |
@@ -528,7 +530,7 @@ Checked against the models in aiomealie 2.1.4. "Required" means the model has no
 | `Recipe.recipeCategory`, `tags`, `tools` (lists of id, name, slug) | yes | `organizers` by kind |
 | `Recipe.recipeServings`, `recipeYieldQuantity`, `recipeYield` | no | `servings`, `yield_quantity`, `yield_unit` |
 | `Recipe.prepTime`, `performTime`, `totalTime` (text) and the three `…Seconds` | no | The three `*_time_seconds` columns; the text forms are formatted from them |
-| `Recipe.orgURL` | no | `source_url` |
+| `Recipe.orgURL` | no | `source_url`. `source_name` has no Mealie field and is not sent |
 | `Recipe.dateAdded` | no | Date part of `created_at` |
 | `Recipe.image`, `rating`, `lastMade` | no | Cover asset ID; null until Phase 5 |
 | `Recipe.nutrition` (schema.org keys, string values) | no | `recipes.nutrition`, same keys |
@@ -574,6 +576,7 @@ prepTimeSeconds        integer or null
 cookTimeSeconds        integer or null
 totalTimeSeconds       integer or null
 nutrition              object of schema.org keys to strings, or null
+sourceName             string or null ("From")
 sourceUrl              URL or null
 ingredientSections[]   { title: string | null, items: Ingredient[] }
 stepSections[]         { title: string | null, steps: Step[] }
@@ -592,7 +595,7 @@ Design rules:
 - **One conversion from draft to input.** `draftToInput(draft, lists)` assigns IDs, matches unit, food and organizer names against the household's lists, and returns the input and the issues. Ingredient lines that arrive as text only go through the rule-based parser on the way.
 - **Caps are part of the schema**: 100 ingredient lines, 100 steps, 20 notes, 50 organizers, 4,000 characters per step. They are what make the save's size provable in [§4.6](#46-one-batch-recipe-save).
 - **Formatting is shared.** `formatQuantity`, `formatIngredient`, scaling and duration helpers live here, so the viewer, cook mode, the search text and later the Mealie `display` field agree.
-- **Fixtures live here too.** At least eight recipes, three of them transcribed from real family cards, cover sections, free-text lines, long and minimal recipes. They feed the mock screens and the tests.
+- **Fixtures live here too**, under the `@recipeflare/schema/fixtures` import so they stay out of production bundles. Six invented recipes cover sections, free-text lines, a long recipe, a title-only recipe, an imported recipe and photos of a paper card. Three more, transcribed from real family cards, are added when the owner supplies them. They feed the mock screens and the tests.
 
 Drizzle table definitions stay in the Worker and are not generated from Zod, nor the reverse. The API shapes are nested documents and the tables are rows; one repository module maps between them, and a save-then-load test guards the mapping.
 
@@ -686,7 +689,7 @@ One table (`import_jobs`, [§4.3](#43-tables)) and one mechanism (Queues) for ev
 
 - Fetch the page with a size cap and a timeout; accept only `http` and `https` and reject IP-literal hosts.
 - Collect every `application/ld+json` block with `HTMLRewriter`, and find a `Recipe` node, including inside `@graph`, arrays and multi-typed nodes.
-- Map to a draft: name, description, yield, ISO 8601 durations to seconds, ingredient strings to lines with `originalText` (the rule-based parser fills the rest when the draft becomes input), instructions (strings, `HowToStep`, `HowToSection`) to step sections, nutrition, keywords and categories as suggested organizers, and the first usable image.
+- Map to a draft: name, the author or site name as the source name, description, yield, ISO 8601 durations to seconds, ingredient strings to lines with `originalText` (the rule-based parser fills the rest when the draft becomes input), instructions (strings, `HowToStep`, `HowToSection`) to step sections, nutrition, keywords and categories as suggested organizers, and the first usable image.
 - Download the image into R2 as an asset owned by the job.
 - Warn on review when a recipe with the same source URL exists.
 - If there is no structured data, fail with a message that says so. The fallbacks (AI on the page text, paste the page, a browser-rendered fetch) are Phase 2 and later, as the build plan has them.

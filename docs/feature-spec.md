@@ -6,11 +6,10 @@ Each section ends with its decisions. A decision marked **proposed** is my defau
 
 ## Needs your input
 
-Three things in this spec cannot be written without you. Until they are filled in, T0.3's last acceptance check is not met.
+Two things in this spec cannot be written without you. Until the first is filled in, T0.3's last acceptance check is not met.
 
 1. **Three real cards** for [§2.3](#23-card-walk-through). Photos are enough. Pick ones that differ: for example one with a "for the sauce" style section, one handwritten, and one with an unusual yield or a note in the margin.
 2. **People and devices** in [§1](#1-people-and-devices). The table holds my assumptions.
-3. **Attribution** in [§2](#2-recipe-content). Paper cards usually say who the recipe came from, and the data model has no field for that yet.
 
 ## 1. People and devices
 
@@ -48,6 +47,7 @@ Only the title is required. Everything else can be left empty and added later.
 | Notes | A list of title and text pairs | 20 notes | For tips, variations, margin notes |
 | Nutrition | Eleven optional text fields, collapsed by default | | Stored as printed, for example "12 g" |
 | Categories, tags, tools | Pickers | 50 in total | See [§4](#4-organizers) |
+| From | Text | 200 characters | Who or where the recipe came from: a relative, a cookbook, a social-media account. Shown with the source link, and searchable |
 | Source link | URL | | Set automatically by URL import |
 | Cover photo | One image | 15 MB before resizing | Shown on the list and at the top of the recipe |
 | More photos | Images | 15 MB each | Shown in a strip on the recipe |
@@ -74,7 +74,7 @@ To be filled from three real cards. For each card, every piece of writing on it 
 - Only the title is required, so a recipe can be saved half-entered and finished later.
 - Photos are resized in the browser to at most 2,560 px on the long edge before upload. That keeps handwriting legible for Phase 2 and keeps uploads near 1 MB on mobile data.
 - A recipe has at most one cover. If none is chosen, the first photo is used; if there are no photos, the list shows a plain tile with the title's first letter.
-- **Open, needs you: attribution.** Cards often say "From the kitchen of…" or name a cookbook. Proposed: add one optional text field, "From", shown beside the source link. It is one new nullable column and maps to nothing in Mealie, which is harmless. The alternative is to put it in the description.
+- A recipe has an optional "From" field for where it came from. URL import fills it with the page's author or site name when the page states one, and the cook can change it. (Decided by the owner, 22 Nov 2026.)
 
 ## 3. Entering ingredients
 
@@ -137,7 +137,7 @@ The cook types a line the way it is written on the card. The rule-based parser (
 **Decisions**
 
 - One search box at the top of the list. Results update as you type, after a short pause.
-- Search looks in the title, description, ingredients and the names of the recipe's categories, tags and tools. All words must match. The last word matches as a prefix, so "choc" finds "chocolate". Plurals and accents are ignored.
+- Search looks in the title, description, "From", ingredients and the names of the recipe's categories, tags and tools. All words must match. The last word matches as a prefix, so "choc" finds "chocolate". Plurals and accents are ignored.
 - Filters are chips for category, tag, tool and food. **Proposed:** every selected filter must match, so adding a filter always narrows the list.
 - Sort: recently changed (the default), newest, title A to Z. While searching, best match is the default.
 - Search text, filters and sort are in the page address, so the back button and a shared link restore them.
