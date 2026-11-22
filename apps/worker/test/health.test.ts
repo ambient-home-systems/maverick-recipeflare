@@ -6,7 +6,7 @@ describe("GET /api/v1/health", () => {
   it("answers ok in the shared shape", async () => {
     const response = await exports.default.fetch("https://recipeflare.test/api/v1/health");
 
-    expect(response.status).toBe(201); // deliberate failure for the T0.2 acceptance check
+    expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("application/json");
     expect(HealthResponse.parse(await response.json())).toEqual({ status: "ok" });
   });
