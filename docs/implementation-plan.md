@@ -68,7 +68,7 @@ Made by the owner on 22 Nov 2026 in answer to this plan's open questions. The se
 | Ingredient parser | The rule-based half moves from Phase 2 to Phase 1. The AI fallback stays in Phase 2 | New task T1.5; about 5 hours move from Phase 2's budget to Phase 1's ([§5.1](#51-rule-based-ingredient-parser)) |
 | Core screens | List and search, recipe view, editor with review mode, cook mode, as a starting set | [§2.2](#22-the-four-core-screens) stands; the gate review can add a screen |
 | "From" field | Recipes get an optional source name, for a relative, a cookbook or a social-media account | New `recipes.source_name` column and `sourceName` in the schema; searchable |
-| Visual direction | "Recipe tin", chosen by the owner from three sketches: the index-card recipe tin, with categories as coloured divider tabs | Recorded in `DESIGN.md`; every screen is built from its tokens and components |
+| Visual direction | "Recipe tin", chosen by the owner from three sketches: the index-card recipe tin, with categories as coloured divider tabs | Recorded in `apps/web/DESIGN.md`; every screen is built from its tokens and components |
 | Public library | The owner wants the option to make the recipe library public | Not designed yet; see [§10](#10-open-questions). It touches auth, because Cloudflare Access sits in front of everything today |
 | Drizzle | Start on 1.0 (currently a release candidate) | Folder-per-migration layout with Wrangler's `migrations_pattern` ([§8.3](#83-d1-migrations)) |
 
