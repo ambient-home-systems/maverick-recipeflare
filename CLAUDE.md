@@ -64,10 +64,11 @@ Not here yet:
 ### Shared schema
 
 - `packages/schema/src` holds one module per concern: `recipe.ts` (the three recipe shapes), `draft.ts` (importer output, `checkDraft`, `draftToInput`), `lists.ts` (organizers, foods, units, labels, members, assets), `sections.ts`, `format.ts`, `slug.ts`, `name-key.ts`, `duration.ts`, `id.ts`, `import-job.ts`, `api.ts`. Import from `@recipeflare/schema`.
-- Fixture recipes and lists are imported from `@recipeflare/schema/fixtures`, never from the main entry, so they stay out of production bundles. They are invented; do not replace them with text copied from a site or a book.
+- Fixture recipes and lists are imported from `@recipeflare/schema/fixtures`, never from the main entry, so they stay out of production bundles. Six are invented and three come from sample cards the owner supplied (ingredient lines as written, steps reworded, no photos). Do not add text copied from a site or a book.
 - Size caps live in `LIMITS` in `primitives.ts`. The one-batch save depends on them; change one only together with the plan's save section.
 - The JSON Schema export of `RecipeDraft` has a snapshot test. When you change the draft on purpose, review the diff and update it with `pnpm test -u`.
 - "From" on a recipe is `sourceName` in the API and `source_name` in the database.
+- Match unit names with `unitMatcher()`. A one-letter unit matches by exact case only ("t" is a teaspoon, "T" a tablespoon); do not lowercase unit text before matching.
 - Every recipe shape comes from `@recipeflare/schema`. The API validates with it, the editor uses it as its form resolver, and import output is validated with it. Do not define a second recipe type anywhere.
 - `RecipeDraft` must stay exportable to JSON Schema: plain objects, arrays, strings, numbers and nullables only. Cross-field checks go in `checkDraft()`.
 - An ingredient line keeps its `originalText`. Parsing fills the structured fields beside it and never overwrites it.

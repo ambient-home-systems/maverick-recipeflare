@@ -6,6 +6,7 @@ import {
   draftToInput,
   RecipeDraft,
   recipeDraftJsonSchema,
+  unitMatcher,
 } from "./draft";
 import { fixtureFoods, fixtureId, fixtureOrganizers, fixtureUnits } from "./fixtures";
 import { ImportJob, UrlImportRequest } from "./import-job";
@@ -347,6 +348,72 @@ describe("draftToInput", () => {
       "missing_ingredients",
       "missing_steps",
     ]);
+  });
+});
+
+describe("unitMatcher", () => {
+  const match = unitMatcher(fixtureUnits);
+  const unitId = (name: string) => fixtureUnits.find((u) => u.name === name)?.id ?? null;
+
+  it("tells a one-letter teaspoon from a one-letter tablespoon by case", () => {
+    expect(match("t")).toBe(unitId("teaspoon"));
+    expect(match("T")).toBe(unitId("tablespoon"));
+  });
+
+  it("ignores the full stops of handwritten abbreviations", () => {
+    expect(match("t.")).toBe(unitId("teaspoon"));
+    expect(match("T.")).toBe(unitId("tablespoon"));
+    expect(match("C.")).toBe(unitId("cup"));
+    expect(match("c.")).toBe(unitId("cup"));
+    expect(match("lbs.")).toBe(unitId("pound"));
+  });
+
+  it("ignores case for longer names", () => {
+    expect(match("TBSP")).toBe(unitId("tablespoon"));
+    expect(match("Tsp.")).toBe(unitId("teaspoon"));
+    expect(match("Cups")).toBe(unitId("cup"));
+    expect(match(" Ounces ")).toBe(unitId("ounce"));
+  });
+
+  it("does not guess a one-letter name in the wrong case", () => {
+    // "G" is not an alias of gram here, and guessing could be badly wrong.
+    expect(match("G")).toBeNull();
+    expect(match("g")).toBe(unitId("gram"));
+  });
+
+  it("returns null for a unit the household does not have", () => {
+    expect(match("knob")).toBeNull();
+    expect(match("")).toBeNull();
+  });
+});
+
+describe("the sample cards' lines", () => {
+  // Units and foods exactly as the three sample cards write them.
+  it.each([
+    ["2 lbs. ground chuck", "lbs.", "ground chuck", "pound", "ground chuck"],
+    ["1/3 c. minced onions", "c.", "onions", "cup", "onion"],
+    ["2 1/4 C. flour", "C.", "flour", "cup", "all-purpose flour"],
+    ["1 t. soda", "t.", "soda", "teaspoon", "baking soda"],
+    ["1 t. vanilla", "t.", "vanilla", "teaspoon", "vanilla extract"],
+    ["3/4 C B. Sugar", "C", "B. Sugar", "cup", "brown sugar"],
+    ["1/3 c. minced green pepper", "c.", "green pepper", "cup", "green bell pepper"],
+    ["1 1/2 cups all purpose flour", "cups", "all purpose flour", "cup", "all-purpose flour"],
+  ])("%s matches the household's unit and food", (text, unitName, foodName, unit, food) => {
+    const { input, issues } = draftToInput(
+      RecipeDraft.parse({
+        title: "x",
+        ingredientSections: [{ items: [{ originalText: text, quantity: 1, unitName, foodName }] }],
+        stepSections: [{ steps: [{ text: "Cook." }] }],
+      }),
+      lists,
+      countingIds(),
+    );
+    const line = input.ingredientSections?.[0]?.items[0];
+
+    expect(issues).toEqual([]);
+    expect(line?.unitId).toBe(fixtureUnits.find((u) => u.name === unit)?.id);
+    expect(line?.foodId).toBe(fixtureFoods.find((f) => f.name === food)?.id);
+    expect(line?.originalText).toBe(text);
   });
 });
 
