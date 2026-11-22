@@ -1,0 +1,218 @@
+# Maverick Recipeflare — Feature Spec (Phase 1)
+
+22 Nov 2026. Decides how the Phase 1 screens behave. The [build plan](build-plan.md) sets scope and the [implementation plan](implementation-plan.md) sets the data model and tasks; this document sits between them and is what the four mock screens (T0.7–T0.10) are built from.
+
+Each section ends with its decisions. A decision marked **proposed** is my default and stands unless you change it. Phase 2 appears only where it alters a Phase 1 screen.
+
+## Needs your input
+
+Three things in this spec cannot be written without you. Until they are filled in, T0.3's last acceptance check is not met.
+
+1. **Three real cards** for [§2.3](#23-card-walk-through). Photos are enough. Pick ones that differ: for example one with a "for the sauce" style section, one handwritten, and one with an unusual yield or a note in the margin.
+2. **People and devices** in [§1](#1-people-and-devices). The table holds my assumptions.
+3. **Attribution** in [§2](#2-recipe-content). Paper cards usually say who the recipe came from, and the data model has no field for that yet.
+
+## 1. People and devices
+
+Assumed, to be confirmed:
+
+| Question | Assumption |
+| --- | --- |
+| Who enters recipes | Two adults, mostly at a desktop for typing and on a phone for photos |
+| Who cooks from the app | Anyone in the household |
+| Phones | Both iPhone (Safari) and Android (Chrome). The build plan's share-sheet section covers both |
+| In the kitchen | A phone propped on the counter, sometimes a tablet in landscape |
+| Network in the kitchen | Usually Wi-Fi, but cook mode must not depend on it |
+
+**Decisions**
+
+- Designed at 390 px wide first. Nothing breaks down to 360 px. From 768 px the recipe view, editor and cook mode use two columns.
+- Supported browsers: the current and previous major versions of Safari on iOS, Chrome on Android, and Chrome, Firefox and Safari on desktop.
+- Every Phase 1 action works on a phone. The desktop is a convenience, not a requirement.
+
+## 2. Recipe content
+
+### 2.1 Fields
+
+Only the title is required. Everything else can be left empty and added later.
+
+| Field | Entered as | Limits | Notes |
+| --- | --- | --- | --- |
+| Title | Text | 1–200 characters | |
+| Description | Text, a few lines | 2,000 characters | Shown under the title |
+| Servings | Number | Greater than 0 | "Serves 6" |
+| Yield | Number and a free-text unit | Unit up to 60 characters | "24 cookies", "1 nine-inch pie". Separate from servings because a card may give either or both |
+| Prep, cook and total time | Hours and minutes | Up to 99 hours | If total is empty the app shows prep plus cook |
+| Ingredients | Lines, optionally grouped in titled sections | 100 lines | See [§3](#3-entering-ingredients) |
+| Steps | Numbered paragraphs, optionally grouped in titled sections | 100 steps, 4,000 characters each | Numbering restarts in each section |
+| Notes | A list of title and text pairs | 20 notes | For tips, variations, margin notes |
+| Nutrition | Eleven optional text fields, collapsed by default | | Stored as printed, for example "12 g" |
+| Categories, tags, tools | Pickers | 50 in total | See [§4](#4-organizers) |
+| Source link | URL | | Set automatically by URL import |
+| Cover photo | One image | 15 MB before resizing | Shown on the list and at the top of the recipe |
+| More photos | Images | 15 MB each | Shown in a strip on the recipe |
+| Original card | One or more images, in order | 15 MB each | Front and back of a paper card. Opens full screen with pinch zoom |
+| Attachments | Files such as a PDF | 15 MB each | Listed by file name |
+
+### 2.2 Not entered by hand in Phase 1
+
+- **Step durations and the ingredients each step uses.** The data model holds them, and Phase 2's step details fills them. The Phase 1 editor does not show them.
+- **Rating, favourite, last made.** Phase 5.
+
+### 2.3 Card walk-through
+
+To be filled from three real cards. For each card, every piece of writing on it is listed with the field it goes into. Anything with no home is a gap in the data model and is settled before the Phase 0 gate.
+
+| On the card | Goes into | Fits? |
+| --- | --- | --- |
+| *Card 1: to be added* | | |
+| *Card 2: to be added* | | |
+| *Card 3: to be added* | | |
+
+**Decisions**
+
+- Only the title is required, so a recipe can be saved half-entered and finished later.
+- Photos are resized in the browser to at most 2,560 px on the long edge before upload. That keeps handwriting legible for Phase 2 and keeps uploads near 1 MB on mobile data.
+- A recipe has at most one cover. If none is chosen, the first photo is used; if there are no photos, the list shows a plain tile with the title's first letter.
+- **Open, needs you: attribution.** Cards often say "From the kitchen of…" or name a cookbook. Proposed: add one optional text field, "From", shown beside the source link. It is one new nullable column and maps to nothing in Mealie, which is harmless. The alternative is to put it in the description.
+
+## 3. Entering ingredients
+
+The cook types a line the way it is written on the card. The rule-based parser ([implementation plan §5.1](implementation-plan.md#51-rule-based-ingredient-parser)) reads it and the editor shows what it understood.
+
+**Typing**
+
+- Each ingredient is one text box. Typing `2 cups flour, sifted` and pressing Enter parses the line and moves to a new one, so a list can be typed without touching anything else.
+- Pasting several lines at once makes one ingredient per line.
+- Under each line the editor shows the parse as four chips: quantity `2`, unit `cup`, food `flour`, note `sifted`.
+- Tapping a chip opens a picker to change that field. The unit and food pickers search as you type and offer "create" for a name that does not exist.
+- A food the household does not have yet is shown with a "new" mark. Nothing is created while typing.
+- "Keep as written" turns a line back into free text. Free-text lines are valid, display exactly as typed, and do not scale.
+- A line the parser cannot read at all stays free text, with no error.
+
+**Saving**
+
+- If the recipe contains new foods, saving asks once: "This adds 7 foods: flour, sugar, …". Confirming creates them and saves. This keeps the first recipes fast, when every food is new, without creating anything unseen.
+- The typed text is always kept beside the parsed fields.
+
+**Sections and order**
+
+- "Add section" inserts a titled divider. Lines belong to the divider above them.
+- Lines and dividers are reordered by dragging a handle. Each also has "move up" and "move down" in its menu, for keyboard and screen-reader use.
+- Deleting a divider keeps its lines and joins them to the section above.
+
+**Display**
+
+- The recipe view shows a parsed line formatted from its fields, with quantities as fractions where the unit allows. A free-text line is shown as typed.
+- For a range such as "2 to 3 cups" the quantity is the first number and the typed text keeps the range.
+
+**Decisions**
+
+- Typed lines with a parser, not a form with four boxes per ingredient.
+- New foods are created at save time after one confirmation per recipe. New units are created only from the unit picker, because a wrong unit ("stick", "handful") changes how every later line is read.
+- Free text is always allowed. The app never blocks a save because a line could not be parsed.
+
+## 4. Organizers
+
+| Kind | Meant for | Examples |
+| --- | --- | --- |
+| Category | A few broad groups | Dinner, Dessert, Breakfast |
+| Tag | Anything | Weeknight, Grandma, Freezes well |
+| Tool | Equipment a recipe needs | Slow cooker, Stand mixer |
+| Food | What ingredient lines refer to | Flour, Chicken thigh |
+| Unit | What quantities are measured in | Cup, Gram |
+| Label | A group of foods; the store aisle in Phase 4 | Produce, Dairy |
+
+**Decisions**
+
+- Categories, tags and tools are picked in the editor from a searchable list, and a name that does not exist can be created in place.
+- Each kind has a manage screen that lists entries with the number of recipes using each, and allows renaming.
+- Names are unique within a kind, ignoring case and extra spaces. Creating a duplicate selects the existing one.
+- Deleting a category, tag, tool or label asks for confirmation, states how many recipes or foods use it, and removes it from them.
+- A food or unit that any recipe uses cannot be deleted. The manage screen says how many recipes use it. Renaming is always allowed.
+- Labels are assigned to foods on the food's manage screen and can be put in order. They have no other effect in Phase 1.
+
+## 5. Finding recipes
+
+**Decisions**
+
+- One search box at the top of the list. Results update as you type, after a short pause.
+- Search looks in the title, description, ingredients and the names of the recipe's categories, tags and tools. All words must match. The last word matches as a prefix, so "choc" finds "chocolate". Plurals and accents are ignored.
+- Filters are chips for category, tag, tool and food. **Proposed:** every selected filter must match, so adding a filter always narrows the list.
+- Sort: recently changed (the default), newest, title A to Z. While searching, best match is the default.
+- Search text, filters and sort are in the page address, so the back button and a shared link restore them.
+- The list loads 30 recipes at a time as you scroll.
+- States: first run ("No recipes yet" with buttons for new recipe and import), no results (with a "clear filters" button), loading, and offline.
+
+## 6. Import from a URL
+
+**Decisions**
+
+- "Import" opens a sheet with one box for a link. Submitting it closes the sheet and shows the import as a row at the top of the list with its progress.
+- When the import is ready the row says "Review". Opening it shows the editor in review mode, filled in from the page.
+- Review mode lists what needs attention at the top, for example "No steps were found" or "3 ingredient lines could not be read", and marks those fields.
+- Nothing becomes a recipe until Save is pressed in review mode. "Discard" removes the import.
+- Tags and categories from the page are preselected only if the household already has them. Others are offered as unselected suggestions.
+- The page's main image becomes the cover and can be removed in review.
+- If a recipe with the same link exists, review mode says so and links to it. The import can still be saved.
+- Failures say what happened in plain words and what to try: the site could not be reached, the site blocked the request, or the page has no recipe data. For the last, the message says that pasting the text arrives with Phase 2.
+- A failed import can be retried from its row.
+
+## 7. Cook mode
+
+**Decisions**
+
+- Opened with "Cook" on the recipe view. It fills the screen and hides navigation; "Done" returns to the recipe.
+- The screen stays on while cook mode is open. If the browser cannot keep it on, cook mode says so once.
+- On a phone: steps in large type, one after another, each with a checkbox. Ingredients are in a sheet pulled up from the bottom, each with a checkbox.
+- On a tablet in landscape: ingredients on the left, steps on the right.
+- Scaling: half, 1, 2 and 3 times, or a servings number when the recipe has servings. Parsed quantities change; free-text lines are shown as typed with a mark that they are not scaled.
+- Checked boxes and the scale are kept on the device for that recipe. They survive a reload, a locked phone and a closed app, and are cleared by "Done" or after 12 hours.
+- Section titles are shown, and a checked step is dimmed, not hidden.
+- Cook mode reads from the device's copy of the recipe, so it works offline and with an expired session.
+- No timers in Phase 1. Phase 2's step details adds each step's ingredients and stated times to this screen.
+
+## 8. Offline
+
+**Decisions**
+
+- When the app opens online it copies all recipe data to the device in the background. Any recipe can then be opened offline.
+- List thumbnails are stored as the list is scrolled. A recipe's full-size photos are stored the first time the recipe is opened.
+- Offline is read-only in Phase 1. New recipe, edit, delete and import are disabled, with a short note saying why.
+- A banner says when the app is offline, and when the data shown may be out of date.
+- When the sign-in session has expired the app keeps showing stored recipes and offers "Sign in again".
+
+## 9. Deleting and undoing
+
+**Decisions**
+
+- Deleting a recipe is permanent. The confirmation names the recipe and says its photos are deleted too.
+- There is no trash and no version history in Phase 1.
+- If another device saved the same recipe while it was being edited, saving shows "This recipe was changed on another device" with the choice to reload or to keep editing and save over it. Nothing is overwritten without that choice.
+- Leaving the editor with unsaved changes asks first.
+
+## 10. Accessibility and sizing
+
+**Decisions**
+
+- Touch targets are at least 44 by 44 CSS pixels.
+- Text follows the browser's font-size setting up to 200% without clipping or overlap.
+- Contrast meets WCAG 2.1 AA: 4.5 to 1 for text and 3 to 1 for controls, in light and dark.
+- Everything works from a keyboard, including reordering, with a visible focus ring.
+- Every input has a label and every icon button has a name for screen readers.
+- Motion is reduced when the device asks for it.
+- On phones the main action of each screen is within reach of a thumb at the bottom.
+- Cook mode's step text is at least 20 px and works in portrait and landscape.
+
+## 11. Out of Phase 1
+
+Listed so that gate testing does not record these as workarounds.
+
+- Import from photos or pasted text; AI of any kind.
+- Step durations, per-step ingredients and timers.
+- Meal planning, shopping lists, Home Assistant.
+- Favourites, ratings, comments, cookbooks, the made-it timeline.
+- Unit conversion, print view, public share links.
+- Editing offline.
+- Trash, undo and version history.
+- Passkey login, invitations and member management beyond signing in through Access.

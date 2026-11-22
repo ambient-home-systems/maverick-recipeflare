@@ -12,7 +12,7 @@ Maverick Recipeflare (Recipeflare for short) is a household recipe app on Cloudf
 
 - `docs/build-plan.md` is the design doc: scope, architecture, roadmap, phase gates and the nine decisions. **Its decisions are made. Do not reopen them.** If something in it conflicts with a fact you can verify, stop and say so; do not work around it quietly.
 - `docs/implementation-plan.md` covers Phases 0 and 1: framework, repo layout, data model, shared schema, auth, import jobs, testing and deploys, and the task list (T0.1–T0.13, T1.1–T1.16). Its "Decisions since the build plan" section records later decisions by the owner; where one amends the build plan, it wins.
-- `docs/feature-spec.md` (from T0.3) decides screen behaviour.
+- `docs/feature-spec.md` decides how the Phase 1 screens behave. Build screens from it, and change it in the same pull request when a screen has to differ.
 
 ## How to work
 
