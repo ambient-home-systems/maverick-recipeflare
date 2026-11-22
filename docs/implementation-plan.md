@@ -68,6 +68,8 @@ Made by the owner on 22 Nov 2026 in answer to this plan's open questions. The se
 | Ingredient parser | The rule-based half moves from Phase 2 to Phase 1. The AI fallback stays in Phase 2 | New task T1.5; about 5 hours move from Phase 2's budget to Phase 1's ([§5.1](#51-rule-based-ingredient-parser)) |
 | Core screens | List and search, recipe view, editor with review mode, cook mode, as a starting set | [§2.2](#22-the-four-core-screens) stands; the gate review can add a screen |
 | "From" field | Recipes get an optional source name, for a relative, a cookbook or a social-media account | New `recipes.source_name` column and `sourceName` in the schema; searchable |
+| Visual direction | "Recipe tin", chosen by the owner from three sketches: the index-card recipe tin, with categories as coloured divider tabs | Recorded in `DESIGN.md`; every screen is built from its tokens and components |
+| Public library | The owner wants the option to make the recipe library public | Not designed yet; see [§10](#10-open-questions). It touches auth, because Cloudflare Access sits in front of everything today |
 | Drizzle | Start on 1.0 (currently a release candidate) | Folder-per-migration layout with Wrangler's `migrations_pattern` ([§8.3](#83-d1-migrations)) |
 
 ## 1. Frontend framework
@@ -99,6 +101,7 @@ Svelte 5 is the choice if you expect to write much of the UI by hand, or if old,
 | Server state | TanStack Query, persisted to IndexedDB |
 | Styling | Tailwind CSS 4 with design tokens as CSS variables |
 | Components | Components owned in the repo, built on headless accessible primitives |
+| Type and icons | Atkinson Hyperlegible Next, self-hosted so it works offline; Lucide icons |
 | Forms | react-hook-form with the shared Zod schemas |
 | Reordering | dnd-kit |
 | PWA | vite-plugin-pwa (Workbox) with a hand-written service worker |
@@ -312,6 +315,7 @@ Index: `UNIQUE(recipe_id, position)`.
 | `kind` | TEXT | no | `category`, `tag` or `tool`; a closed set, so `CHECK` is used |
 | `name` | TEXT | no | |
 | `slug` | TEXT | no | |
+| `color` | TEXT | yes | For a category: its divider stock, one of `buff`, `salmon`, `sky`, `mint`, `lilac`. Set when the category is created, taking the least-used stock, so a category keeps its colour when another is deleted. Null for tags and tools |
 | `created_at`, `updated_at` | TEXT | no | |
 
 Index: `UNIQUE(kind, slug)`.
@@ -836,10 +840,10 @@ Suggested mix for the gate's ten: at least one with ingredient sections, one wit
 
 ## 10. Open questions
 
-Questions 1 to 5 of the first version were answered on 22 Nov 2026 and are recorded in [Decisions since the build plan](#decisions-since-the-build-plan). What remains, each with the default this plan assumes so that work can start:
+Questions answered since the first version are recorded in [Decisions since the build plan](#decisions-since-the-build-plan). What remains, each with the default this plan assumes so that work can start:
 
-1. **Access team domain and hostnames for T0.5.** The team domain is the subdomain in `<team>.cloudflareaccess.com`, which is not always the team's display name. It, the two hostnames and the two audience tags are entered as secrets and CI variables during T0.5 and are not needed before then.
-2. **Members.** Which emails are in the household, and should anyone Access admits become a member automatically? Default: yes, with the first sign-in as owner.
+1. **Public library.** The owner wants the option to make the library public. Undecided: which phase; whether public means read-only; the whole library or chosen recipes; and how it works when Cloudflare Access is in front of the hostname. The build plan has public share links in Phase 5, which may be the same feature or a narrower one. Default until decided: nothing is public, and the shell is designed so that a signed-out visitor could be shown a read-only version later.
+2. **Members.** Access admits the household's two adults. Should anyone Access admits become a member automatically on first sign-in? Default: yes, with the first sign-in as owner. Settled in T0.12.
 3. **Drafts on the job, not in `recipes`.** See [Conflicts](#conflicts-with-the-build-plan). Say so if you want imported drafts to appear in the recipe list before review.
 4. **Units.** Is a starting list of about 25 US and metric units right, and should quantities default to fractions?
 5. **What "works offline" covers.** Default: all recipe data syncs to the device, images once viewed. Settled in the spec (T0.3).

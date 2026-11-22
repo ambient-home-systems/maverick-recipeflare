@@ -1,0 +1,139 @@
+/*
+ * Design tokens for Recipeflare: the index-card recipe tin.
+ *
+ * Colours are hex on purpose: tokens.test.ts reads this file and checks the
+ * WCAG contrast of every text and control pairing in both themes.
+ *
+ * Light is the daylight kitchen. Dark is the dim evening kitchen, designed for
+ * low glare and not derived by inverting light.
+ */
+:root {
+  color-scheme: light;
+
+  /* Ink: one colour for all text. Hierarchy comes from weight and size. */
+  --rf-ink: #14263f;
+  --rf-ink-soft: #3f536e;
+
+  /* The shell: the tin itself. */
+  --rf-shell: #17304f;
+  --rf-on-shell: #f4f8fc;
+  --rf-on-shell-soft: #c5d4e6;
+
+  /* Primary buttons: ink on a light kitchen, and the reverse in the dark one. */
+  --rf-primary: #17304f;
+  --rf-primary-press: #0f2238;
+  --rf-on-primary: #f4f8fc;
+
+  /* Working surfaces: card white on a ground tinted from the ruling blue. */
+  --rf-ground: #e9eff6;
+  --rf-surface: #ffffff;
+  --rf-surface-sunk: #f1f5fa;
+
+  /* Ruling blue: hairlines between rows, and the stronger line around controls. */
+  --rf-rule: #a9c1dc;
+  --rf-rule-strong: #5b7ba2;
+
+  /* Rule red: the line a title sits on, and the Add action. */
+  --rf-red-fill: #c8372d;
+  --rf-red-fill-press: #a82c24;
+  --rf-on-red: #ffffff;
+  --rf-red-line: #c8372d;
+  --rf-red-text: #b02a21;
+
+  /* Divider stock: one colour per category, the same wherever it appears. */
+  --rf-stock-buff: #edc96b;
+  --rf-stock-salmon: #f3a892;
+  --rf-stock-sky: #9fc8ea;
+  --rf-stock-mint: #a9dcbd;
+  --rf-stock-lilac: #cbb9e6;
+  --rf-stock-plain: #d6e2ef;
+  --rf-on-stock: #14263f;
+
+  /* States. */
+  --rf-focus: #1552c7;
+  --rf-focus-on-shell: #ffffff;
+  --rf-notice: #fbefc9;
+  --rf-on-notice: #14263f;
+  --rf-ok-text: #1b6e45;
+  --rf-skeleton: #dfe8f2;
+  --rf-overlay-shadow: 0 10px 28px rgb(13 22 38 / 0.2), 0 2px 6px rgb(13 22 38 / 0.12);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --rf-ink: #e8eef6;
+  --rf-ink-soft: #b3c3d8;
+
+  --rf-shell: #10233d;
+  --rf-on-shell: #f4f8fc;
+  --rf-on-shell-soft: #b9cbe0;
+
+  --rf-primary: #dce7f4;
+  --rf-primary-press: #c3d3e6;
+  --rf-on-primary: #14263f;
+
+  --rf-ground: #0b1422;
+  --rf-surface: #152236;
+  --rf-surface-sunk: #0f1a2b;
+
+  --rf-rule: #2d4363;
+  --rf-rule-strong: #6f8fb6;
+
+  --rf-red-fill: #c8372d;
+  --rf-red-fill-press: #a82c24;
+  --rf-on-red: #ffffff;
+  --rf-red-line: #e8766b;
+  --rf-red-text: #f3958b;
+
+  --rf-stock-buff: #dcbb62;
+  --rf-stock-salmon: #e39b86;
+  --rf-stock-sky: #93b9da;
+  --rf-stock-mint: #9bcbae;
+  --rf-stock-lilac: #bcabd6;
+  --rf-stock-plain: #2a3d59;
+  --rf-on-stock: #14263f;
+
+  --rf-focus: #9dc1ff;
+  --rf-focus-on-shell: #ffffff;
+  --rf-notice: #4a3d14;
+  --rf-on-notice: #fbefc9;
+  --rf-ok-text: #7fd3a6;
+  --rf-skeleton: #22334d;
+  --rf-overlay-shadow: 0 10px 28px rgb(0 0 0 / 0.5), 0 2px 6px rgb(0 0 0 / 0.35);
+}
+
+:root {
+  /* Type: one face, chosen for reading at arm's length. Sizes are fixed rem steps. */
+  --rf-font:
+    "Atkinson Hyperlegible Next Variable", "Atkinson Hyperlegible Next", system-ui, sans-serif;
+  --rf-text-xs: 0.8125rem;
+  --rf-text-sm: 0.9375rem;
+  --rf-text-base: 1.0625rem;
+  --rf-text-lg: 1.1875rem;
+  --rf-text-xl: 1.4375rem;
+  --rf-text-2xl: 1.75rem;
+  --rf-text-cook: 1.375rem;
+
+  /* Space: a 4 px step. */
+  --rf-space-1: 0.25rem;
+  --rf-space-2: 0.5rem;
+  --rf-space-3: 0.75rem;
+  --rf-space-4: 1rem;
+  --rf-space-5: 1.25rem;
+  --rf-space-6: 1.5rem;
+  --rf-space-8: 2rem;
+  --rf-space-10: 2.5rem;
+  --rf-space-12: 3rem;
+
+  /* Radius: small on tiles and controls; tabs round only their top corners. */
+  --rf-radius-sm: 0.375rem;
+  --rf-radius-md: 0.625rem;
+  --rf-radius-pill: 999px;
+
+  /* The smallest thing a finger is asked to hit. */
+  --rf-touch: 2.75rem;
+  --rf-touch-nav: 3.25rem;
+
+  --rf-motion: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}

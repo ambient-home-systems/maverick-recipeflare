@@ -1,0 +1,160 @@
+@import "tailwindcss";
+@import "@fontsource-variable/atkinson-hyperlegible-next/wght.css";
+@import "./tokens.css";
+
+/* Tailwind utilities are generated from the tokens, so `bg-surface` or
+   `text-ink` follow the theme without a `dark:` variant anywhere. */
+@theme inline {
+  --color-*: initial;
+  --color-ink: var(--rf-ink);
+  --color-ink-soft: var(--rf-ink-soft);
+  --color-shell: var(--rf-shell);
+  --color-on-shell: var(--rf-on-shell);
+  --color-on-shell-soft: var(--rf-on-shell-soft);
+  --color-primary: var(--rf-primary);
+  --color-primary-press: var(--rf-primary-press);
+  --color-on-primary: var(--rf-on-primary);
+  --color-ground: var(--rf-ground);
+  --color-surface: var(--rf-surface);
+  --color-surface-sunk: var(--rf-surface-sunk);
+  --color-rule: var(--rf-rule);
+  --color-rule-strong: var(--rf-rule-strong);
+  --color-red-fill: var(--rf-red-fill);
+  --color-red-fill-press: var(--rf-red-fill-press);
+  --color-on-red: var(--rf-on-red);
+  --color-red-line: var(--rf-red-line);
+  --color-red-text: var(--rf-red-text);
+  --color-stock-buff: var(--rf-stock-buff);
+  --color-stock-salmon: var(--rf-stock-salmon);
+  --color-stock-sky: var(--rf-stock-sky);
+  --color-stock-mint: var(--rf-stock-mint);
+  --color-stock-lilac: var(--rf-stock-lilac);
+  --color-stock-plain: var(--rf-stock-plain);
+  --color-on-stock: var(--rf-on-stock);
+  --color-focus: var(--rf-focus);
+  --color-notice: var(--rf-notice);
+  --color-on-notice: var(--rf-on-notice);
+  --color-ok-text: var(--rf-ok-text);
+  --color-skeleton: var(--rf-skeleton);
+  --color-transparent: transparent;
+
+  --font-sans: var(--rf-font);
+
+  --text-xs: var(--rf-text-xs);
+  --text-sm: var(--rf-text-sm);
+  --text-base: var(--rf-text-base);
+  --text-lg: var(--rf-text-lg);
+  --text-xl: var(--rf-text-xl);
+  --text-2xl: var(--rf-text-2xl);
+  --text-cook: var(--rf-text-cook);
+
+  --radius-sm: var(--rf-radius-sm);
+  --radius-md: var(--rf-radius-md);
+  --radius-pill: var(--rf-radius-pill);
+
+  --spacing-touch: var(--rf-touch);
+  --spacing-touch-nav: var(--rf-touch-nav);
+
+  --shadow-overlay: var(--rf-overlay-shadow);
+  --breakpoint-md: 48rem;
+}
+
+@layer base {
+  html {
+    font-family: var(--rf-font);
+    font-size: 100%;
+    -webkit-text-size-adjust: 100%;
+    background: var(--rf-ground);
+    color: var(--rf-ink);
+    accent-color: var(--rf-primary);
+    caret-color: var(--rf-red-line);
+    scrollbar-color: var(--rf-rule-strong) transparent;
+  }
+
+  body {
+    font-size: var(--rf-text-base);
+    line-height: 1.4;
+    min-height: 100dvh;
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background: var(--rf-stock-sky);
+    color: var(--rf-on-stock);
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+    line-height: 1.2;
+  }
+
+  a {
+    text-underline-offset: 0.2em;
+    text-decoration-thickness: 0.08em;
+  }
+
+  /* One focus ring everywhere. On the navy shell it turns white. */
+  :focus-visible {
+    outline: 3px solid var(--rf-focus);
+    outline-offset: 2px;
+    border-radius: var(--rf-radius-sm);
+  }
+
+  .on-shell :focus-visible {
+    outline-color: var(--rf-focus-on-shell);
+  }
+
+  /* The navigation is a navy rail from tablet width, and a white bar below it. */
+  @media (min-width: 48rem) {
+    .shell-rail :focus-visible {
+      outline-color: var(--rf-focus-on-shell);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    /* biome-ignore-start lint/complexity/noImportantStyles: reduced motion must win over every component's own timing */
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+    /* biome-ignore-end lint/complexity/noImportantStyles: end of the reduced-motion override */
+  }
+}
+
+@layer utilities {
+  /* Loading rows: a slow shimmer in the ruling blue, held still under reduced motion. */
+  .skeleton {
+    background: linear-gradient(
+      100deg,
+      var(--rf-skeleton) 40%,
+      var(--rf-surface-sunk) 50%,
+      var(--rf-skeleton) 60%
+    );
+    background-size: 220% 100%;
+    animation: skeleton-sweep 1.6s ease-in-out infinite;
+    border-radius: var(--rf-radius-sm);
+  }
+
+  .transition-rf {
+    transition:
+      background-color var(--rf-motion),
+      color var(--rf-motion),
+      border-color var(--rf-motion),
+      transform var(--rf-motion);
+  }
+}
+
+@keyframes skeleton-sweep {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -20% 0;
+  }
+}

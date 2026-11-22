@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Recipeflare">
+  <!-- Placeholder icon: an index card with a divider tab, on ink navy. -->
+  <rect width="512" height="512" rx="112" fill="#17304f"/>
+  <path d="M112 196a24 24 0 0 1 24-24h88a24 24 0 0 1 20.8 12l12.4 21.6a24 24 0 0 0 20.8 12H376a24 24 0 0 1 24 24v114.400a24 24 0 0 1-24 24H136a24 24 0 0 1-24-24z" fill="#ffffff"/>
+  <path d="M128 172a24 24 0 0 1 24-24h72v40h-96z" fill="#edc96b"/>
+  <rect x="112" y="252" width="288" height="12" fill="#c8372d"/>
+  <rect x="144" y="296" width="224" height="8" rx="4" fill="#a9c1dc"/>
+  <rect x="144" y="328" width="168" height="8" rx="4" fill="#a9c1dc"/>
+</svg>

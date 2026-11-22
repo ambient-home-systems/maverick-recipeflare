@@ -6,12 +6,13 @@ Guidance for Claude Code working in this repository.
 
 Maverick Recipeflare (Recipeflare for short) is a household recipe app on Cloudflare: one TypeScript Worker serving a React PWA and a JSON API, with D1, R2, Queues and, in later phases, Workers AI and Durable Objects. One household per install. Licensed AGPL-3.0-only.
 
-**Status: Phase 0, through T0.5.** The workspace, a Worker with a health route, an empty React app, CI, the feature spec, the shared schema package and the deploy pipeline exist. There are no screens, no database tables and no auth yet. When a pull request changes a command or path below, it updates this file in the same pull request.
+**Status: Phase 0, through T0.6.** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, and the web app's shell, design tokens and mock harness exist. There are no product screens, no database tables and no auth yet. When a pull request changes a command or path below, it updates this file in the same pull request.
 
 ## Read first
 
 - `docs/build-plan.md` is the design doc: scope, architecture, roadmap, phase gates and the nine decisions. **Its decisions are made. Do not reopen them.** If something in it conflicts with a fact you can verify, stop and say so; do not work around it quietly.
 - `docs/implementation-plan.md` covers Phases 0 and 1: framework, repo layout, data model, shared schema, auth, import jobs, testing and deploys, and the task list (T0.1–T0.13, T1.1–T1.16). Its "Decisions since the build plan" section records later decisions by the owner; where one amends the build plan, it wins.
+- `PRODUCT.md` records who the app is for and what it must preserve. `DESIGN.md` records the visual system, "Recipe tin", which the owner chose. Read both before any UI work.
 - `docs/operations.md` describes deploys and the one-time setup. It names settings and never gives their values.
 - `docs/feature-spec.md` decides how the Phase 1 screens behave. Build screens from it, and change it in the same pull request when a screen has to differ.
 
@@ -29,6 +30,11 @@ Maverick Recipeflare (Recipeflare for short) is a household recipe app on Cloudf
 wrangler.jsonc        Worker config at the repo root (the Deploy button needs it there)
 apps/worker/          Hono API, queue consumer, auth, Drizzle schema, migrations
 apps/web/             Vite React PWA; builds to apps/web/dist, served as static assets
+  src/styles/         tokens.css (the design tokens) and app.css (Tailwind theme, base styles)
+  src/shell/          The frame every screen sits in: header and navigation
+  src/ui/             Shared components: Button, DividerTabs, RecipeRow, Page, Notice
+  src/pages/          Product screens
+  src/mock/           The /mock harness: screens drawn from fixtures for design review
 packages/schema/      @recipeflare/schema: Zod schemas, types, formatting, fixtures
 scripts/              Small Node scripts used by the root package scripts
 services/fetch-agent/ Placeholder until Phase 3 (yt-dlp and ffmpeg Docker image)
@@ -75,6 +81,17 @@ Not here yet:
 - `RecipeDraft` must stay exportable to JSON Schema: plain objects, arrays, strings, numbers and nullables only. Cross-field checks go in `checkDraft()`.
 - An ingredient line keeps its `originalText`. Parsing fills the structured fields beside it and never overwrites it.
 - The ingredient parser in the shared package is rules only in Phase 1 and must run in the browser with no network. It never creates foods or units.
+
+### Design
+
+- Colours, type sizes, radii and touch sizes come from the tokens in `apps/web/src/styles/tokens.css`, through Tailwind classes such as `bg-surface` and `text-ink`. Do not write a hex colour or a `dark:` variant in a component; the tokens switch with the theme.
+- A new colour token needs its pairings added to `tokens.test.ts`, which checks WCAG contrast in both themes.
+- Rule red as a fill is for adding a recipe only. Save, cook and confirm use the primary button. Errors and delete use red text or a red outline.
+- A category keeps one divider colour wherever it appears. Get it from `stock.ts`; do not pick colours per screen.
+- Rows are ruled, not carded: hairlines in ruling blue, no shadows. No paper textures, handwriting fonts or serif display type.
+- Every link, button and tab is at least 44 by 44 CSS pixels. Use `min-h-touch` and `min-w-touch`.
+- Fonts and icons are self-hosted. Nothing is fetched from a font or icon service, because the app must work offline.
+- Mock screens live under `/mock`, load on demand, and are the only code that imports fixtures.
 
 ### Database (D1)
 
@@ -127,7 +144,7 @@ Not here yet:
 
 - Three Vitest projects, run together from the root config: `packages/schema` (tests beside the source), `apps/worker` (tests in `apps/worker/test/`), `apps/web` (tests beside the source).
 - Worker tests run in workerd through `@cloudflare/vitest-plugin` (`cloudflareTest()` in the Vitest config). Import `env` and `exports` from `cloudflare:workers` and call `exports.default.fetch()`; queue and migration helpers come from `cloudflare:test`.
-- Web tests use Testing Library on happy-dom. Stub `fetch` with `vi.stubGlobal`; stubs and mocks are reset after each test by the config.
+- Web tests use Testing Library on happy-dom. Render a screen with `renderAt(path)` from `src/test-utils.tsx`, which mounts the whole app at an address. Stub `fetch` with `vi.stubGlobal`; stubs and mocks are reset after each test by the config.
 - Test tooling (`vitest`, the Cloudflare plugin, happy-dom) is installed at the workspace root only. Do not add `vitest` to a package: a second copy breaks the run.
 - Storage is isolated per test file, not per test. Use distinct IDs within a file, or reset and re-apply migrations.
 - Once the database exists (T0.11), tests apply the real migration files, so a schema change needs its migration before its tests can pass.

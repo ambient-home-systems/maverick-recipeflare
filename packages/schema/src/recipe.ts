@@ -270,6 +270,8 @@ export const RecipeSummary = z.object({
   slug: Slug,
   title: z.string(),
   description: z.string(),
+  /** "From": who or where the recipe came from. Shown on the list row. */
+  sourceName: z.string().nullable(),
   servings: z.number().nullable(),
   prepTimeSeconds: z.int().nullable(),
   cookTimeSeconds: z.int().nullable(),
@@ -298,6 +300,7 @@ export function toRecipeSummary(recipe: Recipe): RecipeSummary {
     slug: recipe.slug,
     title: recipe.title,
     description: recipe.description,
+    sourceName: recipe.sourceName,
     servings: recipe.servings,
     prepTimeSeconds: recipe.prepTimeSeconds,
     cookTimeSeconds: recipe.cookTimeSeconds,
