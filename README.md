@@ -5,6 +5,7 @@ A household recipe app that runs on Cloudflare: recipes, cook mode, AI import fr
 **Status:** planning. There is no application code yet.
 
 - [Build plan](docs/build-plan.md): scope, AI import pipeline, architecture, roadmap, decisions and risks.
+- [Implementation plan](docs/implementation-plan.md): Phases 0 and 1 in detail, with the data model and the task list.
 
 ## License
 
