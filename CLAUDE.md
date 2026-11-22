@@ -6,7 +6,7 @@ Guidance for Claude Code working in this repository.
 
 Maverick Recipeflare (Recipeflare for short) is a household recipe app on Cloudflare: one TypeScript Worker serving a React PWA and a JSON API, with D1, R2, Queues and, in later phases, Workers AI and Durable Objects. One household per install. Licensed AGPL-3.0-only.
 
-**Status: Phase 0, scaffold and CI (T0.1, T0.2).** The workspace, a Worker with a health route, an empty React app, a first test in each Vitest project and the CI workflow exist. There are no features, no database and no auth yet. When a pull request changes a command or path below, it updates this file in the same pull request.
+**Status: Phase 0, through T0.4.** The workspace, a Worker with a health route, an empty React app, CI, the feature spec and the shared schema package exist. There are no screens, no database and no auth yet. When a pull request changes a command or path below, it updates this file in the same pull request.
 
 ## Read first
 
@@ -63,6 +63,11 @@ Not here yet:
 
 ### Shared schema
 
+- `packages/schema/src` holds one module per concern: `recipe.ts` (the three recipe shapes), `draft.ts` (importer output, `checkDraft`, `draftToInput`), `lists.ts` (organizers, foods, units, labels, members, assets), `sections.ts`, `format.ts`, `slug.ts`, `name-key.ts`, `duration.ts`, `id.ts`, `import-job.ts`, `api.ts`. Import from `@recipeflare/schema`.
+- Fixture recipes and lists are imported from `@recipeflare/schema/fixtures`, never from the main entry, so they stay out of production bundles. They are invented; do not replace them with text copied from a site or a book.
+- Size caps live in `LIMITS` in `primitives.ts`. The one-batch save depends on them; change one only together with the plan's save section.
+- The JSON Schema export of `RecipeDraft` has a snapshot test. When you change the draft on purpose, review the diff and update it with `pnpm test -u`.
+- "From" on a recipe is `sourceName` in the API and `source_name` in the database.
 - Every recipe shape comes from `@recipeflare/schema`. The API validates with it, the editor uses it as its form resolver, and import output is validated with it. Do not define a second recipe type anywhere.
 - `RecipeDraft` must stay exportable to JSON Schema: plain objects, arrays, strings, numbers and nullables only. Cross-field checks go in `checkDraft()`.
 - An ingredient line keeps its `originalText`. Parsing fills the structured fields beside it and never overwrites it.
