@@ -6,12 +6,13 @@ Guidance for Claude Code working in this repository.
 
 Maverick Recipeflare (Recipeflare for short) is a household recipe app on Cloudflare: one TypeScript Worker serving a React PWA and a JSON API, with D1, R2, Queues and, in later phases, Workers AI and Durable Objects. One household per install. Licensed AGPL-3.0-only.
 
-**Status: Phase 0, through T0.4.** The workspace, a Worker with a health route, an empty React app, CI, the feature spec and the shared schema package exist. There are no screens, no database and no auth yet. When a pull request changes a command or path below, it updates this file in the same pull request.
+**Status: Phase 0, through T0.5.** The workspace, a Worker with a health route, an empty React app, CI, the feature spec, the shared schema package and the deploy pipeline exist. There are no screens, no database tables and no auth yet. When a pull request changes a command or path below, it updates this file in the same pull request.
 
 ## Read first
 
 - `docs/build-plan.md` is the design doc: scope, architecture, roadmap, phase gates and the nine decisions. **Its decisions are made. Do not reopen them.** If something in it conflicts with a fact you can verify, stop and say so; do not work around it quietly.
 - `docs/implementation-plan.md` covers Phases 0 and 1: framework, repo layout, data model, shared schema, auth, import jobs, testing and deploys, and the task list (T0.1–T0.13, T1.1–T1.16). Its "Decisions since the build plan" section records later decisions by the owner; where one amends the build plan, it wins.
+- `docs/operations.md` describes deploys and the one-time setup. It names settings and never gives their values.
 - `docs/feature-spec.md` decides how the Phase 1 screens behave. Build screens from it, and change it in the same pull request when a screen has to differ.
 
 ## How to work
@@ -31,7 +32,7 @@ apps/web/             Vite React PWA; builds to apps/web/dist, served as static 
 packages/schema/      @recipeflare/schema: Zod schemas, types, formatting, fixtures
 scripts/              Small Node scripts used by the root package scripts
 services/fetch-agent/ Placeholder until Phase 3 (yt-dlp and ffmpeg Docker image)
-docs/                 Build plan, implementation plan, feature spec
+docs/                 Build plan, implementation plan, feature spec, operations
 ```
 
 ## Commands
@@ -48,6 +49,8 @@ Run from the repository root. Needs Node 22.12 or later and pnpm 10 (`corepack e
 | `pnpm test --project worker` | One project. A file path or `-t "name"` narrows it further |
 | `pnpm typecheck` | Regenerate the Worker's types, then run TypeScript in every package |
 | `pnpm types` | Regenerate `apps/worker/worker-configuration.d.ts` from `wrangler.jsonc`. The file is git-ignored; run this after changing bindings |
+| `pnpm run deploy --dry-run` | Build and bundle the Worker without contacting Cloudflare. Add `--env staging` for the staging config. CI runs both |
+| `pnpm run deploy:staging`, `pnpm run deploy` | Real deploys. They run from GitHub Actions, not from a laptop; see `docs/operations.md`. Use `pnpm run`: bare `pnpm deploy` is a different pnpm command |
 
 To see the built app served by the Worker alone, as in production: `pnpm build`, then `pnpm dev:worker`, then open `http://localhost:8787`.
 
@@ -55,7 +58,6 @@ Not here yet:
 
 | Command | Arrives with |
 | --- | --- |
-| `pnpm run deploy:staging`, `pnpm run deploy` (use `pnpm run`; bare `pnpm deploy` is a different pnpm command) | T0.5 |
 | `pnpm db:generate`, `pnpm db:migrate:local` | T0.11 |
 | Local sign-in through `.dev.vars` (`AUTH_MODE=dev`, `DEV_MEMBER_EMAIL`) | T0.12 |
 
@@ -116,7 +118,9 @@ Not here yet:
 ### Secrets and privacy
 
 - No secrets in the repository, in `wrangler.jsonc` or in CI logs. Local secrets go in `.dev.vars`; deployed ones are Wrangler secrets.
-- The repository is public. Do not commit the household's domain, hostnames, Zero Trust team domain, Access audience tags, Cloudflare account or resource IDs, or email addresses. Hostnames are CI variables; Access settings are Worker secrets. This applies to docs, tests, commit messages and pull requests too.
+- The repository is public. Do not commit the household's domain, hostnames, Zero Trust team domain, Access audience tags, Cloudflare account or resource IDs, or email addresses. Hostnames and Access settings are GitHub environment secrets, so they are masked in the public CI logs. This applies to docs, tests, commit messages and pull requests too.
+- `wrangler.jsonc` names resources and never holds an ID, a route or a hostname. The top-level config is production for every install; `env.staging` is this project's own.
+- Never print a secret or a hostname from a script or a workflow step.
 - Do not commit real recipe pages fetched from other sites. Test fixtures for URL import are synthetic.
 
 ## Testing
@@ -128,7 +132,7 @@ Not here yet:
 - Storage is isolated per test file, not per test. Use distinct IDs within a file, or reset and re-apply migrations.
 - Once the database exists (T0.11), tests apply the real migration files, so a schema change needs its migration before its tests can pass.
 - New behaviour comes with a test. A bug fix comes with a test that fails without it.
-- CI (`.github/workflows/ci.yml`) runs lint, typecheck, test and build on every pull request and on pushes to `main`.
+- CI (`.github/workflows/ci.yml`) runs lint, typecheck, test, build and a deploy dry run on every pull request and on pushes to `main`. On `main` it then deploys staging. `.github/workflows/deploy.yml` is the manual deploy.
 
 ## Style
 

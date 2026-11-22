@@ -17,5 +17,33 @@
     // The API always runs the Worker, even for browser navigations such as
     // opening an image or attachment in a new tab.
     "run_worker_first": ["/api/*"]
+  },
+
+  // Resources are named, never identified by ID. Wrangler creates each one on
+  // the first deploy and finds it by name afterwards.
+  "d1_databases": [{ "binding": "DB", "database_name": "recipeflare" }],
+  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "recipeflare-media" }],
+  "queues": {
+    "producers": [{ "binding": "IMPORT_QUEUE", "queue": "recipeflare-imports" }]
+  },
+
+  // The top-level configuration is production, for this install and for every
+  // install made with the Deploy to Cloudflare button. It sets no route: a
+  // custom domain is passed at deploy time (see scripts/deploy.mjs), and
+  // without one the Worker is served on workers.dev.
+  //
+  // Staging is this project's own second copy. Bindings are not inherited by
+  // environments, so they are repeated here with staging names.
+  "env": {
+    "staging": {
+      // Staging is only ever reached through its custom domain.
+      "workers_dev": false,
+      "preview_urls": false,
+      "d1_databases": [{ "binding": "DB", "database_name": "recipeflare-staging" }],
+      "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "recipeflare-staging-media" }],
+      "queues": {
+        "producers": [{ "binding": "IMPORT_QUEUE", "queue": "recipeflare-staging-imports" }]
+      }
+    }
   }
 }

@@ -772,15 +772,16 @@ The folder layout is fixed for good once the first migration is applied, because
 | Auth | Dev provider | Access | Access |
 | Deployed by | — | GitHub Actions on every merge to `main`, after CI passes | GitHub Actions, started by hand, with an approval on the `production` environment |
 
-Both deploy jobs run the same root script: build, apply migrations to the remote database, then `wrangler deploy`. That script is also what Workers Builds will run for Deploy-button installs in Phase 6, so it must not depend on anything GitHub-specific.
+Both deploy jobs run the same root script, `scripts/deploy.mjs`: build, apply migrations to the remote database, then `wrangler deploy`. CI also runs it with `--dry-run` for both configurations on every pull request, so a broken Wrangler file fails before a deploy. That script is also what Workers Builds will run for Deploy-button installs in Phase 6, so it must not depend on anything GitHub-specific.
 
 **Nothing that identifies the household is committed.** The repository is public, so:
 
 - The Wrangler file names resources (`recipeflare`, `recipeflare-staging`) and carries no resource IDs; Wrangler provisions and links by name.
-- Production and staging hostnames are GitHub environment variables, passed with `wrangler deploy --domain`.
-- The Access team domain and each application's audience tag are Worker secrets (`ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`), set once per environment with `wrangler secret put`.
-- The Cloudflare account ID and API token are GitHub secrets.
-- The operations note describes the steps and names the variables, without values.
+- Production and staging hostnames are GitHub environment secrets (`APP_HOSTNAME`), passed with `wrangler deploy --domain`. They are secrets, not variables, because a public repository's CI logs are public and GitHub masks only secrets.
+- The Access team domain and each application's audience tag are GitHub environment secrets too (`ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`). The deploy script hands them to Wrangler as Worker secrets.
+- The Cloudflare account ID and API token are GitHub repository secrets.
+- The Wrangler file names each resource and gives no ID; Wrangler creates a named resource on the first deploy and finds it by name afterwards.
+- [`docs/operations.md`](operations.md) describes the steps and names the settings, without values.
 
 Our install deploys from GitHub Actions rather than Workers Builds because the test run gates the deploy and production needs an approval step. The Workers Builds path is exercised in Phase 6 by the fresh-account test the build plan already requires.
 
