@@ -14,6 +14,7 @@ import {
   validateMockReviewSearch,
 } from "./mock/scenes";
 import { AddPage } from "./pages/AddPage";
+import { CookPage } from "./pages/CookPage";
 import { EditRecipePage, NewRecipePage } from "./pages/EditorPage";
 import { ManageListPage, ManagePage } from "./pages/ManagePage";
 import { RecipePage } from "./pages/RecipePage";
@@ -112,12 +113,24 @@ const recipeRoute = createRoute({
   component: RecipePage,
 });
 
+const cookRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/recipes/$slug/cook",
+  // The scale the recipe was showing when Cook was pressed.
+  validateSearch: (raw: Record<string, unknown>): { scale?: 0.5 | 2 | 3 } => {
+    const scale = parseScale(raw.scale);
+    return scale === 1 ? {} : { scale };
+  },
+  component: CookPage,
+});
+
 const routeTree = rootRoute.addChildren([
   recipesRoute,
   // "new" can never be a recipe's slug: the shared slug function keeps clear of it.
   at("/recipes/new", NewRecipePage),
   recipeRoute,
   at("/recipes/$slug/edit", EditRecipePage),
+  cookRoute,
   at("/add", AddPage),
   at("/manage", ManagePage),
   at("/manage/$list", ManageListPage),
