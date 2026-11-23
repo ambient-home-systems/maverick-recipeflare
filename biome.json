@@ -6,7 +6,13 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!**/pnpm-lock.yaml", "!**/*.md", "!**/.impeccable"]
+    "includes": [
+      "**",
+      "!**/pnpm-lock.yaml",
+      "!**/*.md",
+      "!**/.impeccable",
+      "!apps/worker/migrations"
+    ]
   },
   "formatter": {
     "indentStyle": "space",

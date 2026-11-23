@@ -6,7 +6,7 @@ Guidance for Claude Code working in this repository.
 
 Maverick Recipeflare (Recipeflare for short) is a household recipe app on Cloudflare: one TypeScript Worker serving a React PWA and a JSON API, with D1, R2, Queues and, in later phases, Workers AI and Durable Objects. One household per install. Licensed AGPL-3.0-only.
 
-**Status: Phase 0, through T0.10.** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, and all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens exist. No product screen is connected to data, and there are no database tables and no auth yet. When a pull request changes a command or path below, it updates this file in the same pull request.
+**Status: Phase 0, through T0.11.** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, and the database schema with its migrations exist. No product screen is connected to data, nothing reads or writes the database yet, and there is no auth. When a pull request changes a command or path below, it updates this file in the same pull request.
 
 ## Read first
 
@@ -29,6 +29,8 @@ Maverick Recipeflare (Recipeflare for short) is a household recipe app on Cloudf
 ```text
 wrangler.jsonc        Worker config at the repo root (the Deploy button needs it there)
 apps/worker/          Hono API, queue consumer, auth, Drizzle schema, migrations
+  src/db/schema.ts    The tables. Change it, then run pnpm db:generate
+  migrations/         One folder per migration; applied by Wrangler, in order
 apps/web/             Vite React PWA; builds to apps/web/dist, served as static assets
   src/styles/         tokens.css (the design tokens) and app.css (Tailwind theme, base styles)
   src/shell/          The frame every screen sits in: header and navigation
@@ -55,6 +57,9 @@ Run from the repository root. Needs Node 22.12 or later and pnpm 10 (`corepack e
 | `pnpm test --project worker` | One project. A file path or `-t "name"` narrows it further |
 | `pnpm typecheck` | Regenerate the Worker's types, then run TypeScript in every package |
 | `pnpm types` | Regenerate `apps/worker/worker-configuration.d.ts` from `wrangler.jsonc`. The file is git-ignored; run this after changing bindings |
+| `pnpm db:generate --name <what_changed>` | Write a migration for a change to `apps/worker/src/db/schema.ts`. Add `--custom` for an empty one to write by hand |
+| `pnpm db:check` | Fail if the schema has a change with no migration. CI runs it |
+| `pnpm db:migrate:local` | Apply migrations to the local database that `pnpm dev` uses |
 | `pnpm run deploy --dry-run` | Build and bundle the Worker without contacting Cloudflare. Add `--env staging` for the staging config. CI runs both |
 | `pnpm run deploy:staging`, `pnpm run deploy` | Real deploys. They run from GitHub Actions, not from a laptop; see `docs/operations.md`. Use `pnpm run`: bare `pnpm deploy` is a different pnpm command |
 
@@ -64,7 +69,6 @@ Not here yet:
 
 | Command | Arrives with |
 | --- | --- |
-| `pnpm db:generate`, `pnpm db:migrate:local` | T0.11 |
 | Local sign-in through `.dev.vars` (`AUTH_MODE=dev`, `DEV_MEMBER_EMAIL`) | T0.12 |
 
 ## Rules that are easy to break
@@ -126,7 +130,10 @@ Not here yet:
 ### Migrations
 
 - Forward only. Never edit a migration that has been applied; add a new one.
-- Generate with `pnpm db:generate` (Drizzle 1.0, one folder per migration). Virtual tables, triggers and seed data are hand-written migrations in the same layout.
+- Generate with `pnpm db:generate --name <what_changed>` (Drizzle 1.0, one folder per migration, named by time). Virtual tables, triggers and seed data are hand-written: `pnpm db:generate --custom --name <what>` makes the empty folder.
+- `drizzle-orm` and `drizzle-kit` are pinned to one exact release candidate. Move both together, and rerun `pnpm db:check` and the Worker tests when you do.
+- Do not edit a generated `migration.sql` or `snapshot.json`, and do not let a formatter touch them. Biome skips the folder.
+- The schema file does not hold the search index, its triggers or the version guard. drizzle-kit cannot model them; they are the hand-written migrations.
 - Never rename or move a migration folder; Wrangler records migrations by path.
 - Never run `drizzle-kit push`.
 - A migration must work with the previously deployed code, because it is applied before the new code goes live. Dropping or renaming a column takes two releases.
@@ -167,9 +174,9 @@ Not here yet:
 - Web tests use Testing Library on happy-dom. Render a screen with `renderAt(path)` from `src/test-utils.tsx`, which mounts the whole app at an address. Stub `fetch` with `vi.stubGlobal`; stubs and mocks are reset after each test by the config.
 - Test tooling (`vitest`, the Cloudflare plugin, happy-dom) is installed at the workspace root only. Do not add `vitest` to a package: a second copy breaks the run.
 - Storage is isolated per test file, not per test. Use distinct IDs within a file, or reset and re-apply migrations.
-- Once the database exists (T0.11), tests apply the real migration files, so a schema change needs its migration before its tests can pass.
+- Worker tests apply the real migration files before each test file (`test/apply-migrations.ts`), so a schema change needs its migration before its tests can pass.
 - New behaviour comes with a test. A bug fix comes with a test that fails without it.
-- CI (`.github/workflows/ci.yml`) runs lint, typecheck, test, build and a deploy dry run on every pull request and on pushes to `main`. On `main` it then deploys staging. `.github/workflows/deploy.yml` is the manual deploy.
+- CI (`.github/workflows/ci.yml`) runs lint, typecheck, the schema-drift check, test, build and a deploy dry run on every pull request and on pushes to `main`. On `main` it then deploys staging. `.github/workflows/deploy.yml` is the manual deploy.
 
 ## Style
 

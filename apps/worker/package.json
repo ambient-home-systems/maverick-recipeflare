@@ -12,9 +12,11 @@
   },
   "dependencies": {
     "@recipeflare/schema": "workspace:*",
+    "drizzle-orm": "1.0.0-rc.6",
     "hono": "^4.13.20"
   },
   "devDependencies": {
+    "drizzle-kit": "1.0.0-rc.6",
     "typescript": "^7.0.2"
   }
 }

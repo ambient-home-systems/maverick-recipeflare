@@ -75,6 +75,35 @@ function run(label, command, args) {
   }
 }
 
+/**
+ * Runs a command and prints what it printed, with anything shaped like a
+ * Cloudflare resource ID replaced. Wrangler names the database it migrates by
+ * its ID, and the deploy log of a public repository is public.
+ */
+function runRedacted(label, command, args) {
+  console.log(`\ndeploy: ${label}`);
+  const result = spawnSync(command, args, {
+    cwd: root,
+    encoding: "utf8",
+    // No terminal on either end, so Wrangler does not wait for a yes.
+    stdio: ["ignore", "pipe", "pipe"],
+    shell: process.platform === "win32",
+    env: { ...process.env, CI: process.env.CI ?? "true" },
+  });
+  const redact = (text) =>
+    (text ?? "")
+      .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, "<id>")
+      .replace(/\b[0-9a-f]{32}\b/gi, "<id>");
+  process.stdout.write(redact(result.stdout));
+  process.stderr.write(redact(result.stderr));
+  if (result.error) {
+    fail(`could not start ${command}: ${result.error.message}`);
+  }
+  if (result.status !== 0) {
+    fail(`"${label}" failed with exit code ${result.status}`);
+  }
+}
+
 function hasMigrations() {
   return (
     existsSync(migrationsDir) && readdirSync(migrationsDir).some((name) => !name.startsWith("."))
@@ -103,7 +132,8 @@ run("build the web app", "pnpm", ["run", "build"]);
 if (dryRun) {
   console.log("\ndeploy: dry run, skipping database migrations");
 } else if (hasMigrations()) {
-  run("apply database migrations", "pnpm", [
+  // Before the new code is uploaded: each migration must work with the code already live.
+  runRedacted("apply database migrations", "pnpm", [
     "exec",
     "wrangler",
     "d1",

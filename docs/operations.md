@@ -96,6 +96,31 @@ Migrations run before the new code is uploaded, so each migration must work with
 - Without signing in, nothing of the app should load.
 - In the deploy log, the Worker should be listed with one address only, shown masked. A `workers.dev` address there means the hostname secret was missing; the script is set to fail before that can happen.
 
+## The database
+
+Each deploy applies any new database migrations before it uploads the code. The first deploy after the schema was added (T0.11) creates every table, the search index and its triggers, and 25 units.
+
+- Migrations live in `apps/worker/migrations`, one folder each, and only ever move forward.
+- The deploy log hides anything shaped like a Cloudflare resource ID in what Wrangler prints while migrating, because the log is public.
+- To see which migrations a database has, with Wrangler signed in: `pnpm exec wrangler d1 migrations list DB --remote`, adding `--env staging` for staging.
+- The search index can be rebuilt from its source table at any time. Do this after restoring a database:
+
+  ```sql
+  INSERT INTO recipes_fts (recipes_fts) VALUES ('rebuild');
+  ```
+
+- `wrangler d1 export` does not work on this database, because it has a full-text index. Backups are D1's Time Travel, which keeps 30 days.
+
+### Undoing a bad migration
+
+A migration cannot be rolled back by rolling back the code. Restore the database to the minute before the deploy began, with Wrangler signed in:
+
+```bash
+pnpm exec wrangler d1 time-travel restore DB --timestamp <time before the deploy, such as 2026-11-23T18:04:00Z>
+```
+
+Add `--env staging` for staging. Everything written after that time is lost, so do it promptly. Then roll the Worker back as described below, and rebuild the search index.
+
 ## Rolling back
 
 In the Cloudflare dashboard, open the Worker, go to **Deployments**, and roll back to the previous version. This restores the code and static files at once.
