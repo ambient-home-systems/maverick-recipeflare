@@ -12,9 +12,10 @@ describe("GET /api/v1/health", () => {
   });
 });
 
-describe("an unknown API path", () => {
+describe("a path outside the app's own API", () => {
   it("answers 404 with the shared error body", async () => {
-    const response = await exports.default.fetch("https://recipeflare.test/api/v1/nope");
+    // Bare /api paths are kept for Phase 4. Unknown paths under /api/v1 are covered in auth.test.ts.
+    const response = await exports.default.fetch("https://recipeflare.test/api/nope");
 
     expect(response.status).toBe(404);
     expect(ErrorBody.parse(await response.json()).error.code).toBe("not_found");

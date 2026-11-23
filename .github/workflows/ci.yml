@@ -96,4 +96,6 @@ jobs:
           APP_HOSTNAME: ${{ secrets.APP_HOSTNAME }}
           ACCESS_TEAM_DOMAIN: ${{ secrets.ACCESS_TEAM_DOMAIN }}
           ACCESS_AUD: ${{ secrets.ACCESS_AUD }}
+          # Optional environment variable; unset means yes.
+          AUTH_AUTO_ENROLL: ${{ vars.AUTH_AUTO_ENROLL }}
           REQUIRE_HOSTNAME: "true"

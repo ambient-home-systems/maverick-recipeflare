@@ -15,6 +15,8 @@
 //                        a public workers.dev address.
 //   ACCESS_TEAM_DOMAIN   Cloudflare Access team domain, stored as a Worker secret.
 //   ACCESS_AUD           Access application audience tag, stored as a Worker secret.
+//   AUTH_AUTO_ENROLL     Optional. "false" stops people the sign-in provider lets
+//                        through from becoming members by themselves.
 //
 // Wrangler reads CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID itself.
 //
@@ -31,7 +33,7 @@ const root = fileURLToPath(new URL("..", import.meta.url));
 const migrationsDir = join(root, "apps", "worker", "migrations");
 
 /** Worker secrets taken from the environment, when present. */
-const SECRET_NAMES = ["ACCESS_TEAM_DOMAIN", "ACCESS_AUD"];
+const SECRET_NAMES = ["ACCESS_TEAM_DOMAIN", "ACCESS_AUD", "AUTH_AUTO_ENROLL"];
 
 function fail(message) {
   console.error(`deploy: ${message}`);

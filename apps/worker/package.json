@@ -13,7 +13,8 @@
   "dependencies": {
     "@recipeflare/schema": "workspace:*",
     "drizzle-orm": "1.0.0-rc.6",
-    "hono": "^4.13.20"
+    "hono": "^4.13.20",
+    "jose": "^6.2.18"
   },
   "devDependencies": {
     "drizzle-kit": "1.0.0-rc.6",
