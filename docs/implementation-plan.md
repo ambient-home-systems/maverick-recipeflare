@@ -2,7 +2,7 @@
 
 22 Nov 2026. Companion to the [build plan](build-plan.md), which stays the source of truth for scope, architecture, roadmap and decisions. This document turns Phase 0 (foundations and design) and Phase 1 (core recipes) into buildable work. Later phases appear only where they constrain a choice made now.
 
-No application code exists yet. Everything below is specification.
+**Phase 0 is complete.** Its gate passed on 23 Nov 2026 ([§2.3](#23-phase-0-gate)), and tasks T0.1 to T0.13 are built. Phase 1 starts with T1.1. Sections 1 to 8 were written before any code existed and have been kept current as tasks changed them.
 
 Updated the same day with the owner's answers to the first five open questions; see [Decisions since the build plan](#decisions-since-the-build-plan).
 
@@ -145,6 +145,18 @@ Alongside the screens, T0.6 fixes the design tokens (colour in light and dark, t
 
 - each of the four mock screens has been reviewed on at least one iPhone and one Android phone, and the approval is recorded in the gate pull request;
 - every field on three real family cards has a home in the schema, the aiomealie mapping in [§4.7](#47-mapping-to-aiomealie) has no gaps, and the migrations apply cleanly to staging.
+
+**The gate passed on 23 Nov 2026.**
+
+**Gate record, screens half (T0.13, 23 Nov 2026).** The owner went through the four mock screens on staging on an iPhone and an Android phone and reported that everything works. No change was asked for. The same visit confirmed sign-in: the mock index named the owner as signed in, which was the last open check of T0.12.
+
+Four defaults were put to the owner at the gate and drew no objection, so they stand for Phase 1: the 25 starting units with fractions by default; a range such as "2 to 3 cups" stored as its first number with the line as written keeping the range; imported recipes staying out of the list until confirmed; and anyone Access admits becoming a member, the first as owner.
+
+**Gate record, schema half (T0.13, 23 Nov 2026).**
+
+- *The cards.* Each row of the feature spec's card walk-through was followed from the card's fixture to a column: title, the ingredient lines in the card's order with their text as written, steps, cook time, the stated yield, the note about the unclear pen marks, the category and the original-card photo. Nothing on a card lacks a column. Two things are knowingly not kept as data, and the photo keeps both: a card's filing letter, and ingredient groups that have no heading.
+- *The aiomealie mapping.* Every field of every model in aiomealie 2.1.4 was listed again from its source and set against §4.7. Every table and column the mapping names exists in the applied migration, and every field the library requires as a string comes from a column that cannot be null. Two models the table did not list, the group and household summaries, are added; both read the `household` row. One thing for Phase 6 is noted on `UserInfo`. Models for meal plans, shopping lists, ratings and favourites belong to the later tables listed under the mapping.
+- *The migrations* applied to the staging database on 23 Nov 2026: four migrations, and the deploy log shows each one marked done.
 
 ## 3. Repository layout
 
@@ -551,7 +563,9 @@ Checked against the models in aiomealie 2.1.4. "Required" means the model has no
 | `Food`: `id`, `name`, `description`, `aliases`, `pluralName`, `labelId`, `label`, `createdAt`, `updatedAt` | first four required | Same-named `foods` columns; `label` from `labels` |
 | `Unit`: `name`, `pluralName`, `abbreviation`, `pluralAbbreviation`, `useAbbreviation`, `fraction`, `description`, `aliases`, `standardQuantity`, `standardUnit` | `name` | Same-named `units` columns |
 | `Label`: `id`, `name` | yes | `labels` |
-| `UserInfo`: `id`, `username`, `email`, `fullName` | yes | `members`; `username` derived from the email |
+| `UserInfo`: `id`, `username`, `email`, `fullName` | yes | `members`; `username` derived from the email. `email` is required and `members.email` may be null from Phase 6, so a passkey-only member needs a stand-in address there |
+| `GroupSummary`: `id`, `name`, `slug` | yes | The `household` row, which stands for Mealie's group as well as its household |
+| `HouseholdSummary`: `id`, `groupId`, `name`, `slug`, `group` | yes | The `household` row again; `group` is its name |
 | `Statistics` counts | yes | `COUNT(*)` queries |
 
 Behaviour the Phase 4 facade needs that Phase 1 already allows: a recipe with only a title is valid (Home Assistant creates recipes by name alone); recipes resolve by ID or slug on the same path; lists take `page` and `perPage`, with `perPage=-1` meaning all; and import handlers are plain functions, so `recipes/create/url` can run one inline and return a slug within aiomealie's 10-second timeout instead of going through review.
@@ -857,11 +871,11 @@ Suggested mix for the gate's ten: at least one with ingredient sections, one wit
 Questions answered since the first version are recorded in [Decisions since the build plan](#decisions-since-the-build-plan). What remains, each with the default this plan assumes so that work can start:
 
 1. **Public library.** The owner wants the option to make the library public. Undecided: which phase; whether public means read-only; the whole library or chosen recipes; and how it works when Cloudflare Access is in front of the hostname. The build plan has public share links in Phase 5, which may be the same feature or a narrower one. Default until decided: nothing is public, and the shell is designed so that a signed-out visitor could be shown a read-only version later.
-2. **Members.** Access admits the household's two adults. Should anyone Access admits become a member automatically on first sign-in? Built in T0.12 as the default: yes, with the first sign-in as owner. `AUTH_AUTO_ENROLL=false` turns it off ([§6.1](#61-one-middleware)). Say so if you want it off.
-3. **Drafts on the job, not in `recipes`.** See [Conflicts](#conflicts-with-the-build-plan). Say so if you want imported drafts to appear in the recipe list before review.
-4. **Units.** Is a starting list of about 25 US and metric units right, and should quantities default to fractions?
+2. **Members.** Access admits the household's two adults. Should anyone Access admits become a member automatically on first sign-in? Built in T0.12 as the default: yes, with the first sign-in as owner. `AUTH_AUTO_ENROLL=false` turns it off ([§6.1](#61-one-middleware)). Stood at the Phase 0 gate.
+3. **Drafts on the job, not in `recipes`.** See [Conflicts](#conflicts-with-the-build-plan). Stood at the Phase 0 gate: an imported draft does not appear in the recipe list before review.
+4. **Units.** A starting list of 25 US and metric units, with quantities shown as fractions by default. Stood at the Phase 0 gate.
 5. **What "works offline" covers.** Default: all recipe data syncs to the device, images once viewed. Settled in the spec (T0.3).
-6. **Quantity ranges** ("2 to 3 cups"). Mealie has a single quantity. Default: the first number goes in `quantity` and the original text keeps the range. A second column can be added later without a rebuild.
+6. **Quantity ranges** ("2 to 3 cups"). Mealie has a single quantity. The first number goes in `quantity` and the original text keeps the range. A second column can be added later without a rebuild. Stood at the Phase 0 gate.
 7. **Images binding cost.** I did not verify its pricing or included transformations. Two variants per upload should be small at household scale. If it is not, the fallback is resizing in the browser before upload.
 8. **NoteFlare.** The build plan says Access works "as NoteFlare does". If NoteFlare has auth or UI code worth sharing, or uses a different frontend framework that you would rather match, that could change [§1](#1-frontend-framework) and T0.12.
 9. **aiomealie pin for Phase 4.** Which Home Assistant version runs at home decides the version to pin. Nothing to do until Phase 4.
