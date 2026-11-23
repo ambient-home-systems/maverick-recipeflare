@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-router";
 import {
   validateMockAddSearch,
+  validateMockCaptureSearch,
   validateMockCookSearch,
   validateMockEditorSearch,
   validateMockListSearch,
@@ -59,6 +60,12 @@ const mockAddRoute = createRoute({
   path: "/mock/add",
   validateSearch: validateMockAddSearch,
   component: lazyRouteComponent(() => import("./mock/MockAdd"), "MockAdd"),
+});
+const mockCaptureRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/mock/capture",
+  validateSearch: validateMockCaptureSearch,
+  component: lazyRouteComponent(() => import("./mock/MockCapture"), "MockCapture"),
 });
 
 const mockRecipeRoute = createRoute({
@@ -141,6 +148,7 @@ const routeTree = rootRoute.addChildren([
   at("/mock/fixtures", MockFixtures),
   mockListRoute,
   mockAddRoute,
+  mockCaptureRoute,
   mockRecipeRoute,
   mockEditRoute,
   mockNewRoute,

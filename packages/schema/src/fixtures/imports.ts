@@ -169,5 +169,59 @@ export const importPastedText: ImportJob = {
   finishedAt: "2026-11-23T10:02:40.000Z",
 };
 
+const cardBase = { ...base, kind: "photo", sourceUrl: null } as const;
+
+/**
+ * A sitting of four cards on its way in: one being read, one being written
+ * up, one ready, and one whose photo could not be read. Newest first.
+ */
+export const fixtureCardImports: ImportJob[] = [
+  {
+    ...cardBase,
+    id: fixtureId(IMPORT_JOB_GROUP, 5),
+    status: "running",
+    stage: "read",
+    attempts: 1,
+    createdAt: "2026-11-23T10:30:40.000Z",
+    updatedAt: "2026-11-23T10:30:45.000Z",
+  },
+  {
+    ...cardBase,
+    id: fixtureId(IMPORT_JOB_GROUP, 6),
+    status: "running",
+    stage: "build",
+    attempts: 0,
+    createdAt: "2026-11-23T10:30:30.000Z",
+    updatedAt: "2026-11-23T10:30:50.000Z",
+  },
+  {
+    ...cardBase,
+    id: fixtureId(IMPORT_JOB_GROUP, 7),
+    status: "needs_review",
+    stage: "build",
+    result: {
+      draft: lemonBarsDraft,
+      issues: checkDraft(lemonBarsDraft),
+      sourceText: pastedLemonBars,
+      readBy: "ai",
+    },
+    attempts: 1,
+    createdAt: "2026-11-23T10:30:20.000Z",
+    updatedAt: "2026-11-23T10:31:10.000Z",
+    finishedAt: "2026-11-23T10:31:10.000Z",
+  },
+  {
+    ...cardBase,
+    id: fixtureId(IMPORT_JOB_GROUP, 8),
+    status: "failed",
+    stage: "read",
+    error: { code: "unreadable", message: "Nothing could be read from the photo." },
+    attempts: 1,
+    createdAt: "2026-11-23T10:30:10.000Z",
+    updatedAt: "2026-11-23T10:30:35.000Z",
+    finishedAt: "2026-11-23T10:30:35.000Z",
+  },
+];
+
 /** Newest first, as the list shows them. */
 export const fixtureImportJobs: ImportJob[] = [importRunning, importNeedsReview, importFailed];

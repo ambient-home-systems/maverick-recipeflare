@@ -38,7 +38,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
     label: "Add",
     icon: Plus,
     emphasis: true,
-    also: ["/recipes/new", "/mock/new"],
+    also: ["/recipes/new", "/mock/new", "/mock/capture"],
   },
   { to: "/manage", label: "Manage", icon: SlidersHorizontal },
 ];
