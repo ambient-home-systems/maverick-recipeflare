@@ -18,7 +18,11 @@ import { importJobs, recipes } from "./schema";
 type Row = typeof importJobs.$inferSelect;
 
 /** What a job was asked to do, as stored: the kind's own input. */
-export type JobInput = { url?: string };
+export type JobInput = {
+  url?: string;
+  /** The page as the cook's browser read it, when it was sent from there. */
+  page?: { siteName: string | null; blocks: string[] };
+};
 
 function toJob(row: Row): ImportJob {
   return ImportJob.parse({

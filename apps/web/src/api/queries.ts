@@ -208,12 +208,13 @@ export function useImport(id: string) {
   });
 }
 
-/** Starts an import from a link. The list shows it from then on. */
+/** Starts an import from a link, or from a page a browser sent. The list shows it from then on. */
 export function useStartImport() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (url: string) =>
-      api("/imports", { method: "POST", body: { kind: "url", url }, schema: ImportJob }),
+    // With `page`, the cook's browser has already read the page and the server does not fetch it.
+    mutationFn: (request: { url: string; page?: { siteName: string | null; blocks: string[] } }) =>
+      api("/imports", { method: "POST", body: { kind: "url", ...request }, schema: ImportJob }),
     onSuccess: (job) => {
       // The row is there the moment the list opens, without waiting for a fetch.
       queryClient.setQueryData<ImportListResponse>(["imports"], (now) => ({

@@ -2,6 +2,9 @@ import { z } from "zod";
 import { DraftIssue, RecipeDraft } from "./draft";
 import { Id, Timestamp } from "./primitives";
 
+/** How much of a page a browser may send: enough for any recipe page, and no more. */
+export const SENT_PAGE_LIMITS = { blocks: 40, blockLength: 400_000, totalLength: 600_000 } as const;
+
 /** Phase 1 implements `url`. The others add handlers, not new machinery. */
 export const ImportJobKind = z.enum(["url", "photo", "text", "video"]);
 export type ImportJobKind = z.infer<typeof ImportJobKind>;
@@ -40,9 +43,25 @@ export const ImportJob = z.object({
 });
 export type ImportJob = z.infer<typeof ImportJob>;
 
-/** Body of `POST /imports` for a link. */
+/**
+ * A recipe page as the cook's own browser read it: the page's address, what
+ * the site calls itself, and its JSON-LD blocks, as text. The "Send to
+ * Recipeflare" bookmark gathers this from the page the browser is showing.
+ */
+export const SentPage = z.object({
+  url: z.url({ protocol: /^https?$/ }).max(2000),
+  siteName: z.string().max(200).nullable().default(null),
+  blocks: z.array(z.string().max(SENT_PAGE_LIMITS.blockLength)).max(SENT_PAGE_LIMITS.blocks),
+});
+export type SentPage = z.infer<typeof SentPage>;
+
+/**
+ * Body of `POST /imports` for a link. With `page`, the page has already been
+ * read by the cook's browser and is not fetched again.
+ */
 export const UrlImportRequest = z.object({
   kind: z.literal("url"),
   url: z.url({ protocol: /^https?$/ }).max(2000),
+  page: SentPage.pick({ siteName: true, blocks: true }).optional(),
 });
 export type UrlImportRequest = z.infer<typeof UrlImportRequest>;

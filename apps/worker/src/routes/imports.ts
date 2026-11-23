@@ -3,9 +3,11 @@ import {
   type ImportDetail,
   type ImportJob,
   type ImportListResponse,
+  SENT_PAGE_LIMITS,
   UrlImportRequest,
 } from "@recipeflare/schema";
 import { type Context, Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import type { AppEnv } from "../auth/types";
 import { assetsOfImport } from "../db/assets";
 import {
@@ -17,7 +19,7 @@ import {
   recipeFromLink,
   requeueImportJob,
 } from "../db/importJobs";
-import { jsonBody, notFound } from "../http";
+import { errorBody, invalid, jsonBody, notFound } from "../http";
 import type { ImportMessage } from "../imports/runner";
 import { removeAssets } from "../media";
 
@@ -41,6 +43,12 @@ async function enqueue(c: Context<AppEnv>, job: ImportJob): Promise<ImportJob> {
   }
 }
 
+/** A link is a line of text. A page sent from a browser is its JSON-LD, which is capped. */
+const importBody = bodyLimit({
+  maxSize: 2 * 1024 * 1024,
+  onError: (c) => c.json(errorBody("too_large", "That page is too large to import"), 413),
+});
+
 const idParam = (c: Context) => Id.safeParse(c.req.param("id")).data ?? null;
 
 /** `/api/v1/imports`. */
@@ -49,11 +57,19 @@ export const importRoutes = new Hono<AppEnv>()
     const body: ImportListResponse = { items: await listOpenImportJobs(c.env.DB) };
     return c.json(body);
   })
-  .post("/", jsonBody(UrlImportRequest), async (c) => {
+  .post("/", importBody, jsonBody(UrlImportRequest), async (c) => {
     const request = c.req.valid("json");
+    const page = request.page
+      ? { siteName: request.page.siteName, blocks: request.page.blocks }
+      : undefined;
+    if (page && page.blocks.join("").length > SENT_PAGE_LIMITS.totalLength) {
+      return invalid(c, [
+        { path: ["page", "blocks"], message: "That page is too large to import" },
+      ]);
+    }
     const job = await createImportJob(
       c.env.DB,
-      { kind: request.kind, sourceUrl: request.url, input: { url: request.url } },
+      { kind: request.kind, sourceUrl: request.url, input: { url: request.url, page } },
       c.get("member").id,
     );
     // 202: the import has been taken on, not done.

@@ -526,6 +526,72 @@ describe("an import from a link, from the queue to a saved recipe", () => {
     expect(other.status).toBe(201);
   });
 
+  it("reads a page the cook's browser sent, and does not ask the site for it", async () => {
+    const url = "https://refusing.example.com/corn-cakes";
+    // What the bookmark gathers: the page's JSON-LD, as text.
+    const blocks = [
+      ...plainPage.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/gs),
+    ].map((match) => match[1] ?? "");
+    expect(blocks).toHaveLength(1);
+    const response = await api.post("/imports", {
+      kind: "url",
+      url,
+      page: { siteName: "The Refusing Kitchen", blocks },
+    });
+    expect(response.status).toBe(202);
+    const created = ImportJob.parse(await response.json());
+    // The site refuses everything the server asks it for: the page, and the picture.
+    const fetcher = vi.fn<typeof fetch>(async () => html("no", { status: 403 }));
+
+    const outcome = await runImportJob(created.id, IMPORT_HANDLERS, { fetch: fetcher, env });
+
+    expect(outcome).toEqual({ ack: true });
+    const job = await loadImportJob(db, created.id);
+    expect(job?.status).toBe("needs_review");
+    expect(job?.result?.draft).toMatchObject({
+      title: "Skillet Corn Cakes",
+      sourceUrl: url,
+      sourceName: "Odalys Brandt",
+    });
+    // Only the picture was asked for, and its refusal cost nothing but the picture.
+    expect(fetcher.mock.calls.map(([input]) => String(input))).toEqual([
+      "https://refusing.example.com/pictures/corn-cakes-wide.jpg",
+    ]);
+  });
+
+  it("says no recipe was found when the browser sent a page that describes none", async () => {
+    const url = "https://refusing.example.com/about";
+    const response = await api.post("/imports", {
+      kind: "url",
+      url,
+      page: { siteName: null, blocks: [JSON.stringify({ "@type": "Article" })] },
+    });
+    const created = ImportJob.parse(await response.json());
+
+    await runImportJob(created.id, IMPORT_HANDLERS, { fetch: site({}), env });
+
+    expect(await loadImportJob(db, created.id)).toMatchObject({
+      status: "failed",
+      error: { code: "no_recipe" },
+    });
+  });
+
+  it("refuses a sent page that is too large, or whose address is not a web address", async () => {
+    const big = await api.post("/imports", {
+      kind: "url",
+      url: "https://refusing.example.com/huge",
+      page: { siteName: null, blocks: ["x".repeat(350_000), "y".repeat(350_000)] },
+    });
+    const odd = await api.post("/imports", {
+      kind: "url",
+      url: "about:blank",
+      page: { siteName: null, blocks: ["{}"] },
+    });
+
+    expect(big.status).toBe(400);
+    expect(odd.status).toBe(400);
+  });
+
   it("starts from the app with a link, and is handled by the registered handler", async () => {
     const response = await api.post("/imports", {
       kind: "url",

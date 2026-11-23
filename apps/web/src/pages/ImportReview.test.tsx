@@ -9,6 +9,7 @@ import {
 } from "@recipeflare/schema/fixtures";
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { encodeSentPage } from "../api/sentPage";
 import { renderAt } from "../test-utils";
 
 afterEach(() => {
@@ -321,5 +322,106 @@ describe("reviewing an import", () => {
       .getAllByRole("link", { current: "page" })
       .map((link) => link.textContent?.trim());
     expect(current).toContain("Recipes");
+  });
+});
+
+describe("a recipe sent from the browser's bookmark", () => {
+  const RECIPE_BLOCK = JSON.stringify({
+    "@type": "Recipe",
+    name: "Refused Plum Cake",
+    recipeIngredient: ["8 plums"],
+  });
+  const PAGE = {
+    url: "https://www.refusing.example.com/plum-cake",
+    siteName: "Refusing Kitchen",
+    blocks: [RECIPE_BLOCK],
+  };
+  const sentAt = (page: typeof PAGE) => `/add${encodeSentPage(page)}`;
+  /** The app is opened by the bookmark at an address that carries the page after the #. */
+  async function arrive(page: typeof PAGE = PAGE) {
+    window.history.replaceState(null, "", sentAt(page));
+    return renderAt(sentAt(page));
+  }
+
+  afterEach(() => {
+    window.history.replaceState(null, "", "/");
+  });
+
+  it("is offered by name and site, and is not imported until the cook says so", async () => {
+    const api = fakeApi({ jobs: [] });
+    await arrive();
+
+    const panel = within(await screen.findByRole("region", { name: "Sent from your browser" }));
+    expect(panel.getByText("Refused Plum Cake")).toBeTruthy();
+    expect(panel.getByText("refusing.example.com")).toBeTruthy();
+    expect(api.sent("POST")).toEqual([]);
+  });
+
+  it("is imported with what the browser read, so the server does not ask the site", async () => {
+    const api = fakeApi({ jobs: [] });
+    const { router } = await arrive();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Import this recipe" }));
+
+    await waitFor(() => expect(router.state.location.pathname).toBe("/"));
+    expect(api.sent("POST", "/imports")[0]?.body).toEqual({
+      kind: "url",
+      url: PAGE.url,
+      page: { siteName: "Refusing Kitchen", blocks: [RECIPE_BLOCK] },
+    });
+    expect((await screen.findByRole("list", { name: "Imports" })).textContent).toContain(
+      "refusing.example.com",
+    );
+  });
+
+  it("can be let go, and then a refresh does not bring it back", async () => {
+    const api = fakeApi({ jobs: [] });
+    const { router } = await arrive();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Not now" }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole("region", { name: "Sent from your browser" })).toBeNull(),
+    );
+    await waitFor(() => expect(router.state.location.hash).toBe(""));
+    expect(api.sent("POST")).toEqual([]);
+  });
+
+  it("says so when the page it was pressed on describes no recipe, and offers nothing to import", async () => {
+    fakeApi({ jobs: [] });
+    await arrive({ ...PAGE, blocks: [JSON.stringify({ "@type": "Article" })] });
+
+    expect(
+      await screen.findByText(/No recipe was found on that page of refusing.example.com/),
+    ).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Import this recipe" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Dismiss" })).toBeTruthy();
+  });
+
+  it("stays, and says so, when the import could not be started", async () => {
+    fakeApi({ jobs: [], refuseStart: true });
+    const { router } = await arrive();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Import this recipe" }));
+
+    expect(await screen.findByText("The import could not be started. Try again.")).toBeTruthy();
+    expect(router.state.location.pathname).toBe("/add");
+    expect(screen.getByRole("button", { name: "Import this recipe" })).toBeTruthy();
+  });
+
+  it("is offered as a bookmark on Add: a link whose address is a script made for this app", async () => {
+    fakeApi({ jobs: [] });
+    await renderAt("/add");
+
+    const bookmark = await screen.findByRole("link", { name: "Send to Recipeflare" });
+    await waitFor(() =>
+      expect(bookmark.getAttribute("href")?.startsWith("javascript:")).toBe(true),
+    );
+    expect(decodeURIComponent(bookmark.getAttribute("href") ?? "")).toContain(
+      `${window.location.origin}/add#page=`,
+    );
+    // Pressed on the Add page itself it only explains where it goes.
+    fireEvent.click(bookmark);
+    expect(screen.getByText(/It does nothing here/)).toBeTruthy();
   });
 });

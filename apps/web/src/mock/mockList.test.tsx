@@ -255,7 +255,7 @@ describe("the list's other states", () => {
     expect(rows[1]).toContain("Ready to review · recipes.example.com");
     expect(rows[1]).not.toContain("blocked");
     expect(rows[2]).toContain(
-      "Could not import. The site does not let apps read its pages. Trying again rarely helps; this one is best typed in.",
+      "Could not import. The site does not let apps read its pages. On a computer, the bookmark on the Add page sends it from your browser. Otherwise it is best typed in.",
     );
 
     expect(imports.getByRole("button", { name: "Review" })).toBeTruthy();
