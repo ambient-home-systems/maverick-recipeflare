@@ -47,6 +47,26 @@ describe("the app shell", () => {
     );
   });
 
+  it("keeps Recipes marked on a recipe, and Add marked while a new one is typed", async () => {
+    const marked = () =>
+      within(screen.getByRole("navigation", { name: "Main" }))
+        .getAllByRole("link")
+        .filter((link) => link.getAttribute("aria-current") === "page")
+        .map((link) => link.textContent);
+
+    await renderAt("/recipes/tomato-soup");
+    expect(marked()).toEqual(["Recipes"]);
+    cleanup();
+    await renderAt("/recipes/tomato-soup/edit");
+    expect(marked()).toEqual(["Recipes"]);
+    cleanup();
+    await renderAt("/recipes/new");
+    expect(marked()).toEqual(["Add"]);
+    cleanup();
+    await renderAt("/add");
+    expect(marked()).toEqual(["Add"]);
+  });
+
   it("says so when an address leads nowhere", async () => {
     await renderAt("/no/such/page");
     expect(screen.getByRole("heading", { name: "There is no page here" })).toBeTruthy();

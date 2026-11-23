@@ -56,6 +56,9 @@ export function RecipePage() {
       photoUrl={() => undefined}
       offline={!online}
       listTo="/"
+      onEdit={(target) =>
+        navigate({ to: "/recipes/$slug/edit", params: { slug: target.slug }, search: {} })
+      }
       onDelete={(target) =>
         remove.mutate(target, { onSuccess: () => navigate({ to: "/", search: {} }) })
       }

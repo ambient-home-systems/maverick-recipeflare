@@ -14,6 +14,7 @@ import {
   validateMockReviewSearch,
 } from "./mock/scenes";
 import { AddPage } from "./pages/AddPage";
+import { EditRecipePage, NewRecipePage } from "./pages/EditorPage";
 import { ManagePage } from "./pages/ManagePage";
 import { RecipePage } from "./pages/RecipePage";
 import { RecipesPage } from "./pages/RecipesPage";
@@ -113,7 +114,10 @@ const recipeRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   recipesRoute,
+  // "new" can never be a recipe's slug: the shared slug function keeps clear of it.
+  at("/recipes/new", NewRecipePage),
   recipeRoute,
+  at("/recipes/$slug/edit", EditRecipePage),
   at("/add", AddPage),
   at("/manage", ManagePage),
   at("/mock", MockIndex),

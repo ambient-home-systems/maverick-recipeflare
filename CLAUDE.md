@@ -6,7 +6,7 @@ Guidance for Claude Code working in this repository.
 
 Maverick Recipeflare (Recipeflare for short) is a household recipe app on Cloudflare: one TypeScript Worker serving a React PWA and a JSON API, with D1, R2, Queues and, in later phases, Workers AI and Durable Objects. One household per install. Licensed AGPL-3.0-only.
 
-**Status: Phase 0 is complete (T0.1 to T0.13); its gate passed on 23 Nov 2026. Phase 1 is built through T1.7 (the recipe repository, the recipes API with search and filters, the API for organizers, foods, units and labels, the ingredient line parser, and the recipe list and the recipe view on real data).** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, the database schema with its migrations, and sign-in (the auth middleware, the Access and dev providers, `/api/v1/me`) exist. The recipe list at `/` and the recipe view at `/recipes/<slug>` are connected to data; the editor and cook mode are still mock screens only, so the recipe view does not offer Edit or Cook yet. When a pull request changes a command or path below, it updates this file in the same pull request.
+**Status: Phase 0 is complete (T0.1 to T0.13); its gate passed on 23 Nov 2026. Phase 1 is built through T1.8 (the recipe repository, the recipes API with search and filters, the API for organizers, foods, units and labels, the ingredient line parser, and the recipe list, the recipe view and the editor on real data).** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, the database schema with its migrations, and sign-in (the auth middleware, the Access and dev providers, `/api/v1/me`) exist. The recipe list at `/`, the recipe view at `/recipes/<slug>` and the editor at `/recipes/new` and `/recipes/<slug>/edit` are connected to data. Photos, importing from a link, the manage screens and cook mode are not: the editor has no photo section, Add offers only typing, and the recipe view does not offer Cook yet. When a pull request changes a command or path below, it updates this file in the same pull request.
 
 ## Read first
 
@@ -123,6 +123,10 @@ To be signed in locally, copy `.dev.vars.example` to `.dev.vars` and run `pnpm d
 - Rows are reordered with dnd-kit through `SortableRows`. Dragging starts from the handle only, so a row scrolls the page as usual.
 - A food the household does not have is a name on the line (`newFood`) until the cook confirms it at save. Typing never creates a food. Units are created only from the unit picker.
 - The editor reads a line with `ingredientParser()` from the shared package, handed to it as the `parse` prop. `ParsedLine` and `LineParser` are the shared package's types.
+- A unit or an organizer made in a picker exists only in the editor until the save (`EditorPage.tsx`). `saveRecipe()` in `apps/web/src/api/saveRecipe.ts` then creates what the recipe still uses, creates the confirmed foods, swaps the editor's own IDs for the server's, and saves the recipe. Do not post to the lists from a picker: an abandoned recipe must leave nothing behind.
+- Creating is "create or find": a name that is already taken answers with the entry that has it, and the save uses that. This is what makes a save safe to try again.
+- The page asks before the cook leaves with unsaved changes, by any way out: `useBlocker` for the navigation and the back button, and the browser's own question for closing the tab. It reads the unsaved state from a ref.
+- A conflict offers three ways on and takes none by itself: reload theirs, save over it from their version, or keep editing.
 
 ### Cook mode
 

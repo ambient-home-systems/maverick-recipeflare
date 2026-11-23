@@ -17,8 +17,8 @@ export function AddScreen({
 }: {
   /** Opens the editor on a new recipe. */
   onType?: () => void;
-  /** Starts an import from a link that has passed the shared schema's check. */
-  onImport: (url: string) => void;
+  /** Starts an import from a link that has passed the shared schema's check. Without it, importing is not offered. */
+  onImport?: (url: string) => void;
   offline?: boolean;
 }) {
   const [url, setUrl] = useState("");
@@ -38,7 +38,7 @@ export function AddScreen({
       return;
     }
     setProblem(null);
-    onImport(request.data.url);
+    onImport?.(request.data.url);
   };
 
   return (
@@ -69,41 +69,43 @@ export function AddScreen({
         </Button>
       </section>
 
-      <form noValidate onSubmit={submit} className="px-4 py-5">
-        <h2 className="flex items-center gap-2 text-lg font-bold">
-          <Link2 aria-hidden="true" size="1.25rem" />
-          From a link
-        </h2>
-        <p className="mt-1 max-w-[38ch]">
-          Paste the address of a recipe page. The app reads it and shows you what it found to check
-          before anything is saved.
-        </p>
-        <label htmlFor={urlId} className="mt-4 mb-1 block text-sm font-semibold">
-          Recipe page address
-        </label>
-        <input
-          id={urlId}
-          type="url"
-          inputMode="url"
-          autoComplete="off"
-          autoCapitalize="off"
-          spellCheck={false}
-          value={url}
-          disabled={offline}
-          aria-invalid={problem ? true : undefined}
-          aria-describedby={problem ? problemId : undefined}
-          onChange={(event) => setUrl(event.target.value)}
-          className={`${FIELD} max-w-[34rem]`}
-        />
-        {problem ? (
-          <div id={problemId} className="mt-2 max-w-[34rem]">
-            <Notice problem>{problem}</Notice>
-          </div>
-        ) : null}
-        <Button type="submit" className="mt-4" disabled={offline}>
-          Import
-        </Button>
-      </form>
+      {onImport ? (
+        <form noValidate onSubmit={submit} className="px-4 py-5">
+          <h2 className="flex items-center gap-2 text-lg font-bold">
+            <Link2 aria-hidden="true" size="1.25rem" />
+            From a link
+          </h2>
+          <p className="mt-1 max-w-[38ch]">
+            Paste the address of a recipe page. The app reads it and shows you what it found to
+            check before anything is saved.
+          </p>
+          <label htmlFor={urlId} className="mt-4 mb-1 block text-sm font-semibold">
+            Recipe page address
+          </label>
+          <input
+            id={urlId}
+            type="url"
+            inputMode="url"
+            autoComplete="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            value={url}
+            disabled={offline}
+            aria-invalid={problem ? true : undefined}
+            aria-describedby={problem ? problemId : undefined}
+            onChange={(event) => setUrl(event.target.value)}
+            className={`${FIELD} max-w-[34rem]`}
+          />
+          {problem ? (
+            <div id={problemId} className="mt-2 max-w-[34rem]">
+              <Notice problem>{problem}</Notice>
+            </div>
+          ) : null}
+          <Button type="submit" className="mt-4" disabled={offline}>
+            Import
+          </Button>
+        </form>
+      ) : null}
     </Page>
   );
 }

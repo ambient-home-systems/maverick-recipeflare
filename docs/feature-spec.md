@@ -264,7 +264,8 @@ The cook types a line the way it is written on the card. The rule-based parser (
 - Deleting a recipe is permanent. The confirmation names the recipe and says its photos are deleted too.
 - There is no trash and no version history in Phase 1.
 - If another device saved the same recipe while it was being edited, saving shows "This recipe was changed on another device" with the choice to reload or to keep editing and save over it. Nothing is overwritten without that choice.
-- Leaving the editor with unsaved changes asks first.
+- Leaving the editor with unsaved changes asks first, whichever way out is taken: Cancel, the navigation, the back button, or closing the tab (where the browser asks in its own words).
+- A save that does not reach the server, or that the server refuses, says so at the top of the editor. What was typed stays, and Save can be pressed again.
 - A save that is refused lists what needs fixing at the top of the editor, in the order the fields come down the page. Pressing one goes to its field or row. Each problem is also shown under its own field, and clears as it is fixed.
 
 ## 10. Accessibility and sizing
