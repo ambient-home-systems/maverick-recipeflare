@@ -2,7 +2,7 @@
 
 A household recipe app that runs on Cloudflare: recipes, cook mode, AI import from photos of recipe cards, web pages and social-media videos, meal planning and shopping lists. Recipeflare for short.
 
-**Status:** Phase 0. The repository has a Worker with a health route and sign-in, the database schema, the web app's shell and design system, and mock screens drawn from sample recipes under `/mock`. It has no features yet.
+**Status:** Phase 0 (foundations and design) is complete. Phase 1 (core recipes) has not started. The repository has a Worker with a health route and sign-in, the database schema, the web app's shell and design system, and mock screens drawn from sample recipes under `/mock`. It has no features yet.
 
 - [Build plan](docs/build-plan.md): scope, AI import pipeline, architecture, roadmap, decisions and risks.
 - [Implementation plan](docs/implementation-plan.md): Phases 0 and 1 in detail, with the data model and the task list.
