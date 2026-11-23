@@ -100,18 +100,33 @@ function buildRecipe(number: number, spec: RecipeSpec): Recipe {
     };
   };
 
-  const assets: Asset[] = (spec.assets ?? []).map((role, position) => ({
-    id: nextId(),
-    role,
-    position,
-    contentType: "image/jpeg",
-    sizeBytes: 900_000,
-    width: 2560,
-    height: 1920,
-    hasVariants: true,
-    originalFilename: null,
-    createdAt: FIXTURE_TIME,
-  }));
+  const assets: Asset[] = (spec.assets ?? []).map((role, position) =>
+    role === "attachment"
+      ? {
+          id: nextId(),
+          role,
+          position,
+          contentType: "application/pdf",
+          sizeBytes: 348_160,
+          width: null,
+          height: null,
+          hasVariants: false,
+          originalFilename: `${spec.slug}.pdf`,
+          createdAt: FIXTURE_TIME,
+        }
+      : {
+          id: nextId(),
+          role,
+          position,
+          contentType: "image/jpeg",
+          sizeBytes: 900_000,
+          width: 2560,
+          height: 1920,
+          hasVariants: true,
+          originalFilename: null,
+          createdAt: FIXTURE_TIME,
+        },
+  );
 
   const minutes = (value: number | undefined) => (value === undefined ? null : value * 60);
 
@@ -391,7 +406,7 @@ export const cardamomCookies = buildRecipe(4, {
   categories: ["Dessert"],
   tags: ["Holiday", "Family favorite"],
   tools: ["Stand mixer"],
-  assets: ["cover", "original", "original"],
+  assets: ["cover", "original", "original", "attachment"],
   updatedAt: "2026-11-10T14:00:00.000Z",
 });
 

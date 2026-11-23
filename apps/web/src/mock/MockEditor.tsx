@@ -125,7 +125,7 @@ function useMockLists() {
       ]);
       return id;
     },
-    onAddPhotos: (group: "photo" | "original", files: File[]): Asset[] =>
+    onAddPhotos: (group: "photo" | "original" | "attachment", files: File[]): Asset[] =>
       files.map((file, index) => {
         const id = newId();
         added.current.set(id, URL.createObjectURL(file));
@@ -133,7 +133,8 @@ function useMockLists() {
           id,
           role: group,
           position: 1000 + index,
-          contentType: file.type || "image/jpeg",
+          contentType:
+            file.type || (group === "attachment" ? "application/octet-stream" : "image/jpeg"),
           sizeBytes: file.size,
           width: null,
           height: null,

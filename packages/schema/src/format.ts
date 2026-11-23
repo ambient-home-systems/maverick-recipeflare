@@ -108,3 +108,23 @@ export function formatIngredient(line: DisplayLine, options: { scale?: number } 
   }
   return main ? `${main}, ${line.note}` : line.note;
 }
+
+/**
+ * A file's size in a few characters: "340 KB", "1.2 MB". The units are the
+ * ones the upload limit is stated in, so a file under "15 MB" is under the limit.
+ */
+export function formatFileSize(bytes: number): string {
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+  if (bytes < 1024 * 1024) {
+    return `${Math.round(bytes / 1024)} KB`;
+  }
+  const megabytes = bytes / (1024 * 1024);
+  return `${megabytes < 10 ? megabytes.toFixed(1).replace(/\.0$/, "") : Math.round(megabytes)} MB`;
+}
+
+/** What an attachment is called: the name of the file it was added from. */
+export function attachmentName(asset: { originalFilename: string | null }): string {
+  return asset.originalFilename?.trim() || "Attachment";
+}

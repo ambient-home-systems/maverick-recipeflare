@@ -15,7 +15,7 @@ let slug = "";
 
 test.beforeAll(async ({ request }) => {
   await emptyLibrary(request);
-  slug = (await makeRecipe(request, "Tomato Stew")).slug;
+  slug = (await makeRecipe(request, "Tomato Stew", { attachment: "tomato-stew-card.pdf" })).slug;
 });
 
 /** Findings that would stop someone using the screen. */

@@ -21,7 +21,7 @@ import {
 } from "./editorState";
 import { IngredientList } from "./IngredientList";
 import { OrganizerFields } from "./OrganizerFields";
-import { PhotoFields } from "./PhotoFields";
+import { type FileGroup, PhotoFields } from "./PhotoFields";
 import { SMALL_BUTTON } from "./rowParts";
 import { StepList } from "./StepList";
 
@@ -57,8 +57,8 @@ type RecipeEditorScreenProps = {
   parse: LineParser;
   stockFor: (categoryId: string) => Stock;
   photoUrl: (asset: Asset) => string | undefined;
-  /** Adds photos from the device. Without it the editor has no photo section. */
-  onAddPhotos?: (group: "photo" | "original", files: File[]) => Asset[];
+  /** Adds photos or attachments from the device. Without it the editor has no section for them. */
+  onAddPhotos?: (group: FileGroup, files: File[]) => Asset[];
   onCreateUnit: (name: string) => string;
   onCreateOrganizer: (kind: OrganizerKind, name: string) => string;
   /**
@@ -420,7 +420,7 @@ export function RecipeEditorScreen({
 
       {onAddPhotos ? (
         <>
-          <SectionHead title="Photos and original card" />
+          <SectionHead title="Photos and files" />
           <PhotoFields
             assets={value.assets}
             onChange={(assets) => set("assets", assets)}

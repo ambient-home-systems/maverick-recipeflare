@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { appInstalled, emptyLibrary, gradientPng, onDevice } from "./helpers";
+import { appInstalled, emptyLibrary, gradientPng, onDevice, samplePdf } from "./helpers";
 
 /**
  * The main path, as one cook would walk it: type a recipe in, find it, cook
@@ -17,7 +17,7 @@ test("a recipe is typed in, found, cooked from offline, edited and deleted", asy
   await expect(page.getByRole("heading", { name: "No recipes yet" })).toBeVisible();
   await page.getByRole("link", { name: "Type a recipe" }).click();
 
-  // Type a recipe, with a photo.
+  // Type a recipe, with a photo and a file that is not one.
   await expect(page.getByRole("heading", { level: 1, name: "New recipe" })).toBeVisible();
   await page.getByLabel("Title").fill("Plum Cake");
   await page.getByLabel("Description").fill("For the end of summer.");
@@ -36,6 +36,11 @@ test("a recipe is typed in, found, cooked from offline, edited and deleted", asy
     mimeType: "image/png",
     buffer: gradientPng(1200, 900),
   });
+  await page.getByLabel("Add files").setInputFiles({
+    name: "plum-cake-card.pdf",
+    mimeType: "application/pdf",
+    buffer: samplePdf(),
+  });
   await page.getByRole("button", { name: "Save", exact: true }).click();
 
   // Foods the household does not have yet are confirmed once.
@@ -49,6 +54,12 @@ test("a recipe is typed in, found, cooked from offline, edited and deleted", asy
   await expect(page.getByText("8 plums, halved")).toBeVisible();
   await expect(page.getByText("Bake until golden.")).toBeVisible();
   await expect(page.locator("main img").first()).toHaveJSProperty("complete", true);
+
+  // The file that is not a picture is listed by name, and comes back as it went.
+  const attachment = page.getByRole("link", { name: /plum-cake-card\.pdf/ });
+  await expect(attachment).toBeVisible();
+  const [download] = await Promise.all([page.waitForEvent("download"), attachment.click()]);
+  expect(download.suggestedFilename()).toBe("plum-cake-card.pdf");
 
   // Find it from the list, by a word in an ingredient.
   await page.getByRole("link", { name: "All recipes" }).first().click();

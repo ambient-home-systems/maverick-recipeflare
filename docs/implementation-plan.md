@@ -418,7 +418,7 @@ An asset uploaded during an import belongs to the job until the cook confirms, w
 - **Serving.** `GET /assets/{id}/{original|thumb|full}`, behind sign-in like every route, with `Cache-Control: private, max-age=31536000, immutable`. A picture is served as a picture. Anything else is served as a download with a generic type. Every response carries `nosniff` and a sandboxing content security policy, so a stored file is never run in the app's origin whatever it holds.
 - **Deleting.** Rows go first and files after. A recipe's delete and a save that drops a photo delete the files once the answer is sent; discarding an import deletes its picture at once. A file left behind by a failure there has no row and is unreachable.
 - **Uploads nobody claimed** (a save that failed part-way and was not tried again) have no recipe and no import. Each upload clears those older than a day, fifty at a time.
-- **Attachments** are stored, attached, kept through saves and served by the API. No screen adds or lists them yet; see the feature spec.
+- **Attachments** are stored, attached, kept through saves and served by the API, as a download and never inline. Their screens came after the rest of T1.10, once the owner had asked for them: the editor's "Photos and files" lists them by name and size, and the recipe lists them after the notes. The service worker does not keep them, since a download is a page load under `/api/`, which it never answers.
 
 **`import_jobs`** — described in [§7](#7-import-jobs).
 

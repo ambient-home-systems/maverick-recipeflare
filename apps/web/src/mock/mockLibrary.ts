@@ -210,7 +210,8 @@ export function mockStockFor(categorySlug: string) {
  */
 export function placeholderPhoto(recipe: Recipe, asset: Asset): string | undefined {
   if (asset.role === "attachment") {
-    return undefined;
+    // There is no file behind a sample attachment; the link leads to a line of text saying so.
+    return "data:text/plain,This%20sample%20attachment%20has%20no%20file%20behind%20it.";
   }
   const siblings = recipe.assets
     .filter((other) => (other.role === "original") === (asset.role === "original"))

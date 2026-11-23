@@ -1,13 +1,22 @@
-import { type Asset, coverAsset } from "@recipeflare/schema";
-import { ArrowLeft, ArrowRight, ImagePlus, Star, Trash2 } from "lucide-react";
+import {
+  type Asset,
+  attachmentName,
+  coverAsset,
+  formatFileSize,
+  LIMITS,
+} from "@recipeflare/schema";
+import { ArrowLeft, ArrowRight, FilePlus, ImagePlus, Paperclip, Star, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../../ui/Button";
 import { Mark } from "../../ui/Field";
+import { Notice } from "../../ui/Notice";
 import { Sheet } from "../../ui/Sheet";
 import { moveRow } from "./editorState";
 import { SMALL_BUTTON } from "./rowParts";
 
 type Group = "photo" | "original";
+/** What a file is added as: one of the two kinds of picture, or an attachment. */
+export type FileGroup = Group | "attachment";
 
 const inGroup = (asset: Asset, group: Group) =>
   group === "original"
@@ -15,8 +24,9 @@ const inGroup = (asset: Asset, group: Group) =>
     : asset.role === "cover" || asset.role === "photo";
 
 /**
- * The recipe's photos and its original card. A picture is pressed to choose it
- * as the cover, to put a card's sides in order, or to remove it.
+ * The recipe's photos, its original card, and its attachments. A picture is
+ * pressed to choose it as the cover, to put a card's sides in order, or to
+ * remove it. An attachment is a file of any other kind, listed by its name.
  */
 export function PhotoFields({
   assets,
@@ -27,10 +37,13 @@ export function PhotoFields({
   assets: Asset[];
   onChange: (assets: Asset[]) => void;
   photoUrl: (asset: Asset) => string | undefined;
-  /** Takes the files the cook chose and returns them as the recipe's new pictures. */
-  onAddPhotos: (group: Group, files: File[]) => Asset[];
+  /** Takes the files the cook chose and returns them as the recipe's new pictures or attachments. */
+  onAddPhotos: (group: FileGroup, files: File[]) => Asset[];
 }) {
   const [chosenId, setChosenId] = useState<string | null>(null);
+  /** Files that were too large to add, by name, from the last time some were chosen. */
+  const [refused, setRefused] = useState<string[]>([]);
+  const attachments = assets.filter((asset) => asset.role === "attachment");
   const chosen = assets.find((asset) => asset.id === chosenId);
   const cover = coverAsset({ assets });
   const renumber = (next: Asset[]) => next.map((asset, position) => ({ ...asset, position }));
@@ -122,6 +135,68 @@ export function PhotoFields({
           </div>
         );
       })}
+
+      <div className="md:col-span-2">
+        <h3 className="text-sm font-semibold">Attachments</h3>
+        <p className="text-sm">A file that goes with the recipe, such as a PDF.</p>
+        {attachments.length > 0 ? (
+          <ul className="mt-2 border-t border-rule">
+            {attachments.map((asset) => (
+              <li key={asset.id} className="flex items-center gap-2 border-b border-rule py-1">
+                <Paperclip aria-hidden="true" size="1.125rem" className="flex-none" />
+                <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">
+                  <span className="font-semibold">{attachmentName(asset)}</span>{" "}
+                  <span className="text-sm whitespace-nowrap">
+                    {formatFileSize(asset.sizeBytes)}
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  className={SMALL_BUTTON}
+                  onClick={() =>
+                    onChange(renumber(assets.filter((other) => other.id !== asset.id)))
+                  }
+                >
+                  <Trash2 aria-hidden="true" size="1.125rem" />
+                  Remove
+                  <span className="sr-only"> {attachmentName(asset)}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {refused.length > 0 ? (
+          <div className="mt-2" role="status">
+            <Notice problem>
+              {refused.join(", ")} {refused.length === 1 ? "is" : "are"} larger than 15 MB and{" "}
+              {refused.length === 1 ? "was" : "were"} not added.
+            </Notice>
+          </div>
+        ) : null}
+        <label
+          className={`${SMALL_BUTTON} mt-2 cursor-pointer has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-focus`}
+        >
+          <FilePlus aria-hidden="true" size="1.125rem" />
+          Add files
+          <input
+            type="file"
+            multiple
+            className="sr-only"
+            onChange={(event) => {
+              const files = [...(event.target.files ?? [])];
+              // A file is sent as it is, so one over the limit is turned away here, by name.
+              const fits = files.filter((file) => file.size <= LIMITS.uploadBytes);
+              setRefused(
+                files.filter((file) => file.size > LIMITS.uploadBytes).map((file) => file.name),
+              );
+              if (fits.length > 0) {
+                onChange(renumber([...assets, ...onAddPhotos("attachment", fits)]));
+              }
+              event.target.value = "";
+            }}
+          />
+        </label>
+      </div>
 
       <Sheet
         open={chosen !== undefined}

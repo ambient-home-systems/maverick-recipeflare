@@ -64,6 +64,7 @@ export async function preparePhoto(file: File): Promise<Blob> {
 /** Sends a file to be stored. It belongs to no recipe until a recipe's save names it. */
 export async function uploadAsset(file: File, role: AssetRole): Promise<Asset> {
   const body = role === "attachment" ? file : await preparePhoto(file);
-  const query = new URLSearchParams({ role, filename: file.name });
+  // The server takes a name of up to 200 characters. A longer one keeps its ending, where the type is.
+  const query = new URLSearchParams({ role, filename: file.name.slice(-200) });
   return api(`/assets?${query}`, { method: "POST", file: body, schema: Asset });
 }

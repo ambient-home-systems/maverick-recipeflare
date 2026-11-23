@@ -8,6 +8,8 @@ import {
   roastChicken,
 } from "./fixtures";
 import {
+  attachmentName,
+  formatFileSize,
   formatIngredient,
   formatQuantity,
   ingredientAmount,
@@ -157,5 +159,33 @@ describe("formatIngredient", () => {
       note: "A little love",
     };
     expect(formatIngredient(line)).toBe("A little love");
+  });
+});
+
+describe("formatFileSize", () => {
+  it("says a size in the unit that suits it", () => {
+    expect(formatFileSize(0)).toBe("0 B");
+    expect(formatFileSize(900)).toBe("900 B");
+    expect(formatFileSize(348_160)).toBe("340 KB");
+    expect(formatFileSize(1024 * 1024)).toBe("1 MB");
+    expect(formatFileSize(1.26 * 1024 * 1024)).toBe("1.3 MB");
+    expect(formatFileSize(12.4 * 1024 * 1024)).toBe("12 MB");
+  });
+
+  it("counts as the upload limit does, so a file it calls 15 MB is at the limit", () => {
+    expect(formatFileSize(15 * 1024 * 1024)).toBe("15 MB");
+  });
+});
+
+describe("attachmentName", () => {
+  it("is the name of the file it was added from", () => {
+    expect(attachmentName({ originalFilename: " Aunt May's card.pdf " })).toBe(
+      "Aunt May's card.pdf",
+    );
+  });
+
+  it("says Attachment for a file that came with no name", () => {
+    expect(attachmentName({ originalFilename: null })).toBe("Attachment");
+    expect(attachmentName({ originalFilename: "  " })).toBe("Attachment");
   });
 });
