@@ -60,6 +60,9 @@ export function MockList() {
         links={{ newRecipe: "/mock/new", importLink: "/mock/add" }}
         thumbnailFor={placeholderThumbnail}
         onReviewImport={() => navigate({ to: "/mock/review", search: {} })}
+        // Drawn so the failed row can be judged whole. They do nothing here, as the note below says.
+        onRetryImport={() => {}}
+        onRemoveImport={() => {}}
         recipeLink={(recipe) => ({ to: "/mock/recipe/$slug", params: { slug: recipe.slug } })}
       />
 

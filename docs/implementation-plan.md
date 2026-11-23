@@ -681,6 +681,11 @@ Everything is under `/api/v1` and, except health, needs a member. Request bodies
 | `POST /foods`, `PUT /foods/{id}` | Create or change, from a `FoodInput` | The entry; 409 `duplicate`; 400 for a label that does not exist |
 | `DELETE /foods/{id}`, `DELETE /units/{id}` | Delete, unless a recipe uses it | 204; 409 `in_use` with `recipeCount`; 404 |
 | `POST /units`, `PUT /units/{id}` | Create or change, from a `UnitInput` | The entry; 409 `duplicate` |
+| `GET /imports` | The imports a person still has to wait for or deal with (queued, running, to review, failed), newest first | `{ items }` of `ImportJob` |
+| `POST /imports` | Take on an import from `{ kind: "url", url }`: a queued job and a queue message that names it | 202 with the `ImportJob`. If the message could not be sent the job comes back `failed` with `not_queued`, so it can be tried again |
+| `GET /imports/{id}` | One import, with what was found once it is ready | The `ImportJob`, or 404 |
+| `POST /imports/{id}/retry` | Put a failed import back in line from the start | 202 with the job; 404 unless it is a failed import |
+| `DELETE /imports/{id}` | Remove an import | 204, or 404 |
 | `POST /labels`, `PUT /labels/{id}`, `DELETE /labels/{id}` | Create, change (name, colour, order) or delete. Deleting takes the label off its foods | The entry or 204; 409 `duplicate` |
 
 - A body larger than 2 MB is a 413 `too_large`; a recipe at every size cap is under 1 MB.
@@ -771,6 +776,15 @@ One table (`import_jobs`, [§4.3](#43-tables)) and one mechanism (Queues) for ev
 - **Insert and send are not atomic.** If the send fails the job is marked `failed` and the API says so. The job list has a retry action that re-sends.
 - **Handlers are plain functions** of the job and the environment, with `fetch` passed in. Tests call them directly, and the Phase 4 Home Assistant import can run one inline.
 - **Stages.** A multi-step import records its `stage` and sends itself the next message. This is what replaces Workflows.
+
+**As built in T1.11** (`apps/worker/src/imports/runner.ts`, `apps/worker/src/db/importJobs.ts`).
+
+- The Worker's `queue()` handler serves both queues and tells them apart by name: the dead-letter queue's ends in `-dlq`. Both are consumers in `wrangler.jsonc`, with three retries on the import queue and no waiting to fill a batch.
+- A run first claims the job, which only a `queued` or `running` job allows, and counts the attempt. That one statement is what makes a redelivered message harmless.
+- A handler signals with what it throws: `RetryableImportError`, `PermanentImportError` with a code, or anything else, which is treated as retryable. A retry waits one minute, then two, then four.
+- A job that fails for good keeps its code: `no_recipe`, `blocked`, `retries_exhausted`, `not_queued` (the message could not be sent), `unsupported` (no handler for the kind) or `bad_draft` (the handler returned something that is not a draft).
+- The list asks for the imports again every two seconds while one is queued or running, and stops when none is.
+- Until T1.12 there is no handler for `url`, so an import from a link fails with `unsupported`. The Add page does not offer importing until then.
 
 ### 7.3 The URL handler
 

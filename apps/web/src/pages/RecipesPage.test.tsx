@@ -78,20 +78,27 @@ type Answer = Response | Error | (() => Response);
 
 /** The API as the page sees it. `recipes` answers the list; it can be changed between requests. */
 function stubApi(recipes: Answer | ((url: URL) => Answer)) {
-  const state = { recipes };
+  const state = { recipes, imports: [] as unknown[], importChanges: [] as string[] };
   const give = (answer: Answer) => {
     if (answer instanceof Error) {
       throw answer;
     }
     return typeof answer === "function" ? answer() : answer.clone();
   };
-  const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = new URL(String(input), "http://localhost");
     if (url.pathname.endsWith("/organizers")) {
       return Response.json({ items: ORGANIZERS });
     }
     if (url.pathname.endsWith("/foods")) {
       return Response.json({ items: FOODS });
+    }
+    if (url.pathname.includes("/imports")) {
+      if ((init?.method ?? "GET") !== "GET") {
+        state.importChanges.push(`${init?.method} ${url.pathname.replace("/api/v1", "")}`);
+        return new Response(null, { status: 204 });
+      }
+      return Response.json({ items: state.imports });
     }
     const answer = state.recipes;
     return give(
@@ -257,6 +264,84 @@ describe("a long list", () => {
     expect(rowTitles().at(-1)).toBe("Recipe 31");
     expect(api.listRequests().map((url) => url.searchParams.get("page"))).toEqual(["1", "2"]);
     expect(screen.queryByRole("button", { name: "Show more recipes" })).toBeNull();
+  });
+});
+
+describe("imports from a link, above the recipes", () => {
+  const importJob = (n: number, status: string, extra: Record<string, unknown> = {}) => ({
+    id: id(500 + n),
+    kind: "url",
+    status,
+    stage: null,
+    sourceUrl: `https://example.com/recipe-${n}`,
+    result: null,
+    error: null,
+    attempts: 1,
+    recipeId: null,
+    createdAt: TIME,
+    updatedAt: TIME,
+    finishedAt: null,
+    ...extra,
+  });
+  const importRows = () =>
+    within(screen.getByRole("list", { name: "Imports" }))
+      .getAllByRole("listitem")
+      .map((item) => item.textContent);
+
+  it("shows an import's progress without a reload, and stops asking once none is being read", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const api = stubApi(page([summary(1, "Soup")]));
+      api.state.imports = [importJob(1, "running")];
+      await renderAt("/");
+
+      await waitFor(() => expect(importRows()[0]).toContain("Reading the page"));
+      const importRequests = () =>
+        api.fetchMock.mock.calls.filter(([input]) => String(input).endsWith("/imports")).length;
+      const before = importRequests();
+
+      // The import fails on the server. Nobody touches the page.
+      api.state.imports = [
+        importJob(1, "failed", { error: { code: "no_recipe", message: "No recipe" } }),
+      ];
+      await vi.advanceTimersByTimeAsync(2100);
+
+      await waitFor(() => expect(importRows()[0]).toContain("Could not import"));
+      expect(importRows()[0]).toContain("No recipe was found on that page");
+      expect(importRequests()).toBeGreaterThan(before);
+
+      // Nothing is being read now, so the asking stops.
+      const settled = importRequests();
+      await vi.advanceTimersByTimeAsync(6000);
+      expect(importRequests()).toBe(settled);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("tries a failed import again, and removes one, through the API", async () => {
+    const api = stubApi(page([summary(1, "Soup")]));
+    api.state.imports = [
+      importJob(1, "failed", { error: { code: "retries_exhausted", message: "Down" } }),
+    ];
+    await renderAt("/");
+    await waitFor(() => expect(importRows()[0]).toContain("The site could not be reached"));
+
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    await waitFor(() =>
+      expect(api.state.importChanges).toEqual([`POST /imports/${id(501)}/retry`]),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+    await waitFor(() => expect(api.state.importChanges).toContain(`DELETE /imports/${id(501)}`));
+  });
+
+  it("shows no imports band when there are none", async () => {
+    stubApi(page([summary(1, "Soup")]));
+    await renderAt("/");
+    await waitFor(() => expect(rowTitles()).toEqual(["Soup"]));
+
+    expect(screen.queryByRole("list", { name: "Imports" })).toBeNull();
   });
 });
 
