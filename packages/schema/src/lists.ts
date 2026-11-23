@@ -14,8 +14,14 @@ export const OrganizerRef = z.object({
 });
 export type OrganizerRef = z.infer<typeof OrganizerRef>;
 
+/** The divider stock a category owns: one of five card-stock colours. */
+export const OrganizerColor = z.enum(["buff", "salmon", "sky", "mint", "lilac"]);
+export type OrganizerColor = z.infer<typeof OrganizerColor>;
+
 export const Organizer = OrganizerRef.extend({
   kind: OrganizerKind,
+  /** Set for a category when it is created, and kept. Null for tags and tools. */
+  color: OrganizerColor.nullable(),
   createdAt: Timestamp,
   updatedAt: Timestamp,
 });
@@ -23,6 +29,9 @@ export type Organizer = z.infer<typeof Organizer>;
 
 export const OrganizerInput = z.object({ name: Name });
 export type OrganizerInput = z.infer<typeof OrganizerInput>;
+
+export const OrganizerCreate = OrganizerInput.extend({ kind: OrganizerKind });
+export type OrganizerCreate = z.infer<typeof OrganizerCreate>;
 
 // --- Labels: groups of foods, and the store aisles in Phase 4. ---
 

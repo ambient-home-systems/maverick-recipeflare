@@ -1,4 +1,12 @@
-import type { Food, Label, Member, Organizer, OrganizerKind, Unit } from "../lists";
+import {
+  type Food,
+  type Label,
+  type Member,
+  type Organizer,
+  OrganizerColor,
+  type OrganizerKind,
+  type Unit,
+} from "../lists";
 import { slugify } from "../slug";
 
 /**
@@ -157,11 +165,15 @@ const ORGANIZER_ROWS: [OrganizerKind, string][] = [
   ["tool", "Griddle"],
 ];
 
+/** Categories take the stocks in order, as a household's first categories would. */
+const FIXTURE_STOCKS = OrganizerColor.options;
+
 export const fixtureOrganizers: Organizer[] = ORGANIZER_ROWS.map(([kind, name], index) => ({
   id: fixtureId(GROUP.organizer, index + 1),
   kind,
   name,
   slug: slugify(name),
+  color: kind === "category" ? (FIXTURE_STOCKS[index % FIXTURE_STOCKS.length] ?? null) : null,
   createdAt: FIXTURE_TIME,
   updatedAt: FIXTURE_TIME,
 }));
