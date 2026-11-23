@@ -21,7 +21,17 @@
 
   // Resources are named, never identified by ID. Wrangler creates each one on
   // the first deploy and finds it by name afterwards.
-  "d1_databases": [{ "binding": "DB", "database_name": "recipeflare" }],
+  //
+  // Migrations are one folder each, as Drizzle writes them. Wrangler records a
+  // migration by its path under migrations_dir, so a folder is never renamed.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "recipeflare",
+      "migrations_dir": "apps/worker/migrations",
+      "migrations_pattern": "apps/worker/migrations/*/migration.sql"
+    }
+  ],
   "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "recipeflare-media" }],
   "queues": {
     "producers": [{ "binding": "IMPORT_QUEUE", "queue": "recipeflare-imports" }]
@@ -39,7 +49,14 @@
       // Staging is only ever reached through its custom domain.
       "workers_dev": false,
       "preview_urls": false,
-      "d1_databases": [{ "binding": "DB", "database_name": "recipeflare-staging" }],
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "recipeflare-staging",
+          "migrations_dir": "apps/worker/migrations",
+          "migrations_pattern": "apps/worker/migrations/*/migration.sql"
+        }
+      ],
       "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "recipeflare-staging-media" }],
       "queues": {
         "producers": [{ "binding": "IMPORT_QUEUE", "queue": "recipeflare-staging-imports" }]

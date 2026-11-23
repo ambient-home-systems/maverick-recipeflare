@@ -44,6 +44,10 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      # A change to the Drizzle schema must come with its migration.
+      - name: Check that the schema and the migrations agree
+        run: pnpm db:check
+
       - name: Test
         run: pnpm test
 

@@ -18,6 +18,9 @@
     "typecheck": "pnpm run types && pnpm -r run typecheck",
     "test": "vitest run",
     "test:watch": "vitest",
+    "db:generate": "pnpm --filter @recipeflare/worker exec drizzle-kit generate",
+    "db:check": "node scripts/check-migrations.mjs",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
     "deploy": "node scripts/deploy.mjs",
     "deploy:staging": "node scripts/deploy.mjs --env staging"
   },

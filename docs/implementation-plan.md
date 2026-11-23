@@ -41,7 +41,7 @@ Platform facts below were read from the live Cloudflare docs and from the publis
 | Workers AI JSON mode takes a JSON Schema and can fail with `JSON Mode couldn't be met`; no streaming | [JSON mode](https://developers.cloudflare.com/workers-ai/features/json-mode/) | The draft schema in [§5](#5-shared-recipe-schema) stays plain enough to export as JSON Schema |
 | aiomealie 2.1.4 (latest on PyPI) calls 29 distinct paths; its models were read field by field | `aiomealie-2.1.4` source from PyPI | Mapping table in [§4.7](#47-mapping-to-aiomealie) |
 
-Not verified in this session: Cloudflare Images binding pricing and its included transformations, Drizzle 1.0's stable release date, and what the Deploy button requires as placeholder resource IDs. The first and last are in [§10](#10-open-questions); the Drizzle version is pinned and checked in T0.11.
+Not verified in this session: Cloudflare Images binding pricing and its included transformations, Drizzle 1.0's stable release date, and what the Deploy button requires as placeholder resource IDs. The first and last are in [§10](#10-open-questions); the Drizzle version was pinned and checked in T0.11 (see [§8.3](#83-d1-migrations)).
 
 ## Conflicts with the build plan
 
@@ -372,7 +372,7 @@ Index: `(label_id)`.
 | `standard_unit` | TEXT | yes | |
 | `created_at`, `updated_at` | TEXT | no | |
 
-A migration inserts about 25 common units with fixed IDs. Teaspoon gets the alias `t`, tablespoon `T` and cup `C`, so that handwritten abbreviations match (see [§5.1](#51-rule-based-ingredient-parser)). `name_key` uniqueness applies to unit names; aliases are compared as written. Foods and labels start empty and are created as recipes are entered.
+A migration inserts 25 common units with fixed IDs. Teaspoon gets the alias `t`, tablespoon `T` and cup `C`, so that handwritten abbreviations match (see [§5.1](#51-rule-based-ingredient-parser)). `name_key` uniqueness applies to unit names; aliases are compared as written. Foods and labels start empty and are created as recipes are entered.
 
 **`assets`** — images and attachments, owned by a recipe, an import job, or both in turn.
 
@@ -757,14 +757,18 @@ A red check blocks merge. The Playwright run joins once T1.15 lands.
 ### 8.3 D1 migrations
 
 - **Source.** Drizzle 1.0's `drizzle-kit generate` writes each migration into its own folder under `apps/worker/migrations`. Virtual tables, triggers and seed data are hand-written migrations created with `drizzle-kit generate --custom`, in the same layout.
-- **Applied by Wrangler.** The D1 binding sets `migrations_pattern` to `apps/worker/migrations/*/migration.sql`, the setting Wrangler provides for this layout. `wrangler d1 migrations apply DB` runs with `--local` or `--remote`, by binding name as the build plan specifies, because other installs will have different database names. The binding is called `DB` and is never renamed.
+- **Applied by Wrangler.** The D1 binding sets `migrations_dir` to `apps/worker/migrations` and `migrations_pattern` to `apps/worker/migrations/*/migration.sql`, the pair of settings Wrangler provides for this layout. `wrangler d1 migrations apply DB` runs with `--local` or `--remote`, by binding name as the build plan specifies, because other installs will have different database names. The binding is called `DB` and is never renamed.
 - **Forward only.** No down migrations. An applied migration is never edited; a mistake is fixed by a new one.
 - **Never `drizzle-kit push`.** It bypasses the migration history and would see the FTS shadow tables as drift.
 - **Additive by default.** The deploy applies migrations and then uploads code, so for a moment the old code runs on the new schema. A migration must therefore work with the previous release. Removing or renaming a column takes two releases.
 - **Avoid rebuilding parent tables.** If one is unavoidable, follow D1's deferred-foreign-key procedure and test on a copy of production data, checking child row counts.
-- **Recovery.** Time Travel keeps 30 days of point-in-time restore. The production deploy prints the current bookmark before it applies migrations. `wrangler d1 export` cannot be used once the FTS table exists.
+- **Recovery.** Time Travel keeps 30 days of point-in-time restore, and restores to a time as well as to a bookmark, so a bad migration is undone by restoring to the minute before the deploy began. The deploy does not print a bookmark: its log is public, and it hides anything shaped like a resource ID in what Wrangler prints while migrating. `wrangler d1 export` cannot be used once the FTS table exists.
+- **Checked in CI.** `pnpm db:check` fails when the schema has a change with no migration, or when the migration folders are inconsistent. It writes nothing.
+- **Generated files are left alone.** Biome does not format the migrations folder, and a generated `migration.sql` or `snapshot.json` is never edited by hand.
 
-The folder layout is fixed for good once the first migration is applied, because Wrangler records each migration by its path. Drizzle 1.0 is a release candidate today; T0.11 pins the exact version and confirms that Wrangler and the test setup both read the layout.
+The folder layout is fixed for good once the first migration is applied, because Wrangler records each migration by its path. Drizzle 1.0 is still a release candidate: `drizzle-orm` and `drizzle-kit` are pinned to exactly `1.0.0-rc.6`, the newest on 23 Nov 2026. T0.11 confirmed that Wrangler 4.166 and the test plugin's `readD1Migrations()` both read the layout, and that migrations whose trigger bodies run from `BEGIN` to `END` apply whole through both.
+
+One thing the generated SQL does not do: SQLite lets a text primary key be null unless the column also says `NOT NULL`, and Drizzle does not write that for a primary key. Every ID is made by the Worker and typed as required, so a null ID would be a bug in our own code, and the tables do not guard against it.
 
 ### 8.4 Environments and deploys
 
