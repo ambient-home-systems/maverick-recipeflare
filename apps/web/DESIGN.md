@@ -553,6 +553,12 @@ An import from a link, listed above the recipes until a person has dealt with it
 - **Actions:** "Review" is a primary button at the right of the row. A failed import has "Try again" and "Remove", both quiet, on a line below its text.
 - Imports are hidden while the list is searched or filtered, and when offline.
 
+### Manage rows and the entry sheet
+- **Index row:** a link across the stack's width: the list's name in title weight, a line of body small saying what it is, its count in 600 at the right, and a chevron. At least 2.75rem tall.
+- **Entry row:** a button across the width: the name in 600, and under it one line of body small saying how much it is used ("Used in 3 recipes", "Not used"), led by a detail where there is one (a unit's abbreviation, a food's label). A category's row starts with a 2rem tile of its own stock.
+- **Add box:** a labelled text box and a primary Add button on one row at the top of the list. Not rule red: red adds a recipe.
+- **Entry sheet:** the entry's boxes, each with its label above; a tick box is a 1.5rem native box inside a 2.75rem label with a line of help. Save is the primary button and Delete a quiet one with its icon. Delete asks in the same sheet, in a sentence that says what the entry will be taken off. Where an entry cannot be deleted the sheet says why and shows no Delete button.
+
 ### Navigation
 - **Phone bar:** card white with a top hairline. Each item is an icon in a 3.5rem by 2.25rem box over a nav label, at least 3.25rem tall. Ink on white. The current destination has a `surface-sunk` ground and 700 weight; it does not change colour.
 - **Rail (from 768 px):** navy. Items are rows: icon box 2.5rem wide, then the label in body size, `on-shell`, weight 400. Current and hovered items take `shell-raised`.

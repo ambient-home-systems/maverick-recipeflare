@@ -1,5 +1,6 @@
 import {
   FoodListResponse,
+  LabelListResponse,
   OrganizerListResponse,
   RECIPES_PER_PAGE,
   Recipe,
@@ -134,5 +135,39 @@ export function useDeleteRecipe() {
       // The use counts on organizers and foods have changed too.
       return queryClient.invalidateQueries();
     },
+  });
+}
+
+/** Every label, in the household's own order, with how many foods have each. */
+export function useLabels() {
+  return useQuery({
+    queryKey: ["lists", "labels"],
+    queryFn: ({ signal }) => api("/labels", { schema: LabelListResponse, signal }),
+    select: (data) => data.items,
+  });
+}
+
+/** A change to one of the household's lists: an entry added, changed or deleted. */
+export type ListChange = {
+  list: "organizers" | "foods" | "units" | "labels";
+  method: "POST" | "PUT" | "DELETE";
+  /** The entry changed or deleted. Left out when adding. */
+  id?: string;
+  body?: unknown;
+};
+
+/**
+ * Changes one of the lists. A name shows on every recipe that uses it, and the
+ * use counts follow recipes, so afterwards everything the cache holds is fetched again.
+ */
+export function useChangeList() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (change: ListChange) =>
+      api(`/${change.list}${change.id ? `/${change.id}` : ""}`, {
+        method: change.method,
+        body: change.body,
+      }),
+    onSuccess: () => queryClient.invalidateQueries(),
   });
 }

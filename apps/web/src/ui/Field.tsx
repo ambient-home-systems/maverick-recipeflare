@@ -32,6 +32,8 @@ type FieldProps = {
   invalid?: boolean;
   /** The key a summary of problems uses to find this field and go to it. */
   anchor?: string;
+  /** Shows the value without letting it be changed, when the change could not be saved anyway. */
+  readOnly?: boolean;
 };
 
 /** A small outlined word beside a label or a row: "check", "new", "as written". */
@@ -115,6 +117,7 @@ export function TextField({
         spellCheck={type === "url" || verbatim ? false : undefined}
         enterKeyHint={enterKeyHint}
         value={props.value}
+        readOnly={props.readOnly}
         aria-invalid={props.error || props.invalid ? true : undefined}
         aria-describedby={described(id, props.error, props.hint)}
         onChange={(event) => props.onChange(event.target.value)}

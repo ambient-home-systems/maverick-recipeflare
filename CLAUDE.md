@@ -6,7 +6,7 @@ Guidance for Claude Code working in this repository.
 
 Maverick Recipeflare (Recipeflare for short) is a household recipe app on Cloudflare: one TypeScript Worker serving a React PWA and a JSON API, with D1, R2, Queues and, in later phases, Workers AI and Durable Objects. One household per install. Licensed AGPL-3.0-only.
 
-**Status: Phase 0 is complete (T0.1 to T0.13); its gate passed on 23 Nov 2026. Phase 1 is built through T1.8 (the recipe repository, the recipes API with search and filters, the API for organizers, foods, units and labels, the ingredient line parser, and the recipe list, the recipe view and the editor on real data).** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, the database schema with its migrations, and sign-in (the auth middleware, the Access and dev providers, `/api/v1/me`) exist. The recipe list at `/`, the recipe view at `/recipes/<slug>` and the editor at `/recipes/new` and `/recipes/<slug>/edit` are connected to data. Photos, importing from a link, the manage screens and cook mode are not: the editor has no photo section, Add offers only typing, and the recipe view does not offer Cook yet. When a pull request changes a command or path below, it updates this file in the same pull request.
+**Status: Phase 0 is complete (T0.1 to T0.13); its gate passed on 23 Nov 2026. Phase 1 is built through T1.9 (the recipe repository, the recipes API with search and filters, the API for organizers, foods, units and labels, the ingredient line parser, and the recipe list, the recipe view, the editor and the manage screens on real data).** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, the database schema with its migrations, and sign-in (the auth middleware, the Access and dev providers, `/api/v1/me`) exist. The recipe list at `/`, the recipe view at `/recipes/<slug>` and the editor at `/recipes/new` and `/recipes/<slug>/edit` and the manage screens at `/manage` are connected to data. Photos, importing from a link and cook mode are not: the editor has no photo section, Add offers only typing, and the recipe view does not offer Cook yet. When a pull request changes a command or path below, it updates this file in the same pull request.
 
 ## Read first
 
@@ -115,6 +115,13 @@ To be signed in locally, copy `.dev.vars.example` to `.dev.vars` and run `pnpm d
 - What a list shows (search, filters, sort) is in the page address, read with the route's `validateSearch` and written with `navigate({ search, replace: true })`. A recipe's scale is in its address the same way.
 - A screen offers an action only when it is given the handler for it: the recipe view shows Cook and Edit when it has `onCook` and `onEdit`. Do not show a button that does nothing.
 - A change (a delete, a save) is a mutation hook in `queries.ts` that invalidates what it made stale. The screen is told when it is under way and when it failed, and says so in a `Notice`.
+
+### Manage screens
+
+- All six lists use one screen, `ManageListScreen`. A list differs only in its words and in the boxes an entry has (`ManageField`), which `ManagePage.tsx` supplies. Do not write a seventh screen for a new list.
+- The screen is told how a change went (`ManageOutcome`) and shows a refusal where it belongs: a taken name under the name box, anything else in a `Notice` in the sheet.
+- A food or unit that recipes use has no Delete button; the sheet says why. Do not offer a button and then refuse.
+- Saving a unit sends every field the API takes, including those with no box yet, so nothing is reset by a rename.
 
 ### Recipe editor
 
