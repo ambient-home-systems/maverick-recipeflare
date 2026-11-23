@@ -1,4 +1,5 @@
 import { getRouteApi } from "@tanstack/react-router";
+import { assetUrl } from "../api/assets";
 import { ApiError, SignedOutError } from "../api/client";
 import { useDeleteRecipe, useOrganizers, useRecipe } from "../api/queries";
 import { useOnline } from "../api/useOnline";
@@ -53,7 +54,7 @@ export function RecipePage() {
       onScale={setScale}
       stockFor={stockFor}
       // Photos are served from T1.10. Until then a recipe has none.
-      photoUrl={() => undefined}
+      photoUrl={assetUrl}
       offline={!online}
       listTo="/"
       onCook={(target) =>

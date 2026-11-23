@@ -44,7 +44,8 @@ type Statement = BatchItem<"sqlite">;
 type Statements = [Statement, ...Statement[]];
 
 export type SaveResult =
-  | { ok: true; recipe: Recipe }
+  /** `removedAssetIds` are photos the save took off the recipe; their files are the caller's to delete. */
+  | { ok: true; recipe: Recipe; removedAssetIds: string[] }
   | { ok: false; reason: "not_found" }
   /** Someone else saved first. `current` is the recipe as it is now. */
   | { ok: false; reason: "conflict"; current: Recipe }
@@ -260,7 +261,9 @@ async function readBeforeSave(orm: Orm, target: Target, input: RecipeInput) {
   // An ID no job has, when the save confirms no import, so the batch keeps one shape.
   const importJobId = target.create ? (target.importJobId ?? "") : "";
 
-  const [current, taken, foodRows, unitRows, organizerRows, jobRows] = await orm.batch([
+  const listedAssets = JSON.stringify((input.assets ?? []).map((asset) => asset.id));
+
+  const [current, taken, foodRows, unitRows, organizerRows, jobRows, assetRows] = await orm.batch([
     orm
       .select({
         slug: recipes.slug,
@@ -286,10 +289,19 @@ async function readBeforeSave(orm: Orm, target: Target, input: RecipeInput) {
       .select({ status: importJobs.status })
       .from(importJobs)
       .where(eq(importJobs.id, importJobId)),
+    // The recipe's assets as they stand, what the import brought, and any the save names.
+    orm
+      .select({ id: assets.id, ownerId: sql<string | null>`${assets.recipeId}`.as("owner_id") })
+      .from(assets)
+      .where(
+        sql`${assets.recipeId} = ${target.id} OR ${assets.importJobId} = ${importJobId} OR ${assets.id} IN (SELECT value FROM json_each(${listedAssets}))`,
+      ),
   ]);
 
   return {
     importStatus: jobRows[0]?.status ?? null,
+    /** Asset ID to the recipe that has it, or null for one that is not on a recipe yet. */
+    assetOwners: new Map(assetRows.map((asset) => [asset.id, asset.ownerId])),
     base,
     current: current[0] ?? null,
     takenSlugs: taken.map((row) => row.slug),
@@ -303,6 +315,7 @@ async function readBeforeSave(orm: Orm, target: Target, input: RecipeInput) {
 function referenceIssues(
   input: RecipeInput,
   known: Awaited<ReturnType<typeof readBeforeSave>>,
+  recipeId: string,
 ): FieldIssue[] {
   const issues: FieldIssue[] = [];
   input.ingredientSections.forEach((section, sectionIndex) => {
@@ -328,6 +341,13 @@ function referenceIssues(
       }
     });
   }
+  (input.assets ?? []).forEach((asset, index) => {
+    const owner = known.assetOwners.get(asset.id);
+    // Not uploaded, swept away, or on another recipe.
+    if (owner === undefined || (owner !== null && owner !== recipeId)) {
+      issues.push({ path: ["assets", index], message: "This photo is no longer there" });
+    }
+  });
   return issues;
 }
 
@@ -365,7 +385,7 @@ async function save(
         ],
       };
     }
-    const issues = referenceIssues(input, known);
+    const issues = referenceIssues(input, known, target.id);
     if (issues.length > 0) {
       return { ok: false, reason: "invalid", issues };
     }
@@ -376,6 +396,7 @@ async function save(
         ? known.current.slug
         : uniqueSlug(known.base, known.takenSlugs);
 
+    const listed = new Set((input.assets ?? []).map((asset) => asset.id));
     try {
       const statements = writeStatements(orm, target, input, slug, memberId, known);
       const results = await orm.batch([
@@ -387,7 +408,12 @@ async function save(
         // An update of a recipe that was deleted after the read. Nothing was written.
         return { ok: false, reason: "not_found" };
       }
-      return { ok: true, recipe };
+      const kept = new Set(recipe.assets.map((asset) => asset.id));
+      // What the read saw on the recipe, or arriving with the import, and the save left off.
+      const removedAssetIds = input.assets
+        ? [...known.assetOwners.keys()].filter((id) => !kept.has(id) && !listed.has(id))
+        : [];
+      return { ok: true, recipe, removedAssetIds };
     } catch (error) {
       const message = messagesOf(error);
       if (message.includes("version_conflict")) {
@@ -531,20 +557,49 @@ function writeStatements(
       .onConflictDoUpdate({ target: recipeSearch.recipeId, set: text }),
   );
 
-  if (target.create && target.importJobId !== null) {
-    // Confirming an import: what it brought with it becomes the recipe's, and
-    // the job is done. In the same batch, so neither happens without the recipe.
+  const confirming = target.create ? target.importJobId : null;
+  if (confirming !== null) {
+    // Confirming an import: what it brought with it becomes the recipe's. In
+    // the same batch as the recipe, so neither happens without the other.
     statements.push(
       orm
         .update(assets)
         .set({ recipeId: id })
-        .where(sql`${assets.importJobId} = ${target.importJobId} AND ${assets.recipeId} IS NULL`),
+        .where(sql`${assets.importJobId} = ${confirming} AND ${assets.recipeId} IS NULL`),
+    );
+  }
+
+  if (input.assets) {
+    // The list is the whole truth about the recipe's assets: each one named
+    // takes its role and its place, and one left out is deleted. The cover is
+    // stood down first, because a recipe may have only one at any moment.
+    const placed = JSON.stringify(input.assets);
+    statements.push(
+      orm
+        .update(assets)
+        .set({ role: "photo" })
+        .where(sql`${assets.recipeId} = ${id} AND ${assets.role} = 'cover'`),
+      orm.run(sql`
+        UPDATE assets
+        SET recipe_id = ${id}, role = placed.role, position = placed.position
+        FROM (
+          SELECT json_extract(value, '$.id') AS id, json_extract(value, '$.role') AS role, key AS position
+          FROM json_each(${placed})
+        ) AS placed
+        WHERE assets.id = placed.id AND (assets.recipe_id IS NULL OR assets.recipe_id = ${id})`),
+      orm.run(sql`
+        DELETE FROM assets
+        WHERE recipe_id = ${id}
+          AND id NOT IN (SELECT json_extract(value, '$.id') FROM json_each(${placed}))`),
+    );
+  }
+
+  if (confirming !== null) {
+    statements.push(
       orm
         .update(importJobs)
         .set({ status: "completed", recipeId: id, updatedAt: now })
-        .where(
-          sql`${importJobs.id} = ${target.importJobId} AND ${importJobs.status} = 'needs_review'`,
-        ),
+        .where(sql`${importJobs.id} = ${confirming} AND ${importJobs.status} = 'needs_review'`),
     );
   }
   return statements;

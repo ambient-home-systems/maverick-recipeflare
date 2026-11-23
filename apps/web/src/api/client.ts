@@ -12,7 +12,7 @@ import { markSignedIn, markSignedOut } from "./session";
  * Base URL of the API. Empty means the same origin as the app. It is a setting
  * so that a native wrapper can point the app at a household's server later.
  */
-const API_BASE: string = import.meta.env.VITE_API_BASE ?? "";
+export const API_BASE: string = import.meta.env.VITE_API_BASE ?? "";
 
 /** The API refused a request and said why, in the shared error body. */
 export class ApiError extends Error {
@@ -52,6 +52,8 @@ type RequestOptions<T extends z.ZodType> = {
   method?: "GET" | "POST" | "PUT" | "DELETE";
   /** Sent as JSON. */
   body?: unknown;
+  /** Sent as it is, as the whole body: a photo or an attachment. */
+  file?: Blob;
   /** The shape of a successful answer. Left out for a request that answers with no body. */
   schema?: T;
   signal?: AbortSignal;
@@ -73,8 +75,13 @@ export async function api<T extends z.ZodType>(
   try {
     response = await fetch(`${API_BASE}/api/v1${path}`, {
       method: options.method ?? "GET",
-      headers: options.body === undefined ? undefined : { "Content-Type": "application/json" },
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      headers: options.file
+        ? // The server reads what the file is from the file itself. The type only says "a file".
+          { "Content-Type": options.file.type || "application/octet-stream" }
+        : options.body === undefined
+          ? undefined
+          : { "Content-Type": "application/json" },
+      body: options.file ?? (options.body === undefined ? undefined : JSON.stringify(options.body)),
       signal: options.signal,
       // When the session runs out, Cloudflare Access answers every request with
       // a redirect to its login page on another origin. Followed, that fails

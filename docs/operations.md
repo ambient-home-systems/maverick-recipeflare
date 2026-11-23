@@ -14,6 +14,7 @@ How this install is deployed and what has to be set up by hand. Written for T0.5
 | R2 bucket | `recipeflare-staging-media` | `recipeflare-media` |
 | Import queue | `recipeflare-staging-imports` | `recipeflare-imports` |
 | Dead-letter queue | `recipeflare-staging-imports-dlq` | `recipeflare-imports-dlq` |
+| Images | The `IMAGES` binding, which names no resource | The same |
 | Deployed | Automatically, on every merge to `main`, after CI passes | By hand from the Actions tab, after approval |
 | GitHub environment | `staging` | `production` |
 

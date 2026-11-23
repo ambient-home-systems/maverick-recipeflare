@@ -407,12 +407,14 @@ describe("typing a new recipe", () => {
     await waitFor(() => expect(router.state.location.pathname).toBe("/recipes/stubborn-stew"));
   });
 
-  it("has no photo section until photos can be uploaded", async () => {
+  it("has a place for photos and for the original card", async () => {
     fakeApi();
     await renderAt("/recipes/new");
     await editorOpen();
 
-    expect(screen.queryByText("Photos and original card")).toBeNull();
+    expect(screen.getByText("Photos and original card")).toBeTruthy();
+    expect(screen.getByLabelText("Add photos")).toBeTruthy();
+    expect(screen.getByLabelText("Add the card")).toBeTruthy();
   });
 });
 

@@ -1,6 +1,7 @@
 import { type RecipeSort, slugify } from "@recipeflare/schema";
 import { getRouteApi } from "@tanstack/react-router";
 import { useMemo } from "react";
+import { assetUrl } from "../api/assets";
 import {
   type RecipeListRequest,
   useChangeImport,
@@ -110,6 +111,7 @@ export function RecipesPage() {
       onRemoveImport={(job) => changeImport.mutate({ id: job.id, action: "remove" })}
       links={{ newRecipe: "/recipes/new", importLink: "/add" }}
       recipeLink={(recipe) => ({ to: "/recipes/$slug", params: { slug: recipe.slug } })}
+      thumbnailFor={(recipe) => (recipe.cover ? assetUrl(recipe.cover, "thumb") : undefined)}
     />
   );
 }

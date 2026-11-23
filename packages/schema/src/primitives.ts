@@ -22,6 +22,10 @@ export const LIMITS = {
   nameLength: 100,
   urlLength: 2000,
   sourceNameLength: 200,
+  /** Photos, card sides and attachments on one recipe. */
+  assets: 30,
+  /** One uploaded file: 15 MB. */
+  uploadBytes: 15 * 1024 * 1024,
   /** 99 hours 59 minutes. */
   durationSeconds: 99 * 3600 + 59 * 60,
 } as const;

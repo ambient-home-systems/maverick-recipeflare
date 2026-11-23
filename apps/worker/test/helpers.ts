@@ -161,6 +161,16 @@ export function signedIn(bindings: Cloudflare.Env, email: string) {
     AUTH_AUTO_ENROLL: undefined,
   } as AppEnv["Bindings"];
 
+  // Work a route leaves for after its answer, such as deleting a removed photo's files.
+  const afterwards: Promise<unknown>[] = [];
+  const context = {
+    waitUntil: (work: Promise<unknown>) => {
+      afterwards.push(work);
+    },
+    passThroughOnException: () => {},
+    props: {},
+  } as unknown as ExecutionContext;
+
   const send = (method: string, path: string, body?: unknown, headers: HeadersInit = {}) =>
     app.fetch(
       new Request(`http://localhost:8787/api/v1${path}`, {
@@ -170,6 +180,7 @@ export function signedIn(bindings: Cloudflare.Env, email: string) {
           body === undefined ? undefined : typeof body === "string" ? body : JSON.stringify(body),
       }),
       settings,
+      context,
     );
 
   return {
@@ -180,9 +191,24 @@ export function signedIn(bindings: Cloudflare.Env, email: string) {
     // A delete has no body, so it says where it came from, as a browser does.
     delete: (path: string) => send("DELETE", path, undefined, { "Sec-Fetch-Site": "same-origin" }),
     send,
+    /** Sends a file as the body of a request, as the app does for a photo. */
+    upload: (path: string, bytes: Uint8Array, contentType?: string) =>
+      app.fetch(
+        new Request(`http://localhost:8787/api/v1${path}`, {
+          method: "POST",
+          headers: contentType
+            ? { "Content-Type": contentType }
+            : { "Sec-Fetch-Site": "same-origin" },
+          body: bytes,
+        }),
+        settings,
+        context,
+      ),
+    /** Waits for whatever the routes left to do after answering. */
+    settled: () => Promise.all(afterwards.splice(0)),
     /** For a client that builds its own requests, such as Hono's typed client. */
     fetch: (input: RequestInfo | URL, init?: RequestInit) =>
-      app.fetch(new Request(input, init), settings),
+      app.fetch(new Request(input, init), settings, context),
   };
 }
 

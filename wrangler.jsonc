@@ -33,6 +33,9 @@
     }
   ],
   "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "recipeflare-media" }],
+  // Resizes an uploaded photo into the two sizes the app shows. It names no
+  // resource. If a resize fails the original photo is served instead.
+  "images": { "binding": "IMAGES" },
   // Imports are jobs on one queue, consumed by this same Worker. Each message
   // is a job's ID. A message that has failed three retries goes to the
   // dead-letter queue, whose consumer, also this Worker, marks the job failed,
@@ -72,6 +75,7 @@
         }
       ],
       "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "recipeflare-staging-media" }],
+      "images": { "binding": "IMAGES" },
       "queues": {
         "producers": [{ "binding": "IMPORT_QUEUE", "queue": "recipeflare-staging-imports" }],
         "consumers": [

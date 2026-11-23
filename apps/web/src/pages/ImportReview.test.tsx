@@ -1,4 +1,4 @@
-import { type ImportJob, newId, type Recipe, slugify } from "@recipeflare/schema";
+import { type Asset, type ImportJob, newId, type Recipe, slugify } from "@recipeflare/schema";
 import {
   fixtureFoods,
   fixtureOrganizers,
@@ -34,6 +34,7 @@ function fakeApi(
   options: {
     jobs?: ImportJob[];
     duplicate?: { slug: string; title: string };
+    assets?: Asset[];
     refuseStart?: boolean;
     refuseDiscard?: boolean;
   } = {},
@@ -68,7 +69,11 @@ function fakeApi(
       if (path.startsWith("/imports/")) {
         const job = jobs.get(path.replace("/imports/", ""));
         return job
-          ? Response.json({ ...job, duplicate: options.duplicate ?? null })
+          ? Response.json({
+              ...job,
+              duplicate: options.duplicate ?? null,
+              assets: options.assets ?? [],
+            })
           : refusal(404, "not_found");
       }
       const slug = decodeURIComponent(path.replace("/recipes/", ""));

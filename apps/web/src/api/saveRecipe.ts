@@ -1,4 +1,6 @@
 import {
+  type Asset,
+  type AssetRole,
   ConflictBody,
   DuplicateBody,
   FoodEntry,
@@ -10,6 +12,7 @@ import {
 } from "@recipeflare/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { z } from "zod";
+import { uploadAsset } from "./assets";
 import { ApiError, api } from "./client";
 
 /** A unit or an organizer made in a picker. It exists only in the editor until the recipe is saved. */
@@ -28,7 +31,49 @@ export type SaveRequest = {
   newFoodByLine: Record<string, string>;
   pendingUnits: readonly PendingUnit[];
   pendingOrganizers: readonly PendingOrganizer[];
+  /**
+   * The recipe's photos, card sides and attachments as the editor has them, in
+   * order. Left out, the save leaves the recipe's assets as they are.
+   */
+  assets?: readonly Pick<Asset, "id" | "role">[];
+  /** Photos added in the editor and not sent yet, by the ID the editor gave each. */
+  pendingPhotos?: ReadonlyMap<string, File>;
+  /**
+   * Photos already sent, by the editor's ID. The caller keeps this between
+   * tries, so a save that failed part-way does not send a photo twice.
+   */
+  sentPhotos?: Map<string, Asset>;
 };
+
+/** A photo could not be sent. `name` is the file's, for saying which. */
+export class PhotoNotSentError extends Error {
+  readonly fileName: string;
+
+  constructor(fileName: string, cause: unknown) {
+    super(`Could not send ${fileName}`, { cause });
+    this.name = "PhotoNotSentError";
+    this.fileName = fileName;
+  }
+}
+
+/** Sends the photos the recipe still has and the server does not, and gives each its stored asset. */
+async function sendPhotos(request: SaveRequest): Promise<Map<string, Asset>> {
+  const sent = request.sentPhotos ?? new Map<string, Asset>();
+  for (const asset of request.assets ?? []) {
+    const file = request.pendingPhotos?.get(asset.id);
+    if (!file || sent.has(asset.id)) {
+      continue;
+    }
+    // The role is settled by the save; any picture role does for the upload.
+    const role: AssetRole = asset.role === "attachment" ? "attachment" : "photo";
+    try {
+      sent.set(asset.id, await uploadAsset(file, role));
+    } catch (error) {
+      throw new PhotoNotSentError(file.name, error);
+    }
+  }
+  return sent;
+}
 
 /**
  * Creates an entry of one of the household's lists, or finds the one that
@@ -53,8 +98,8 @@ async function createOrFind<T extends z.ZodType<{ id: string }>>(
 /**
  * Saves a recipe from the editor. Whatever the cook made along the way is
  * created first, and only if the recipe still uses it: units and organizers
- * from the pickers, and the foods confirmed at save. Then the recipe is saved
- * with those in place.
+ * from the pickers, the foods confirmed at save, and the photos added. Then the
+ * recipe is saved with those in place.
  */
 export async function saveRecipe(request: SaveRequest): Promise<Recipe> {
   const { input } = request;
@@ -84,9 +129,15 @@ export async function saveRecipe(request: SaveRequest): Promise<Recipe> {
     foodIds.set(name, await createOrFind("/foods", { name }, FoodEntry));
   }
 
+  const photos = await sendPhotos(request);
+
   const swap = (id: string) => replaced.get(id) ?? id;
   const body: RecipeInput = {
     ...input,
+    assets: request.assets?.map((asset) => ({
+      id: photos.get(asset.id)?.id ?? asset.id,
+      role: asset.role,
+    })),
     ingredientSections: input.ingredientSections.map((section) => ({
       ...section,
       items: section.items.map((line) => {

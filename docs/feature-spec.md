@@ -112,6 +112,9 @@ Three sample cards supplied by the owner on 22 Nov 2026. Every piece of writing 
 - Only the title is required, so a recipe can be saved half-entered and finished later.
 - Photos are resized in the browser to at most 2,560 px on the long edge before upload. That keeps handwriting legible for Phase 2 and keeps uploads near 1 MB on mobile data.
 - A recipe has at most one cover. If none is chosen, the first photo is used; if there are no photos, the list shows a plain tile with the title's first letter.
+- Photos are sent when the recipe is saved, not when they are chosen, so a recipe that is abandoned leaves nothing behind. Until then they are shown from the device.
+- A file over 15 MB is refused, and the editor names the file. A photo the browser has made smaller is never that large; the limit is met by a file the browser cannot read as a picture.
+- Attachments are not in the editor yet. The server stores and serves them; no screen adds or lists one. They need drawing first.
 - A recipe has an optional "From" field for where it came from. URL import fills it with the page's author or site name when the page states one, and the cook can change it. (Decided by the owner, 22 Nov 2026.)
 
 ### 2.4 The recipe view
@@ -227,7 +230,7 @@ The cook types a line the way it is written on the card. The rule-based parser (
 - Nothing becomes a recipe until Save is pressed in review mode. "Discard" removes the import, and always asks first.
 - Leaving review some other way (the navigation, the back button) keeps the import in the list to review later. If corrections have been made it asks first, because they are lost: the import stays as it was read from the page.
 - Tags and categories from the page are preselected only if the household already has them. Others are offered as unselected suggestions.
-- The page's main image becomes the cover and can be removed in review. (The image arrives with photos, T1.10. Until then review has the link to the page and no picture.)
+- The page's main image becomes the cover and can be removed in review.
 - If a recipe with the same link exists, review mode says so and links to it. The import can still be saved.
 - Failures say what happened in plain words and what to try: the site could not be reached, the site blocked the request, or the page has no recipe data. For the last, the message says that pasting the text arrives with Phase 2.
 - A failed import can be retried from its row.
