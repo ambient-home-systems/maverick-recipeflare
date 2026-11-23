@@ -115,7 +115,7 @@ If every request answers "Sign-in is not set up on this server", the `ACCESS_TEA
 
 ## AI
 
-Importing from photos and text (Phase 2) asks a model on Workers AI, through an AI Gateway. Nothing needs setting up before the first deploy: the binding names no resource, the deploy token needs no new permission as far as the docs say, and Cloudflare makes the gateway called `default` the first time the Worker calls it.
+Importing from photos and text (Phase 2) asks a model on Workers AI, through an AI Gateway. Nothing needs setting up before the first deploy: the binding names no resource, the deploy token needs no new permission (the first deploy with the binding, on 23 Nov 2026, passed with the token of step 1), and Cloudflare makes the gateway called `default` the first time the Worker calls it.
 
 ### Check it after a deploy
 
@@ -134,6 +134,7 @@ Each is optional. Add it as an environment **variable** of the GitHub environmen
 | `AI_PROFILE` | Which models do the AI jobs. The profiles are in `apps/worker/src/ai/profiles.ts`: `standard`, `gemma`, `qwen` | `standard` |
 | `AI_GATEWAY` | The name of the AI Gateway every model call goes through. Any name but `default` must be created in the dashboard first | `default` |
 | `AI_LOG_CONTENT` | `true` lets the gateway keep what was asked of a model and what it answered: photos of recipe cards and their text | Not kept. The gateway still records each call's model, time and cost |
+| `AI_DAILY_IMPORTS` | How many imports may ask a model in any 24 hours. Past it, a new import fails saying the day's allowance is used up; one already under way finishes | 100 |
 
 A variable that has been set stays set on the Worker after it is removed from GitHub. To go back to a default, set the variable to the default's value and deploy.
 

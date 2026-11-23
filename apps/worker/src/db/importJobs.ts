@@ -6,7 +6,7 @@ import {
   newId,
   type RecipeDraft,
 } from "@recipeflare/schema";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { importJobs, recipes } from "./schema";
 
@@ -23,6 +23,41 @@ export type JobInput = {
   /** The page as the cook's browser read it, when it was sent from there. */
   page?: { siteName: string | null; blocks: string[] };
 };
+
+/** One call a job made to a model: what it was for, who answered and what it cost. */
+export type AiCallRecord = {
+  task: string;
+  profile: string;
+  model: string;
+  milliseconds: number;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  tries: number;
+  at: string;
+};
+
+/**
+ * What a staged import has gathered so far. A stage reads it, does its one
+ * thing, and hands back what the next stage needs. `calls` and `steps` are the
+ * runner's own; the rest is the handler's.
+ */
+export type JobWork = {
+  /** The model calls made for this job, in order. */
+  calls?: AiCallRecord[];
+  /** How many stages the job has finished. */
+  steps?: number;
+  [key: string]: unknown;
+};
+
+function toWork(text: string | null): JobWork {
+  if (text === null) {
+    return {};
+  }
+  const parsed: unknown = JSON.parse(text);
+  return parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)
+    ? (parsed as JobWork)
+    : {};
+}
 
 function toJob(row: Row): ImportJob {
   return ImportJob.parse({
@@ -60,6 +95,8 @@ export async function createImportJob(
     sourceUrl: job.sourceUrl === null ? null : canonicalUrl(job.sourceUrl),
     input: JSON.stringify(job.input),
     result: null,
+    work: null,
+    review: null,
     errorCode: null,
     errorMessage: null,
     attempts: 0,
@@ -93,14 +130,19 @@ export async function recipeFromLink(
   return row ?? null;
 }
 
-/** A job together with what it was asked to do, for the runner. */
+/** A job together with what it was asked to do and what it has gathered, for the runner. */
 export async function loadImportJobForRun(
   db: D1Database,
   id: string,
-): Promise<{ job: ImportJob; input: JobInput; createdBy: string } | null> {
+): Promise<{ job: ImportJob; input: JobInput; work: JobWork; createdBy: string } | null> {
   const row = await drizzle(db).select().from(importJobs).where(eq(importJobs.id, id)).get();
   return row
-    ? { job: toJob(row), input: JSON.parse(row.input) as JobInput, createdBy: row.createdBy }
+    ? {
+        job: toJob(row),
+        input: JSON.parse(row.input) as JobInput,
+        work: toWork(row.work),
+        createdBy: row.createdBy,
+      }
     : null;
 }
 
@@ -128,11 +170,68 @@ export async function claimImportJob(db: D1Database, id: string): Promise<boolea
   return claimed.length > 0;
 }
 
+/**
+ * Moves a running job on to its next stage, keeping what it has gathered. The
+ * attempt count starts again: retries are counted for each stage by itself.
+ *
+ * False when the job is no longer at `from`: another delivery of the same
+ * message got there first, and this one has nothing left to do.
+ */
+export async function advanceImportJob(
+  db: D1Database,
+  id: string,
+  from: string | null,
+  to: string,
+  work: JobWork,
+): Promise<boolean> {
+  const moved = await drizzle(db)
+    .update(importJobs)
+    .set({ stage: to, work: JSON.stringify(work), attempts: 0, updatedAt: now() })
+    .where(
+      and(
+        eq(importJobs.id, id),
+        eq(importJobs.status, "running"),
+        from === null ? isNull(importJobs.stage) : eq(importJobs.stage, from),
+      ),
+    )
+    .returning({ id: importJobs.id });
+  return moved.length > 0;
+}
+
+/** Keeps a job's record of its model calls when a stage did not finish. Changes nothing else. */
+export async function keepImportWork(db: D1Database, id: string, work: JobWork): Promise<void> {
+  await drizzle(db)
+    .update(importJobs)
+    .set({ work: JSON.stringify(work) })
+    .where(eq(importJobs.id, id));
+}
+
+/**
+ * How many imports asked a model since `since`, not counting `exceptId`. An
+ * import that was discarded is gone and no longer counts.
+ */
+export async function countAiImports(
+  db: D1Database,
+  since: string,
+  exceptId: string,
+): Promise<number> {
+  const row = await db
+    .prepare(
+      `SELECT COUNT(*) AS n FROM import_jobs
+       WHERE created_at >= ?1 AND id != ?2
+         AND work IS NOT NULL AND json_array_length(work, '$.calls') > 0`,
+    )
+    .bind(since, exceptId)
+    .first<{ n: number }>();
+  return row?.n ?? 0;
+}
+
 /** Stores what the importer found and hands the job to a person. Only a running job can be finished. */
 export async function finishImportJob(
   db: D1Database,
   id: string,
   result: { draft: RecipeDraft; issues: DraftIssue[] },
+  work?: JobWork,
 ): Promise<void> {
   const at = now();
   await drizzle(db)
@@ -140,6 +239,7 @@ export async function finishImportJob(
     .set({
       status: "needs_review",
       result: JSON.stringify(result),
+      ...(work ? { work: JSON.stringify(work) } : {}),
       errorCode: null,
       errorMessage: null,
       updatedAt: at,
@@ -167,7 +267,11 @@ export async function failImportJob(
     .where(and(eq(importJobs.id, id), inArray(importJobs.status, ["queued", "running"])));
 }
 
-/** Puts a failed job back in line, as if it had just been asked for. Null if it is not a failed job. */
+/**
+ * Puts a failed job back in line. It keeps its stage and what it had gathered,
+ * so it takes up where it failed: a card that was read is not read again
+ * because a later stage failed. Null if it is not a failed job.
+ */
 export async function requeueImportJob(db: D1Database, id: string): Promise<ImportJob | null> {
   const rows = await drizzle(db)
     .update(importJobs)

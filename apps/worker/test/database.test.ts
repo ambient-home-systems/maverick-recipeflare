@@ -63,7 +63,7 @@ beforeAll(async () => {
 });
 
 describe("the migrations", () => {
-  it("are the four on disk, applied in order", async () => {
+  it("are the five on disk, applied in order", async () => {
     const applied = await db
       .prepare("SELECT name FROM d1_migrations ORDER BY id")
       .all<{ name: string }>();
@@ -72,6 +72,7 @@ describe("the migrations", () => {
       "search_index/migration.sql",
       "version_guard/migration.sql",
       "seed_units/migration.sql",
+      "import_work_and_review/migration.sql",
     ]);
   });
 

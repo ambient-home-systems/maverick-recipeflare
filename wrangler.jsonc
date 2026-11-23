@@ -44,12 +44,14 @@
   // is a job's ID. A message that has failed three retries goes to the
   // dead-letter queue, whose consumer, also this Worker, marks the job failed,
   // so nothing is lost silently. A batch is not waited for: an import starts at once.
+  // A message is one stage of one import, and a stage can be a model call that
+  // takes a minute. Two to a batch keeps an invocation well inside its time.
   "queues": {
     "producers": [{ "binding": "IMPORT_QUEUE", "queue": "recipeflare-imports" }],
     "consumers": [
       {
         "queue": "recipeflare-imports",
-        "max_batch_size": 10,
+        "max_batch_size": 2,
         "max_batch_timeout": 0,
         "max_retries": 3,
         "dead_letter_queue": "recipeflare-imports-dlq"
@@ -86,7 +88,7 @@
         "consumers": [
           {
             "queue": "recipeflare-staging-imports",
-            "max_batch_size": 10,
+            "max_batch_size": 2,
             "max_batch_timeout": 0,
             "max_retries": 3,
             "dead_letter_queue": "recipeflare-staging-imports-dlq"

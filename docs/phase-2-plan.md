@@ -64,7 +64,7 @@ Read from the live Cloudflare docs on 23 Nov 2026. The first pass, for the plan,
 - *Model IDs, and which take a picture and a JSON Schema in one call.* Settled from the catalog as far as it goes: see the table. Whether each really returns the schema is seen by the owner's check on staging.
 - *How a picture is passed, and how large it may be.* The shape is settled. The size is not stated anywhere and is found out in T2.6.
 - *Whether the tests and the end-to-end run start without Cloudflare credentials.* They did not, and now do: see the table. CI has none and passes.
-- *Whether the deploy token needs a Workers AI permission.* The docs say a deploy needs no permission on what a Worker is bound to. The first staging deploy with the binding confirms it or not; its result is recorded with T2.2.
+- *Whether the deploy token needs a Workers AI permission.* It does not. The docs say a deploy needs no permission on what a Worker is bound to, and the first staging deploy with the binding passed with the token unchanged.
 - *Whether Unified Billing is available, and what the default gateway is called.* The gateway is `default`. Unified Billing needs credits bought first; nothing uses it yet.
 
 ## 3. Conflicts with the build plan
@@ -106,7 +106,7 @@ A stage is one model call, or one piece of work in code. The job row records whi
 
 ### 4.3 Failures the list can explain
 
-New codes for a failed import, each with plain words in `ImportRow.tsx`: `too_thin` (there was not enough to make a recipe from), `unreadable` (nothing could be read from the photo), `ai_unavailable` (the model could not be reached after retries; trying again later may work), `ai_limit` (today's allowance for AI imports is used up).
+New codes for a failed import, each with plain words in `ImportRow.tsx`: `too_thin` (there was not enough to make a recipe from), `unreadable` (nothing could be read from the photo), `ai_unavailable` (the model could not be reached after retries; trying again later may work), `ai_limit` (today's allowance for AI imports is used up). As built, two more: `ai_answer` (the model's answer could not be used, twice running, or it declined) and `ai_setup` (the model is gone, or a setting is wrong).
 
 ## 5. The rules every AI step follows
 
@@ -217,5 +217,8 @@ Each task is one pull request with its ID in the title. Hours are estimates and 
 **As built.**
 
 - **T2.1** is built. Checked: the Worker tests (a stand-in for the binding), the end-to-end run and both deploy dry runs pass with no Cloudflare credentials; a retired model, by its error code, fails as not worth retrying; the items of [§2](#2-what-was-checked-and-what-it-changed) are each confirmed or corrected there. Not checked, because it needs the deployed Worker and the owner: the check on staging itself. It is the "Check the AI connection" button on the `/mock` page, which asks one small question and says which model answered; `docs/operations.md` gives the steps, including asking the retired model. The gateway's spend limit is a dashboard step for the owner, in the same place.
+
+- **T2.2** is built: see "As built in T2.2" in [the first plan's import section](implementation-plan.md#72-rules). Checked, with handlers and a model that are stand-ins: a job moves through three stages and lands in review; a message delivered twice at any stage, one after the other or at once, changes nothing; a stage that fails is retried alone, and "Try again" takes up at that stage; the daily limit fails a job with `ai_limit` before any model is asked; Phase 1's link import passes its tests unchanged. The plan gave three failure codes for a model; as built there are four, `ai_setup` being the one for a model that is gone or a setting that is wrong, which only whoever looks after the app can fix.
+- **The deploy token** needs no new permission. The staging deploy that followed T2.1, on 23 Nov 2026, uploaded the Worker with its `AI` binding using the token as it was.
 
 Suggested order: T2.1 and T2.5 first, since both wait on the owner. Then T2.2 to T2.4, which give a working import with no camera in the way. Then T2.6, T2.7 and T2.8. T2.11 as soon as cards can be imported, because its result decides the models every later task is judged with. T2.9 and T2.10 can follow the gate if time is short: neither is in the gate's twenty cards.

@@ -30,7 +30,7 @@ import { removeAssets } from "../media";
  */
 async function enqueue(c: Context<AppEnv>, job: ImportJob): Promise<ImportJob> {
   try {
-    const message: ImportMessage = { jobId: job.id };
+    const message: ImportMessage = { jobId: job.id, stage: job.stage };
     await c.env.IMPORT_QUEUE.send(message);
     return job;
   } catch (error) {

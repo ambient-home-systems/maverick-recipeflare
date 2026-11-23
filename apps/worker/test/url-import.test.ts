@@ -66,7 +66,9 @@ const JOB = { id: "", kind: "url" } as unknown as ImportJob;
 /** Runs the handler on one page and returns the draft as the runner would store it. */
 async function draftOf(body: string, url = "https://kitchen.example.com/recipes/a-dish") {
   const fetcher = site({ [url]: () => html(body) });
-  return RecipeDraft.parse(await importFromUrl(JOB, { url }, { fetch: fetcher, env, ai: noAi }));
+  return RecipeDraft.parse(
+    await importFromUrl(JOB, { url }, { fetch: fetcher, env, ai: noAi }, {}),
+  );
 }
 
 async function failureOf(run: Promise<unknown>) {
@@ -192,7 +194,7 @@ describe("reading a recipe from a page", () => {
 describe("fetching the page", () => {
   const url = "https://kitchen.example.com/a";
   const run = (fetcher: typeof fetch, address = url) =>
-    importFromUrl(JOB, { url: address }, { fetch: fetcher, env, ai: noAi });
+    importFromUrl(JOB, { url: address }, { fetch: fetcher, env, ai: noAi }, {});
 
   it.each([
     "http://192.168.1.10/recipe",

@@ -1,11 +1,17 @@
 import { checkDraft, type ImportJob, type ImportJobKind, RecipeDraft } from "@recipeflare/schema";
 import { z } from "zod";
-import type { AiRunner } from "../ai/runner";
+import { AiFailure } from "../ai/failure";
+import type { AiRunner, AiSettings } from "../ai/runner";
 import {
+  type AiCallRecord,
+  advanceImportJob,
   claimImportJob,
+  countAiImports,
   failImportJob,
   finishImportJob,
   type JobInput,
+  type JobWork,
+  keepImportWork,
   loadImportJobForRun,
 } from "../db/importJobs";
 import { keepPicture } from "./picture";
@@ -34,42 +40,144 @@ export class PermanentImportError extends Error {
   }
 }
 
+/** What a queue message carries: a pointer to the job, and the stage it is for. Nothing else. */
+export const ImportMessage = z.object({
+  jobId: z.uuid(),
+  /**
+   * The stage the job was at when the message was sent. A message that
+   * arrives after the job has moved on is a second delivery, and is dropped.
+   * Left out, the message is for whatever stage the job is at.
+   */
+  stage: z.string().nullable().optional(),
+});
+export type ImportMessage = z.infer<typeof ImportMessage>;
+
 /**
  * What a handler is given besides the job: nothing it could not be handed in
  * a test. `ai` is the only way a handler reaches a model.
  */
-export type ImportTools = { fetch: typeof fetch; env: Env; ai: AiRunner };
+export type ImportTools = {
+  fetch: typeof fetch;
+  env: Env & AiSettings;
+  ai: AiRunner;
+  /** Puts a message on the import queue. Left out, it is the queue itself. */
+  send?: (message: ImportMessage) => Promise<unknown>;
+};
 
-/** One kind of import: it reads the source and returns what it found. It saves nothing. */
+/**
+ * A handler's answer when the import is not finished: the stage to run next,
+ * and what to keep for it. Anything else a handler returns is taken as the
+ * finished draft.
+ */
+export class NextStage {
+  readonly stage: string;
+  readonly work: JobWork;
+
+  constructor(stage: string, work: JobWork) {
+    this.stage = stage;
+    this.work = work;
+  }
+}
+
+/**
+ * One kind of import. It is called once for each stage: `job.stage` says
+ * which (null for the first), and `work` is what earlier stages kept. It
+ * returns the draft, or a `NextStage`. It saves nothing.
+ */
 export type ImportHandler = (
   job: ImportJob,
   input: JobInput,
   tools: ImportTools,
+  work: JobWork,
 ) => Promise<unknown>;
 
 export type ImportHandlers = Partial<Record<ImportJobKind, ImportHandler>>;
 
-/** What a queue message carries: a pointer to the job, and nothing else. */
-export const ImportMessage = z.object({ jobId: z.uuid() });
-export type ImportMessage = z.infer<typeof ImportMessage>;
-
 /** What to do with the message that asked for a run. */
 export type RunOutcome = { ack: true } | { ack: false; delaySeconds: number };
+
+/** How many AI imports a day, unless `AI_DAILY_IMPORTS` says otherwise. */
+export const DAILY_AI_IMPORTS = 100;
+/** The queue brings a message back three times: the fourth delivery is the last. */
+const LAST_ATTEMPT = 4;
+/** No import has this many stages. One that asks for more is going round in circles. */
+const MAX_STAGES = 8;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** A minute, then two, then four: a site that is down is given time to come back. */
 const retryDelay = (attempts: number) => Math.min(60 * 2 ** Math.max(0, attempts - 1), 900);
 
+/** What a failed model call means for the import, in a code the list can explain. */
+function importError(failure: AiFailure): PermanentImportError {
+  switch (failure.reason) {
+    case "limit":
+      return new PermanentImportError("ai_limit", failure.message);
+    case "bad_answer":
+    case "refused":
+      return new PermanentImportError("ai_answer", failure.message);
+    case "unavailable":
+      return new PermanentImportError("ai_unavailable", failure.message);
+    default:
+      // A model that is gone, a request it will not take, a setting that names nothing.
+      return new PermanentImportError("ai_setup", failure.message);
+  }
+}
+
 /**
- * Runs one job. Safe to call again for the same job: a job a person already
- * has is left alone, and one that was running when its last attempt died is
+ * The model runner one job is handed. It is the app's runner with two things
+ * added: the daily limit is checked before a job's first call, and every call
+ * is written down in `calls`, to be kept with the job.
+ */
+function aiForJob(tools: ImportTools, jobId: string, calls: AiCallRecord[]): AiRunner {
+  const limit = Number(tools.env.AI_DAILY_IMPORTS?.trim() || DAILY_AI_IMPORTS);
+  return {
+    profile: () => tools.ai.profile(),
+    async run(request) {
+      if (calls.length === 0) {
+        // A job that has already asked a model is let finish: stopping it
+        // half-way would waste what it has spent.
+        const since = new Date(Date.now() - DAY_MS).toISOString();
+        if ((await countAiImports(tools.env.DB, since, jobId)) >= limit) {
+          throw new AiFailure("limit", false, "Today's allowance of AI imports is used up.");
+        }
+      }
+      const answer = await tools.ai.run(request);
+      calls.push({
+        task: answer.task,
+        profile: answer.profile,
+        model: answer.model,
+        milliseconds: answer.milliseconds,
+        inputTokens: answer.usage?.inputTokens ?? null,
+        outputTokens: answer.usage?.outputTokens ?? null,
+        tries: answer.tries,
+        at: new Date().toISOString(),
+      });
+      return answer;
+    },
+  };
+}
+
+/**
+ * Runs one stage of one job. Safe to call again for the same job: a job a
+ * person already has is left alone, a message for a stage the job has left
+ * is dropped, and a stage that was running when its last attempt died is
  * simply run again and its result overwritten.
  */
 export async function runImportJob(
   jobId: string,
   handlers: ImportHandlers,
   tools: ImportTools,
+  forStage?: string | null,
 ): Promise<RunOutcome> {
   const db = tools.env.DB;
+  if (forStage !== undefined) {
+    // Looked at before the job is claimed, so that a second delivery does not
+    // count as an attempt at a stage it was never for.
+    const before = await loadImportJobForRun(db, jobId);
+    if (!before || before.job.stage !== forStage) {
+      return { ack: true };
+    }
+  }
   if (!(await claimImportJob(db, jobId))) {
     return { ack: true };
   }
@@ -87,30 +195,85 @@ export async function runImportJob(
     return { ack: true };
   }
 
+  const calls: AiCallRecord[] = [...(loaded.work.calls ?? [])];
+  const made = calls.length;
+  /** What the job has gathered, with every model call made so far, this run's included. */
+  const withCalls = (work: JobWork): JobWork => (calls.length > 0 ? { ...work, calls } : work);
+  const fail = async (code: string, message: string): Promise<RunOutcome> => {
+    if (calls.length > made) {
+      await keepImportWork(db, jobId, withCalls(loaded.work));
+    }
+    await failImportJob(db, jobId, { code, message });
+    return { ack: true };
+  };
+
   try {
-    const draft = RecipeDraft.parse(await handler(job, input, tools));
+    const answer = await handler(
+      job,
+      input,
+      { ...tools, ai: aiForJob(tools, jobId, calls) },
+      loaded.work,
+    );
+
+    if (answer instanceof NextStage) {
+      const steps = (loaded.work.steps ?? 0) + 1;
+      if (answer.stage === job.stage || steps > MAX_STAGES) {
+        return fail("bad_draft", "The import did not finish.");
+      }
+      const work = withCalls({ ...answer.work, steps });
+      if (!(await advanceImportJob(db, jobId, job.stage, answer.stage, work))) {
+        // Another delivery of this message ran the stage first and has sent the next one.
+        return { ack: true };
+      }
+      try {
+        const message: ImportMessage = { jobId, stage: answer.stage };
+        await (tools.send ?? ((next) => tools.env.IMPORT_QUEUE.send(next)))(message);
+      } catch (error) {
+        console.error("import: could not queue the next stage", error);
+        // The job is at its next stage with what it gathered, so trying again takes up there.
+        await failImportJob(db, jobId, {
+          code: "not_queued",
+          message: "The import could not be carried on. Try again.",
+        });
+      }
+      return { ack: true };
+    }
+
+    const draft = RecipeDraft.parse(answer);
     // The picture the source points at is fetched here, for every kind of
     // import, so that a handler still saves nothing itself.
     await keepPicture({ id: job.id, createdBy }, draft.imageUrl, tools);
-    await finishImportJob(db, jobId, { draft, issues: checkDraft(draft) });
+    await finishImportJob(
+      db,
+      jobId,
+      { draft, issues: checkDraft(draft) },
+      calls.length > 0 ? withCalls(loaded.work) : undefined,
+    );
     return { ack: true };
-  } catch (error) {
+  } catch (thrown) {
+    let error = thrown;
+    if (error instanceof AiFailure) {
+      // A model that is busy is asked again, as a site that is down would be.
+      // The last time round, the job says it was the model, not a site.
+      error =
+        error.retryable && job.attempts < LAST_ATTEMPT
+          ? new RetryableImportError(error.message, { cause: error })
+          : importError(error);
+    }
     if (error instanceof PermanentImportError) {
-      await failImportJob(db, jobId, { code: error.code, message: error.message });
-      return { ack: true };
+      return fail(error.code, error.message);
     }
     if (error instanceof z.ZodError) {
       // The handler returned something that is not a draft. Trying again would return it again.
-      await failImportJob(db, jobId, {
-        code: "bad_draft",
-        message: "What was read from the source could not be understood.",
-      });
-      return { ack: true };
+      return fail("bad_draft", "What was read from the source could not be understood.");
     }
     // A retryable error, or one nobody foresaw: the job stays `running`, and
     // the queue brings the message back. Past its retries it reaches the
     // dead-letter queue, which marks the job failed.
     console.error("import: a run failed and will be retried", error);
+    if (calls.length > made) {
+      await keepImportWork(db, jobId, withCalls(loaded.work));
+    }
     return { ack: false, delaySeconds: retryDelay(job.attempts) };
   }
 }
@@ -143,7 +306,7 @@ export async function handleImportBatch(
       continue;
     }
     try {
-      const outcome = await runImportJob(parsed.data.jobId, handlers, tools);
+      const outcome = await runImportJob(parsed.data.jobId, handlers, tools, parsed.data.stage);
       if (outcome.ack) {
         message.ack();
       } else {

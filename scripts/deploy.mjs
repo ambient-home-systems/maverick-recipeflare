@@ -23,6 +23,8 @@
 //                        Unset means "default".
 //   AI_LOG_CONTENT       Optional. "true" lets the gateway keep what was asked
 //                        of a model and what it answered.
+//   AI_DAILY_IMPORTS     Optional. How many imports may ask a model in a day.
+//                        Unset means 100.
 //
 // Wrangler reads CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID itself.
 //
@@ -46,6 +48,7 @@ const SECRET_NAMES = [
   "AI_PROFILE",
   "AI_GATEWAY",
   "AI_LOG_CONTENT",
+  "AI_DAILY_IMPORTS",
 ];
 
 function fail(message) {
