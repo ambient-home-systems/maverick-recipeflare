@@ -60,7 +60,7 @@ Four places where this plan reads the build plan in a particular way, so you can
 
 ## Decisions since the build plan
 
-Made by the owner on 22 Nov 2026 in answer to this plan's open questions. The second one amends the build plan's roadmap; the build plan's text has not been edited.
+Made by the owner on 22 Nov 2026 in answer to this plan's open questions, with later ones dated. The second one amends the build plan's roadmap; the build plan's text has not been edited.
 
 | Decision | Choice | What it changes |
 | --- | --- | --- |
@@ -71,6 +71,10 @@ Made by the owner on 22 Nov 2026 in answer to this plan's open questions. The se
 | Visual direction | "Recipe tin", chosen by the owner from three sketches: the index-card recipe tin, with categories as coloured divider tabs | Recorded in `apps/web/DESIGN.md`; every screen is built from its tokens and components |
 | Public library | The owner wants the option to make the recipe library public | Not designed yet; see [§10](#10-open-questions). It touches auth, because Cloudflare Access sits in front of everything today |
 | Drizzle | Start on 1.0 (currently a release candidate) | Folder-per-migration layout with Wrangler's `migrations_pattern` ([§8.3](#83-d1-migrations)) |
+| Members (23 Nov 2026) | Anyone Cloudflare Access admits becomes a member by themselves on first sign-in | Closes open question 2 in [§10](#10-open-questions). Nothing to build: it is the default since T0.12 |
+| Mock screens (23 Nov 2026) | The app has no link to them. They stay, at `/mock`, for design review | The link under Manage is removed |
+| App updates (23 Nov 2026) | A refresh must be enough to move to a new version | [§6.2](#62-cloudflare-access), as built in T1.13 |
+| Attachments (23 Nov 2026) | Files that are not images are supported | The editor and the recipe list them ([§4.3](#43-tables), as built in T1.10) |
 
 ## 1. Frontend framework
 
@@ -990,7 +994,7 @@ Suggested mix for the gate's ten: at least one with ingredient sections, one wit
 Questions answered since the first version are recorded in [Decisions since the build plan](#decisions-since-the-build-plan). What remains, each with the default this plan assumes so that work can start:
 
 1. **Public library.** The owner wants the option to make the library public. Undecided: which phase; whether public means read-only; the whole library or chosen recipes; and how it works when Cloudflare Access is in front of the hostname. The build plan has public share links in Phase 5, which may be the same feature or a narrower one. Default until decided: nothing is public, and the shell is designed so that a signed-out visitor could be shown a read-only version later.
-2. **Members.** Access admits the household's two adults. Should anyone Access admits become a member automatically on first sign-in? Built in T0.12 as the default: yes, with the first sign-in as owner. `AUTH_AUTO_ENROLL=false` turns it off ([§6.1](#61-one-middleware)). Stood at the Phase 0 gate.
+2. **Members.** Settled by the owner on 23 Nov 2026: anyone Access admits becomes a member automatically on first sign-in, with the first sign-in as owner. Access already decides who gets in, so a second approval would add nothing. `AUTH_AUTO_ENROLL=false` remains for an install that wants it ([§6.1](#61-one-middleware)).
 3. **Drafts on the job, not in `recipes`.** See [Conflicts](#conflicts-with-the-build-plan). Stood at the Phase 0 gate: an imported draft does not appear in the recipe list before review.
 4. **Units.** A starting list of 25 US and metric units, with quantities shown as fractions by default. Stood at the Phase 0 gate.
 5. **What "works offline" covers.** Default: all recipe data syncs to the device, images once viewed. Settled in the spec (T0.3).
