@@ -85,13 +85,33 @@ type Page = { blocks: string[]; siteName: string | null; url: URL };
 const tooLarge = () => new PermanentImportError("too_large", "That page is too large to read.");
 
 /**
+ * What the importer says about itself when it asks for a page: what a desktop
+ * browser says. The owner decided this on 23 Nov 2026, after a large recipe
+ * site refused a request that named the app. An import is one page, asked for
+ * once, because a person pasted its address; it is that person's reading of
+ * the page, done from the server. This is as far as it goes: nothing here
+ * retries a refusal, changes identity between tries or routes around a block.
+ *
+ * The browser version is a recent one, not a live one. Raise it once in a
+ * while; a version years old is its own reason to be refused.
+ */
+const BROWSER_HEADERS = {
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",
+  "Accept-Language": "en-US,en;q=0.9",
+  "Upgrade-Insecure-Requests": "1",
+};
+const PAGE_ACCEPT =
+  "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8";
+
+/**
  * Asks for the page, following a site's redirects by hand so that each
  * address on the way is checked like the first.
  */
 export async function fetchChecked(
   url: URL,
   fetcher: typeof fetch,
-  accept = "text/html,application/xhtml+xml",
+  accept = PAGE_ACCEPT,
 ): Promise<{ response: Response; url: URL }> {
   const signal = AbortSignal.timeout(TIMEOUT_MS);
   let current = url;
@@ -99,11 +119,7 @@ export async function fetchChecked(
     let response: Response;
     try {
       response = await fetcher(current.toString(), {
-        headers: {
-          Accept: accept,
-          // Says what is asking, plainly. Some sites refuse a request that says nothing.
-          "User-Agent": "Mozilla/5.0 (compatible; Recipeflare recipe import)",
-        },
+        headers: { ...BROWSER_HEADERS, Accept: accept },
         redirect: "manual",
         signal,
       });
@@ -132,7 +148,7 @@ async function readPage(url: URL, fetcher: typeof fetch): Promise<Page> {
   const { response, url: finalUrl } = await fetchChecked(url, fetcher);
 
   if (response.status === 401 || response.status === 403) {
-    throw new PermanentImportError("blocked", "The site refused the request.");
+    throw new PermanentImportError("blocked", "The site does not let apps read its pages.");
   }
   if (response.status === 404 || response.status === 410) {
     throw new PermanentImportError("no_page", "There is no page at that address.");

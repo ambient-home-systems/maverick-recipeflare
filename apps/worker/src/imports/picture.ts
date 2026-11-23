@@ -24,7 +24,11 @@ export async function keepPicture(
     return;
   }
   try {
-    const { response } = await fetchChecked(checkedUrl(imageUrl), tools.fetch, "image/*");
+    const { response } = await fetchChecked(
+      checkedUrl(imageUrl),
+      tools.fetch,
+      "image/avif,image/webp,image/png,image/jpeg,image/*;q=0.8",
+    );
     if (!response.ok) {
       await response.body?.cancel();
       return;
