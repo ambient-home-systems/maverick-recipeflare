@@ -6,7 +6,7 @@ Guidance for Claude Code working in this repository.
 
 Maverick Recipeflare (Recipeflare for short) is a household recipe app on Cloudflare: one TypeScript Worker serving a React PWA and a JSON API, with D1, R2, Queues and, in later phases, Workers AI and Durable Objects. One household per install. Licensed AGPL-3.0-only.
 
-**Status: Phase 0 is complete (T0.1 to T0.13); its gate passed on 23 Nov 2026. Phase 1 is built through T1.3 (the recipe repository, the recipes API, and the API for organizers, foods, units and labels).** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, the database schema with its migrations, and sign-in (the auth middleware, the Access and dev providers, `/api/v1/me`) exist. No product screen is connected to data yet. When a pull request changes a command or path below, it updates this file in the same pull request.
+**Status: Phase 0 is complete (T0.1 to T0.13); its gate passed on 23 Nov 2026. Phase 1 is built through T1.4 (the recipe repository, the recipes API with search and filters, and the API for organizers, foods, units and labels).** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, the database schema with its migrations, and sign-in (the auth middleware, the Access and dev providers, `/api/v1/me`) exist. No product screen is connected to data yet. When a pull request changes a command or path below, it updates this file in the same pull request.
 
 ## Read first
 
@@ -125,7 +125,7 @@ To be signed in locally, copy `.dev.vars.example` to `.dev.vars` and run `pnpm d
 - At most 100 bound parameters per statement. Chunk multi-row inserts with `chunkRows()` and state every column of each row, so the count per row is known. Pass `IN` lists as one JSON parameter expanded with `json_each` (`inJson()`).
 - Columns that share a name across joined tables need their own names in a batched select, because a D1 batch returns rows keyed by column name. Booleans come back from a batch as 0 and 1.
 - A recipe's search text is assembled only by `buildSearchText()`. Anything that changes a name the text contains rewrites the row through it.
-- Never build SQL by concatenating values; bind them. Never pass user text to FTS `MATCH` without the query builder.
+- Never build SQL by concatenating values; bind them. Never pass user text to FTS `MATCH` without the query builder, `ftsQuery()` in `apps/worker/src/db/ftsQuery.ts`.
 - `LIKE` patterns are capped at 50 bytes. Use the FTS index or a range scan.
 - A recipe's children (ingredients, steps, notes, organizer links) are replaced on every save with their IDs preserved. No table may have a foreign key to those child rows.
 - IDs are UUIDv7 text generated in the Worker. The only planned exception is the Phase 4 meal-plan table.

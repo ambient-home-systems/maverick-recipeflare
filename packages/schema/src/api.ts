@@ -39,18 +39,54 @@ export type ErrorBody = z.infer<typeof ErrorBody>;
 export const ConflictBody = ErrorBody.extend({ current: Recipe });
 export type ConflictBody = z.infer<typeof ConflictBody>;
 
-/** How the recipe list can be ordered. */
-export const RecipeSort = z.enum(["changed", "newest", "title"]);
+/**
+ * How the recipe list can be ordered. `match` is best match first, and means
+ * something only while searching.
+ */
+export const RecipeSort = z.enum(["match", "changed", "newest", "title"]);
 export type RecipeSort = z.infer<typeof RecipeSort>;
 
 /** The list loads this many recipes at a time. */
 export const RECIPES_PER_PAGE = 30;
 
-/** Query of `GET /api/v1/recipes`, as it arrives: every value is text. */
+/** "a, b,,a" becomes ["a", "b"]. More than twenty of one kind of filter is not a real request. */
+const commaList = z
+  .string()
+  .default("")
+  .transform((value) =>
+    [
+      ...new Set(
+        value
+          .split(",")
+          .map((item) => item.trim())
+          .filter((item) => item !== ""),
+      ),
+    ].slice(0, 20),
+  );
+
+/**
+ * Query of `GET /api/v1/recipes`, as it arrives: every value is text.
+ *
+ * Every filter given must match, together with the search. A category, tag or
+ * tool is named by its slug and a food by its ID.
+ */
 export const RecipeListQuery = z.object({
+  /** The search text as typed. */
+  q: z
+    .string()
+    .default("")
+    .transform((value) => value.trim().slice(0, 100)),
+  category: z
+    .string()
+    .default("")
+    .transform((value) => value.trim() || null),
+  tags: commaList,
+  tools: commaList,
+  foods: commaList,
+  /** Left out, the list decides: best match while searching, otherwise last changed. */
+  sort: RecipeSort.optional(),
   page: z.coerce.number().int().min(1).max(10_000).default(1),
   perPage: z.coerce.number().int().min(1).max(100).default(RECIPES_PER_PAGE),
-  sort: RecipeSort.default("changed"),
 });
 export type RecipeListQuery = z.infer<typeof RecipeListQuery>;
 

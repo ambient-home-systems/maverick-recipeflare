@@ -7,13 +7,77 @@ import {
 } from "@recipeflare/schema";
 import { type SQL, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
+import { ftsQuery } from "./ftsQuery";
 
-/** The order of each sort. The ID breaks ties, so paging never skips or repeats a recipe. */
+/**
+ * The order of each sort. The ID breaks ties, so paging never skips or repeats
+ * a recipe. Best match weighs a word in the title above one in the
+ * ingredients, the organizers and the description, in that order.
+ */
 const ORDER: Record<RecipeSort, SQL> = {
+  match: sql`bm25(recipes_fts, 10.0, 2.0, 4.0, 3.0), r.updated_at DESC, r.id DESC`,
   changed: sql`r.updated_at DESC, r.id DESC`,
   newest: sql`r.created_at DESC, r.id DESC`,
   title: sql`r.title COLLATE NOCASE ASC, r.id ASC`,
 };
+
+/** A recipe has every one of these organizers of one kind, named by slug. */
+function hasAll(kind: "tag" | "tool", slugs: readonly string[]): SQL {
+  return sql`(SELECT COUNT(*) FROM recipe_organizers AS l
+              JOIN organizers AS o ON o.id = l.organizer_id
+              WHERE l.recipe_id = r.id AND o.kind = ${kind}
+                AND o.slug IN (SELECT value FROM json_each(${JSON.stringify(slugs)}))) = ${slugs.length}`;
+}
+
+/**
+ * Which recipes the list is asked for: the tables to read and the conditions,
+ * every one of which must hold. Null when the search text has nothing in it
+ * that the index could hold, so nothing can match.
+ */
+function selection(query: RecipeListQuery): { from: SQL; where: SQL; sort: RecipeSort } | null {
+  const match = ftsQuery(query.q);
+  if (query.q !== "" && match === null) {
+    return null;
+  }
+  const conditions: SQL[] = [];
+  if (match) {
+    conditions.push(sql`recipes_fts MATCH ${match}`);
+  }
+  if (query.category) {
+    conditions.push(
+      sql`EXISTS (SELECT 1 FROM recipe_organizers AS l
+                  JOIN organizers AS o ON o.id = l.organizer_id
+                  WHERE l.recipe_id = r.id AND o.kind = 'category' AND o.slug = ${query.category})`,
+    );
+  }
+  if (query.tags.length > 0) {
+    conditions.push(hasAll("tag", query.tags));
+  }
+  if (query.tools.length > 0) {
+    conditions.push(hasAll("tool", query.tools));
+  }
+  if (query.foods.length > 0) {
+    conditions.push(
+      sql`(SELECT COUNT(DISTINCT i.food_id) FROM recipe_ingredients AS i
+           WHERE i.recipe_id = r.id
+             AND i.food_id IN (SELECT value FROM json_each(${JSON.stringify(query.foods)}))) = ${query.foods.length}`,
+    );
+  }
+  return {
+    from: match
+      ? sql`FROM recipes_fts
+            JOIN recipe_search AS s ON s.doc_id = recipes_fts.rowid
+            JOIN recipes AS r ON r.id = s.recipe_id`
+      : sql`FROM recipes AS r`,
+    where: conditions.length > 0 ? sql`WHERE ${sql.join(conditions, sql` AND `)}` : sql``,
+    // Best match means something only while searching.
+    sort: match
+      ? (query.sort ?? "match")
+      : query.sort === "match" || !query.sort
+        ? "changed"
+        : query.sort,
+  };
+}
 
 type SummaryRow = {
   id: string;
@@ -44,7 +108,8 @@ type AssetRow = {
 };
 
 /**
- * One page of the recipe list, with each recipe's cover, categories and tags.
+ * One page of the recipe list, with each recipe's cover, categories and tags:
+ * the recipes that match the search text and every filter given.
  * One query: a batch of four selects over the same page.
  */
 export async function listRecipes(
@@ -52,20 +117,24 @@ export async function listRecipes(
   query: RecipeListQuery,
 ): Promise<RecipeListResponse> {
   const orm = drizzle(db);
+  const chosen = selection(query);
+  if (!chosen) {
+    return { items: [], page: query.page, perPage: query.perPage, total: 0 };
+  }
+  const { from, where } = chosen;
   const offset = (query.page - 1) * query.perPage;
-  // The page, as a list of IDs. The three selects below that need it repeat it;
-  // a batch is one transaction, so all of them see the same recipes.
-  const page = sql`SELECT r.id FROM recipes AS r ORDER BY ${ORDER[query.sort]} LIMIT ${query.perPage} OFFSET ${offset}`;
+  const paged = sql`${from} ${where} ORDER BY ${ORDER[chosen.sort]} LIMIT ${query.perPage} OFFSET ${offset}`;
+  // The page, as a list of IDs, for the two selects that fetch what belongs to
+  // its recipes. A batch is one transaction, so all four see the same recipes.
+  const page = sql`SELECT r.id ${paged}`;
 
   const [count, rows, organizerRows, assetRows] = await orm.batch([
-    orm.all<{ total: number }>(sql`SELECT COUNT(*) AS total FROM recipes`),
+    orm.all<{ total: number }>(sql`SELECT COUNT(*) AS total ${from} ${where}`),
     orm.all<SummaryRow>(
       sql`SELECT r.id, r.slug, r.title, r.description, r.source_name, r.servings,
                  r.prep_time_seconds, r.cook_time_seconds, r.total_time_seconds,
                  r.created_at, r.updated_at
-          FROM recipes AS r
-          WHERE r.id IN (${page})
-          ORDER BY ${ORDER[query.sort]}`,
+          ${paged}`,
     ),
     orm.all<OrganizerRow>(
       sql`SELECT l.recipe_id, o.id, o.kind, o.name, o.slug
