@@ -159,3 +159,18 @@ export const Asset = z.object({
   createdAt: Timestamp,
 });
 export type Asset = z.infer<typeof Asset>;
+
+/** Where an asset sits on a recipe, as a save states it. Its place is its position in the list. */
+export const AssetPlacement = z.object({ id: Id, role: AssetRole });
+export type AssetPlacement = z.infer<typeof AssetPlacement>;
+
+/** The sizes a picture is served in. A picture with no variants is served as its original in each. */
+export const AssetVariant = z.enum(["original", "thumb", "full"]);
+export type AssetVariant = z.infer<typeof AssetVariant>;
+
+/** Query of `POST /assets`: what the uploaded file is for, and what it was called. */
+export const AssetUploadQuery = z.object({
+  role: AssetRole,
+  filename: z.string().trim().max(200).optional(),
+});
+export type AssetUploadQuery = z.infer<typeof AssetUploadQuery>;

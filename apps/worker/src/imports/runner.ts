@@ -7,6 +7,7 @@ import {
   type JobInput,
   loadImportJobForRun,
 } from "../db/importJobs";
+import { keepPicture } from "./picture";
 
 /**
  * Running an import: the part between a queue message and a job a person can
@@ -72,7 +73,7 @@ export async function runImportJob(
   if (!loaded) {
     return { ack: true };
   }
-  const { job, input } = loaded;
+  const { job, input, createdBy } = loaded;
   const handler = handlers[job.kind];
   if (!handler) {
     await failImportJob(db, jobId, {
@@ -84,6 +85,9 @@ export async function runImportJob(
 
   try {
     const draft = RecipeDraft.parse(await handler(job, input, tools));
+    // The picture the source points at is fetched here, for every kind of
+    // import, so that a handler still saves nothing itself.
+    await keepPicture({ id: job.id, createdBy }, draft.imageUrl, tools);
     await finishImportJob(db, jobId, { draft, issues: checkDraft(draft) });
     return { ack: true };
   } catch (error) {

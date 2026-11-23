@@ -7,6 +7,7 @@ import {
 } from "@recipeflare/schema";
 import { type Context, Hono } from "hono";
 import type { AppEnv } from "../auth/types";
+import { assetsOfImport } from "../db/assets";
 import {
   createImportJob,
   deleteImportJob,
@@ -18,6 +19,7 @@ import {
 } from "../db/importJobs";
 import { jsonBody, notFound } from "../http";
 import type { ImportMessage } from "../imports/runner";
+import { removeAssets } from "../media";
 
 /**
  * Puts a job on the queue. Saving the job and sending its message are two
@@ -67,6 +69,7 @@ export const importRoutes = new Hono<AppEnv>()
     const body: ImportDetail = {
       ...job,
       duplicate: job.sourceUrl ? await recipeFromLink(c.env.DB, job.sourceUrl) : null,
+      assets: await assetsOfImport(c.env.DB, job.id),
     };
     return c.json(body);
   })
@@ -78,8 +81,14 @@ export const importRoutes = new Hono<AppEnv>()
   })
   .delete("/:id", async (c) => {
     const id = idParam(c);
-    if (!id || !(await deleteImportJob(c.env.DB, id))) {
+    if (!id) {
       return notFound(c);
     }
+    // What the import brought and no recipe took goes with it.
+    const pictures = (await assetsOfImport(c.env.DB, id)).map((asset) => asset.id);
+    if (!(await deleteImportJob(c.env.DB, id))) {
+      return notFound(c);
+    }
+    await removeAssets(c.env, pictures);
     return c.body(null, 204);
   });

@@ -409,6 +409,17 @@ R2 keys are derived, not stored: `assets/{id}/original`, `assets/{id}/thumb.webp
 
 An asset uploaded during an import belongs to the job until the cook confirms, when the save batch sets its `recipe_id`.
 
+**As built in T1.10** (`apps/worker/src/media.ts`, `apps/worker/src/db/assets.ts`, `apps/worker/src/routes/assets.ts`).
+
+- **Upload is its own step, and the save attaches.** `POST /assets` stores a file and records it with no recipe. A recipe's save names its assets in order (`assets` on the recipe input, [§4.6](#46-one-batch-recipe-save)); that is what attaches them, sets the cover and the order, and deletes one that is left out. The editor sends photos only when Save is pressed, so an abandoned recipe sends nothing.
+- **The file is read whole, not streamed.** An upload is at most 15 MB (`LIMITS.uploadBytes`) and the browser has already made a photo smaller, to 2,560 px on the long edge, so about a megabyte. Holding it lets the Worker read what the file really is and hand the same bytes to the Images binding twice.
+- **The type is read from the file's first bytes**, never taken from the request. A photo, cover or card side must be a JPEG, PNG, WebP, GIF, HEIC or AVIF. An attachment may be anything.
+- **Variants.** `thumb.webp` and `full.webp` are made with `fit: scale-down`, so a small picture is never enlarged. If the binding is missing, cannot read the format or fails, the asset is kept with `has_variants` 0 and every size is served from the original.
+- **Serving.** `GET /assets/{id}/{original|thumb|full}`, behind sign-in like every route, with `Cache-Control: private, max-age=31536000, immutable`. A picture is served as a picture. Anything else is served as a download with a generic type. Every response carries `nosniff` and a sandboxing content security policy, so a stored file is never run in the app's origin whatever it holds.
+- **Deleting.** Rows go first and files after. A recipe's delete and a save that drops a photo delete the files once the answer is sent; discarding an import deletes its picture at once. A file left behind by a failure there has no row and is unreachable.
+- **Uploads nobody claimed** (a save that failed part-way and was not tried again) have no recipe and no import. Each upload clears those older than a day, fifty at a time.
+- **Attachments** are stored, attached, kept through saves and served by the API. No screen adds or lists them yet; see the feature spec.
+
 **`import_jobs`** — described in [§7](#7-import-jobs).
 
 | Column | Type | Null | Notes |
@@ -516,6 +527,8 @@ A save is: up to two reads, then one `batch()`.
 | last | Upsert the `recipe_search` row | 5 |
 
 A create replaces statement 1 with an `INSERT` and omits the deletes. Confirming an import adds two statements: attach the job's assets to the recipe and mark the job `completed`.
+
+**Assets in the save, as built in T1.10.** When the input carries `assets` (at most 30, `LIMITS.assets`), the batch of reads also fetches the recipe's assets and the ones named, and a save that names an asset that does not exist or is on another recipe is refused. The batch of writes gains three statements, each with the list as one JSON parameter: stand the current cover down to a photo, because the one-cover index is checked row by row; set recipe, role and position for every asset named, with `UPDATE … FROM json_each`; and delete the recipe's assets that are not named. A save with no `assets` leaves them alone. The round trips stay at two, and a test counts them.
 
 **Why it fits**
 
@@ -670,10 +683,10 @@ Everything is under `/api/v1` and, except health, needs a member. Request bodies
 | `GET /me` | Who is signed in | `{ member }` |
 | `GET /auth/refresh?return=/path` | Where "Sign in again" leads. Behind sign-in like every route, which is what brings the Access sign-in page up; once through, it redirects to `return`. Only a path within the app is accepted; anything else becomes `/` | 302 |
 | `GET /recipes` | One page of the list. `q` is the search text. `category` (one slug), `tags` and `tools` (slugs, comma-separated) and `foods` (IDs, comma-separated) are filters, and every one given must match. `sort` is `match`, `changed`, `newest` or `title`; left out it is best match while searching and last changed otherwise. `page` (from 1), `perPage` (1 to 100, default 30) | `{ items, page, perPage, total, libraryTotal }`; each item is a `RecipeSummary` with its cover, categories and tags, `total` counts everything that matched, and `libraryTotal` counts every recipe the household has, so the list can tell "nothing matches" from "no recipes yet" |
-| `POST /recipes` | Create from a `RecipeCreate` body. With an `importJobId` the same save confirms that import: its assets become the recipe's and the job is marked `completed` | 201 with the `Recipe`; 400 at `importJobId` unless that import is waiting for review |
+| `POST /recipes` | Create from a `RecipeCreate` body. `assets`, when given, is the recipe's photos and attachments in order, each `{ id, role }`. With an `importJobId` the same save confirms that import: its assets become the recipe's and the job is marked `completed` | 201 with the `Recipe`; 400 at `importJobId` unless that import is waiting for review |
 | `GET /recipes/{idOrSlug}` | One recipe, by ID first and then by slug | The `Recipe`, or 404 |
-| `PUT /recipes/{id}` | Save over the copy the editor loaded; the `RecipeUpdate` body carries that copy's `version` | The `Recipe`; 409 `version_conflict` with `current`, the recipe as it is now; 404 |
-| `DELETE /recipes/{id}` | Delete | 204, or 404 |
+| `PUT /recipes/{id}` | Save over the copy the editor loaded; the `RecipeUpdate` body carries that copy's `version`. `assets`, when given, replaces the recipe's list: one left out is deleted | The `Recipe`; 409 `version_conflict` with `current`, the recipe as it is now; 404 |
+| `DELETE /recipes/{id}` | Delete, with its photos and their files | 204, or 404 |
 | `GET /organizers`, `/foods`, `/units`, `/labels` | The whole list, each entry with how much it is used: `recipeCount`, or `foodCount` for a label | `{ items }` |
 | `POST /organizers` | Create a category, tag or tool from `{ kind, name }`. A category is given the divider stock the fewest categories have | 201 with the entry; 409 `duplicate` with `existingId` |
 | `PUT /organizers/{id}` | Rename, from `{ name }`. The slug follows the name | The entry; 409 `duplicate`; 404 |
@@ -681,11 +694,13 @@ Everything is under `/api/v1` and, except health, needs a member. Request bodies
 | `POST /foods`, `PUT /foods/{id}` | Create or change, from a `FoodInput` | The entry; 409 `duplicate`; 400 for a label that does not exist |
 | `DELETE /foods/{id}`, `DELETE /units/{id}` | Delete, unless a recipe uses it | 204; 409 `in_use` with `recipeCount`; 404 |
 | `POST /units`, `PUT /units/{id}` | Create or change, from a `UnitInput` | The entry; 409 `duplicate` |
+| `POST /assets?role=…&filename=…` | Store a file; the body is the file itself. `role` is `cover`, `photo`, `original` or `attachment`. The asset belongs to no recipe until a save names it | 201 with the `Asset`; 413 `too_large` over 15 MB; 415 `not_a_picture` when a picture's role is given something else; 400 `empty_file` |
+| `GET /assets/{id}/{size}` | The file, where `size` is `original`, `thumb` or `full`. A picture with no smaller sizes is served as its original for each | The bytes, cacheable for good; 404 |
 | `GET /imports` | The imports a person still has to wait for or deal with (queued, running, to review, failed), newest first | `{ items }` of `ImportJob` |
 | `POST /imports` | Take on an import from `{ kind: "url", url }`: a queued job and a queue message that names it | 202 with the `ImportJob`. If the message could not be sent the job comes back `failed` with `not_queued`, so it can be tried again |
-| `GET /imports/{id}` | One import, with what was found once it is ready, and the recipe the household already has from the same link | The `ImportJob` with `duplicate`, which is `{ slug, title }` or null; or 404 |
+| `GET /imports/{id}` | One import, with what was found once it is ready, the picture it brought, and the recipe the household already has from the same link | The `ImportJob` with `assets` and with `duplicate`, which is `{ slug, title }` or null; or 404 |
 | `POST /imports/{id}/retry` | Put a failed import back in line from the start | 202 with the job; 404 unless it is a failed import |
-| `DELETE /imports/{id}` | Remove an import | 204, or 404 |
+| `DELETE /imports/{id}` | Remove an import, and the picture it brought | 204, or 404 |
 | `POST /labels`, `PUT /labels/{id}`, `DELETE /labels/{id}` | Create, change (name, colour, order) or delete. Deleting takes the label off its foods | The entry or 204; 409 `duplicate` |
 
 - A body larger than 2 MB is a 413 `too_large`; a recipe at every size cap is under 1 MB.
@@ -802,7 +817,7 @@ One table (`import_jobs`, [§4.3](#43-tables)) and one mechanism (Queues) for ev
 - The recipe is the first node typed `Recipe` in any JSON-LD block: at the top, in a list, in `@graph`, or as a page's `mainEntity`. A block that is not valid JSON is passed over, after one more try with its line breaks as spaces, which mends the commonest mistake.
 - Text is taken as a person would read it: tags removed and entities decoded. Nothing is inferred. The yield is servings when the page gives a bare number or names servings, and an amount of something otherwise ("Makes 24 cookies"). The source name is the author, then the publisher, then the page's `og:site_name`.
 - The draft keeps the link as it was given, so the same link pasted twice is recognised; addresses on the page are completed from where the page was finally found.
-- **The image is not downloaded yet.** The draft carries `imageUrl`; fetching it into R2 as the job's asset is done with T1.10, which builds the storage and the variants. Until then review shows the link to the page and no picture. Confirming an import already hands the job's assets to the recipe, so T1.10 adds the download and nothing here changes.
+- **The image** is fetched by the runner, not the handler (`imports/picture.ts`), once a handler has returned a draft with an `imageUrl`: through the same checked fetch as the page, capped at 15 MB, and stored as a cover that belongs to the job. A job that runs again replaces what its last attempt stored. A picture that cannot be had is done without; the import still lands in review. Review shows it as the cover and as the original, and the save hands it to the recipe or, if the cook removed it, deletes it. (Built in T1.10.)
 - The duplicate warning is `duplicate` on `GET /imports/{id}`: the oldest recipe whose stored link equals the job's, both in canonical form. It warns and does not refuse.
 - Review is the editor in review mode at `/imports/<id>/review`. `prepareReview()` turns the draft into the editor's value and the list of things to check, and is what the mock review uses too. Save sends the recipe with the import's ID. Discard asks, removes the import and returns to the list. Going elsewhere with corrections unsaved asks a different question, and leaves the import in the list as it was read.
 - Worker tests never reach the network: the test configuration answers every outbound request with a 503, and a test that needs a page hands the importer its own `fetch`. The pages in `apps/worker/test/fixtures/recipe-pages.ts` are invented.
@@ -959,7 +974,7 @@ Questions answered since the first version are recorded in [Decisions since the 
 4. **Units.** A starting list of 25 US and metric units, with quantities shown as fractions by default. Stood at the Phase 0 gate.
 5. **What "works offline" covers.** Default: all recipe data syncs to the device, images once viewed. Settled in the spec (T0.3).
 6. **Quantity ranges** ("2 to 3 cups"). Mealie has a single quantity. The first number goes in `quantity` and the original text keeps the range. A second column can be added later without a rebuild. Stood at the Phase 0 gate.
-7. **Images binding cost.** I did not verify its pricing or included transformations. Two variants per upload should be small at household scale. If it is not, the fallback is resizing in the browser before upload.
+7. **Images binding cost.** Checked on 23 Nov 2026 against the Images pricing page: binding calls are billed as unique transformations, 5,000 a month are included, and `.info()` is free. An upload makes two. Not settled: one tutorial says binding Images to a Worker needs the paid Images plan, which the pricing page does not say. The code treats the binding as optional, so if a deploy or a transformation is refused the app still works, serving originals; the fallback then is to make the two sizes in the browser.
 8. **NoteFlare.** The build plan says Access works "as NoteFlare does". If NoteFlare has auth or UI code worth sharing, or uses a different frontend framework that you would rather match, that could change [§1](#1-frontend-framework) and T0.12.
 9. **aiomealie pin for Phase 4.** Which Home Assistant version runs at home decides the version to pin. Nothing to do until Phase 4.
 10. **Deploy button placeholders.** The docs ask for default resource names and IDs in the Wrangler file. What it accepts when IDs are omitted needs the Phase 6 fresh-account test.

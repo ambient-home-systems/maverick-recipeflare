@@ -88,7 +88,11 @@ const tooLarge = () => new PermanentImportError("too_large", "That page is too l
  * Asks for the page, following a site's redirects by hand so that each
  * address on the way is checked like the first.
  */
-async function request(url: URL, fetcher: typeof fetch): Promise<{ response: Response; url: URL }> {
+export async function fetchChecked(
+  url: URL,
+  fetcher: typeof fetch,
+  accept = "text/html,application/xhtml+xml",
+): Promise<{ response: Response; url: URL }> {
   const signal = AbortSignal.timeout(TIMEOUT_MS);
   let current = url;
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
@@ -96,7 +100,7 @@ async function request(url: URL, fetcher: typeof fetch): Promise<{ response: Res
     try {
       response = await fetcher(current.toString(), {
         headers: {
-          Accept: "text/html,application/xhtml+xml",
+          Accept: accept,
           // Says what is asking, plainly. Some sites refuse a request that says nothing.
           "User-Agent": "Mozilla/5.0 (compatible; Recipeflare recipe import)",
         },
@@ -125,7 +129,7 @@ async function request(url: URL, fetcher: typeof fetch): Promise<{ response: Res
 
 /** Fetches a page and reads the parts of it an import needs, without holding more than it must. */
 async function readPage(url: URL, fetcher: typeof fetch): Promise<Page> {
-  const { response, url: finalUrl } = await request(url, fetcher);
+  const { response, url: finalUrl } = await fetchChecked(url, fetcher);
 
   if (response.status === 401 || response.status === 403) {
     throw new PermanentImportError("blocked", "The site refused the request.");

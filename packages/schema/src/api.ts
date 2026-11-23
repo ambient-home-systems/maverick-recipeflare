@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ImportJob } from "./import-job";
-import { Food, Label, Member, Organizer, Unit } from "./lists";
+import { Asset, Food, Label, Member, Organizer, Unit } from "./lists";
 import { Id, Slug } from "./primitives";
 import { Recipe, RecipeSummary } from "./recipe";
 
@@ -142,11 +142,13 @@ export const ImportListResponse = z.object({ items: z.array(ImportJob) });
 export type ImportListResponse = z.infer<typeof ImportListResponse>;
 
 /**
- * Body of `GET /api/v1/imports/:id`: the import, and the recipe the household
- * already has from the same link, if there is one. Review says so; it does not
- * stop the save.
+ * Body of `GET /api/v1/imports/:id`: the import, its pictures, and the recipe
+ * the household already has from the same link, if there is one. Review says
+ * so; it does not stop the save.
  */
 export const ImportDetail = ImportJob.extend({
   duplicate: z.object({ slug: Slug, title: z.string() }).nullable(),
+  /** What the import brought with it: for a link, the page's picture. */
+  assets: z.array(Asset),
 });
 export type ImportDetail = z.infer<typeof ImportDetail>;

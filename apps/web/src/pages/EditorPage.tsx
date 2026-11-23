@@ -1,4 +1,5 @@
 import {
+  type Asset,
   type Food,
   type ImportDetail,
   ingredientParser,
@@ -11,7 +12,8 @@ import {
 } from "@recipeflare/schema";
 import { useQueryClient } from "@tanstack/react-query";
 import { getRouteApi, Link, useBlocker, useNavigate } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { assetUrl } from "../api/assets";
 import { ApiError, SignedOutError, UnreachableError } from "../api/client";
 import {
   useChangeImport,
@@ -21,7 +23,7 @@ import {
   useRecipe,
   useUnits,
 } from "../api/queries";
-import { conflictOf, type SaveRequest, useSaveRecipe } from "../api/saveRecipe";
+import { conflictOf, PhotoNotSentError, type SaveRequest, useSaveRecipe } from "../api/saveRecipe";
 import { Button } from "../ui/Button";
 import { EmptyState, Notice } from "../ui/Notice";
 import { Page } from "../ui/Page";
@@ -38,6 +40,19 @@ type Lists = { units: Unit[]; foods: Food[]; organizers: Organizer[] };
 
 /** Why a save did not go through, in words for the cook. What was typed is always still there. */
 function saveProblemText(error: unknown): string {
+  if (error instanceof PhotoNotSentError) {
+    const why = error.cause;
+    if (why instanceof ApiError && why.code === "too_large") {
+      return `The recipe was not saved: ${error.fileName} is larger than 15 MB. Remove it or choose a smaller copy, then save.`;
+    }
+    if (why instanceof ApiError && why.code === "not_a_picture") {
+      return `The recipe was not saved: ${error.fileName} is not a picture the app can keep. Remove it, then save.`;
+    }
+    if (why instanceof SignedOutError || why instanceof UnreachableError) {
+      return saveProblemText(why);
+    }
+    return `The recipe was not saved: ${error.fileName} could not be sent. What you typed is still here; try again.`;
+  }
   if (error instanceof SignedOutError) {
     return "The recipe was not saved: you have been signed out. What you typed is still here, but only on this page. Sign in again in another tab, then save.";
   }
@@ -96,9 +111,21 @@ function Editor({
   // Read once: the review is a copy of what the import found, as the lists stood when it opened.
   const [prepared] = useState(() =>
     importing?.result
-      ? prepareReview(importing.result.draft, lists, ingredientParser(lists))
+      ? prepareReview(importing.result.draft, lists, ingredientParser(lists), importing.assets)
       : null,
   );
+  // Photos added here are shown from the device and sent with the save, so an
+  // abandoned recipe leaves nothing on the server.
+  const added = useRef(new Map<string, { file: File; url: string }>());
+  const sentPhotos = useRef(new Map<string, Asset>());
+  useEffect(() => {
+    const photos = added.current;
+    return () => {
+      for (const photo of photos.values()) {
+        URL.revokeObjectURL(photo.url);
+      }
+    };
+  }, []);
 
   /** The recipe the editor's copy was made from. It changes when the cook reloads after a conflict. */
   const [base, setBase] = useState(recipe);
@@ -188,6 +215,7 @@ function Editor({
     }
   };
 
+  const pagePicture = importing?.assets.find((asset) => asset.role === "cover");
   const review: Review | undefined =
     importing && prepared
       ? {
@@ -208,7 +236,19 @@ function Editor({
                   }),
               }
             : undefined,
-          // The page's picture arrives with photos, in T1.10. Until then the link is the original.
+          original: pagePicture
+            ? {
+                title: "Original",
+                caption: "The picture from the page. Open the page to check the rest against it.",
+                photos: [
+                  {
+                    id: pagePicture.id,
+                    url: assetUrl(pagePicture, "full"),
+                    alt: "The picture from the page",
+                  },
+                ],
+              }
+            : undefined,
         }
       : undefined;
 
@@ -224,8 +264,25 @@ function Editor({
       stockFor={(categoryId): Stock =>
         organizers.find((entry) => entry.id === categoryId)?.color ?? "plain"
       }
-      // Photos arrive with T1.10. Until then the editor has no photo section.
-      photoUrl={() => undefined}
+      photoUrl={(asset) => added.current.get(asset.id)?.url ?? assetUrl(asset, "thumb")}
+      onAddPhotos={(group, files) =>
+        files.map((file, index): Asset => {
+          const id = newId();
+          added.current.set(id, { file, url: URL.createObjectURL(file) });
+          return {
+            id,
+            role: group,
+            position: 1000 + index,
+            contentType: file.type || "image/jpeg",
+            sizeBytes: file.size,
+            width: null,
+            height: null,
+            hasVariants: false,
+            originalFilename: file.name,
+            createdAt: new Date().toISOString(),
+          };
+        })
+      }
       onCreateUnit={(name) => {
         const id = newId();
         setPendingUnits((now) => [...now, unitNamed(id, name)]);
@@ -241,8 +298,21 @@ function Editor({
         ]);
         return id;
       }}
-      onSave={(input, _newFoods, _assets, newFoodByLine) =>
-        submit({ input, newFoodByLine, pendingUnits, pendingOrganizers }, version)
+      onSave={(input, _newFoods, assets, newFoodByLine) =>
+        submit(
+          {
+            input,
+            newFoodByLine,
+            pendingUnits,
+            pendingOrganizers,
+            assets: assets.map(({ id, role }) => ({ id, role })),
+            pendingPhotos: new Map(
+              [...added.current].map(([id, photo]): [string, File] => [id, photo.file]),
+            ),
+            sentPhotos: sentPhotos.current,
+          },
+          version,
+        )
       }
       onLeave={leave}
       onStay={() => {

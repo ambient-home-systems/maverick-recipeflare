@@ -6,7 +6,7 @@ Guidance for Claude Code working in this repository.
 
 Maverick Recipeflare (Recipeflare for short) is a household recipe app on Cloudflare: one TypeScript Worker serving a React PWA and a JSON API, with D1, R2, Queues and, in later phases, Workers AI and Durable Objects. One household per install. Licensed AGPL-3.0-only.
 
-**Status: Phase 0 is complete (T0.1 to T0.13); its gate passed on 23 Nov 2026. Phase 1 is built through T1.9, and T1.11, T1.12 and T1.14 (the recipe repository, the recipes API with search and filters, the API for organizers, foods, units and labels, the ingredient line parser, the recipe list, the recipe view, the editor, the manage screens and cook mode on real data, and importing a recipe from a link through the import jobs). T1.10 and T1.13 (photos, offline) are not.** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, the database schema with its migrations, and sign-in (the auth middleware, the Access and dev providers, `/api/v1/me`) exist. The recipe list at `/`, the recipe view at `/recipes/<slug>`, the editor at `/recipes/new` and `/recipes/<slug>/edit`, cook mode at `/recipes/<slug>/cook`, the manage screens at `/manage`, importing from a link at `/add` and its review at `/imports/<id>/review` are connected to data. Photos are not: the editor has no photo section, and an import arrives without the page's picture. Nothing is kept on the device yet, so cook mode needs a connection to open. When a pull request changes a command or path below, it updates this file in the same pull request.
+**Status: Phase 0 is complete (T0.1 to T0.13); its gate passed on 23 Nov 2026. Phase 1 is built through T1.12, and T1.14 (the recipe repository, the recipes API with search and filters, the API for organizers, foods, units and labels, the ingredient line parser, the recipe list, the recipe view, the editor, the manage screens and cook mode on real data, photos, and importing a recipe from a link through the import jobs). T1.13 (offline) is not.** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, the database schema with its migrations, and sign-in (the auth middleware, the Access and dev providers, `/api/v1/me`) exist. The recipe list at `/`, the recipe view at `/recipes/<slug>`, the editor at `/recipes/new` and `/recipes/<slug>/edit`, cook mode at `/recipes/<slug>/cook`, the manage screens at `/manage`, importing from a link at `/add` and its review at `/imports/<id>/review` are connected to data, photos included. Attachments have no screen yet. Nothing is kept on the device yet, so cook mode needs a connection to open. When a pull request changes a command or path below, it updates this file in the same pull request.
 
 ## Read first
 
@@ -37,11 +37,14 @@ apps/worker/          Hono API, queue consumer, auth, Drizzle schema, migrations
   src/db/recipes.ts   The recipe repository: createRecipe, updateRecipe, loadRecipe, deleteRecipe
   src/db/lists.ts     Organizers, foods, units and labels
   src/db/importJobs.ts  Import jobs: create, claim, finish, fail, requeue
+  src/db/assets.ts    The rows behind photos and attachments
+  src/media.ts        Files in R2: store (with the two smaller sizes), remove, sweep; sniffType()
   src/imports/        runner.ts (the queue handler and one run), handlers.ts (one handler per kind), url.ts (a link)
   migrations/         One folder per migration; applied by Wrangler, in order
 apps/web/             Vite React PWA; builds to apps/web/dist, served as static assets
   src/styles/         tokens.css (the design tokens) and app.css (Tailwind theme, base styles)
-  src/api/            client.ts (api(), the three errors), queries.ts (TanStack Query hooks), session.ts
+  src/api/            client.ts (api(), the three errors), queries.ts (TanStack Query hooks), session.ts,
+                      saveRecipe.ts (the editor's save), assets.ts (assetUrl(), uploads, making a photo smaller)
   src/shell/          The frame every screen sits in: header, navigation, the signed-out band
   src/ui/             Shared components: Button, DividerTabs, RecipeRow, Page, Notice, Sheet, Chip, Field, Picker
   src/pages/          Product screens. A screen is given its data as props and fetches nothing itself.
@@ -200,6 +203,17 @@ To be signed in locally, copy `.dev.vars.example` to `.dev.vars` and run `pnpm d
 - Review is the editor in review mode, opened by `ReviewImportPage` on a copy made by `prepareReview()`. Discard removes the import; leaving any other way keeps it.
 - Worker tests have no network: `vitest.config.ts` answers every outbound request with a 503. A test that needs a page passes the importer its own `fetch`.
 - The Worker's default export is an object with `fetch` and `queue`. The dead-letter queue is told from the import queue by its name ending in `-dlq`; keep that ending when naming one.
+
+### Photos and attachments
+
+- A file is uploaded first (`POST /assets`) and belongs to nothing. A recipe's save attaches it: `assets` on the input is the recipe's whole list, in order, and an asset left out is deleted. Do not add a second way to attach, reorder or remove.
+- The editor sends photos at Save, never when they are chosen. Until then a photo is shown from the device. `sentPhotos` is what stops a second try from sending one twice.
+- Every address of a stored file comes from `assetUrl()` in `apps/web/src/api/assets.ts`. A screen is handed a `photoUrl` function and builds no address itself.
+- R2 keys are derived from the asset's ID by `assetKey()` and never stored. A stored file never changes, which is why it is served as immutable.
+- What a file is comes from `sniffType()`, never from the request's content type. Only the picture types it knows are served inline; anything else is a download. Do not serve SVG or HTML from the app's origin.
+- The Images binding is optional in the code (`env.IMAGES?`). A picture whose smaller sizes could not be made is kept and served from its original; nothing may depend on `hasVariants` being true.
+- Rows are deleted before files. A route that removes assets deletes their files after answering, with `waitUntil`.
+- An import's picture is fetched by the runner (`imports/picture.ts`), through `fetchChecked()`. A handler still saves nothing.
 
 ### Licensing
 

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Asset, FoodRef, OrganizerRef, UnitRef } from "./lists";
+import { Asset, AssetPlacement, FoodRef, OrganizerRef, UnitRef } from "./lists";
 import { DurationSeconds, Id, LIMITS, PositiveNumber, Slug, Timestamp } from "./primitives";
 
 // --- Parts shared by every recipe shape ---
@@ -99,6 +99,7 @@ function crossFieldIssues(recipe: {
   categoryIds: string[];
   tagIds: string[];
   toolIds: string[];
+  assets?: AssetPlacement[] | undefined;
 }): Issue[] {
   const issues: Issue[] = [];
 
@@ -160,6 +161,14 @@ function crossFieldIssues(recipe: {
     issues.push({ path: ["tagIds"], message: "A category, tag or tool can be added only once" });
   }
 
+  const assets = recipe.assets ?? [];
+  if (new Set(assets.map((asset) => asset.id)).size !== assets.length) {
+    issues.push({ path: ["assets"], message: "A photo can be added only once" });
+  }
+  if (assets.filter((asset) => asset.role === "cover").length > 1) {
+    issues.push({ path: ["assets"], message: "A recipe has one cover" });
+  }
+
   return issues;
 }
 
@@ -171,6 +180,12 @@ const recipeInputShape = {
   categoryIds: z.array(Id).max(LIMITS.organizers).default([]),
   tagIds: z.array(Id).max(LIMITS.organizers).default([]),
   toolIds: z.array(Id).max(LIMITS.organizers).default([]),
+  /**
+   * The recipe's photos, card sides and attachments, in order. Each was
+   * uploaded first. One left out is deleted. With no list at all, a save
+   * leaves the recipe's assets as they are.
+   */
+  assets: z.array(AssetPlacement).max(LIMITS.assets).optional(),
 };
 
 function withCrossFieldChecks<T extends z.ZodType<Parameters<typeof crossFieldIssues>[0]>>(
