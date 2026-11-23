@@ -438,10 +438,10 @@ describe("labels", () => {
 
     openRow(/^Pantry/);
     expect(sheet("Change label").getByText("Place in the list: 3 of 3")).toBeTruthy();
-    expect(
-      (sheet("Change label").getByRole("button", { name: "Move down" }) as HTMLButtonElement)
-        .disabled,
-    ).toBe(true);
+    // At the end of the list it cannot go down. The button says so and stays where focus can rest.
+    const down = sheet("Change label").getByRole("button", { name: "Move down" });
+    expect(down.getAttribute("aria-disabled")).toBe("true");
+    expect((down as HTMLButtonElement).disabled).toBe(false);
     fireEvent.click(sheet("Change label").getByRole("button", { name: "Move up" }));
 
     await waitFor(() =>
@@ -469,6 +469,105 @@ describe("labels", () => {
     fireEvent.click(sheet("Change label").getByRole("button", { name: "Delete" }));
     expect(sheet("Delete this label?").getByText(/will be taken off 1 food/)).toBeTruthy();
     expect(sheet("Delete this label?").getByText(/The foods stay\./)).toBeTruthy();
+  });
+});
+
+describe("what the screen says and where focus goes", () => {
+  const said = () => screen.getAllByRole("status").map((status) => status.textContent);
+
+  it("counts a list in its own plural", async () => {
+    fakeApi();
+    await renderAt("/manage/categories");
+
+    expect(await screen.findByText("2 categories")).toBeTruthy();
+  });
+
+  it("says what happened after an entry is added, saved and deleted", async () => {
+    fakeApi();
+    await renderAt("/manage/tags");
+    await screen.findByRole("list", { name: "Tags" });
+
+    fireEvent.change(addBox("tag"), { target: { value: "Picnic" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+    await waitFor(() => expect(said()).toContain("Picnic added."));
+
+    openRow(/^Picnic/);
+    fireEvent.change(sheet("Change tag").getByLabelText("Name"), { target: { value: "Outdoors" } });
+    fireEvent.click(sheet("Change tag").getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(said()).toContain("Outdoors saved."));
+
+    openRow(/^Outdoors/);
+    fireEvent.click(sheet("Change tag").getByRole("button", { name: "Delete" }));
+    fireEvent.click(sheet("Delete this tag?").getByRole("button", { name: "Delete tag" }));
+    await waitFor(() => expect(said()).toContain("Outdoors deleted."));
+    // The row that opened the sheet is gone, so focus goes to the box for adding.
+    await waitFor(() => expect(document.activeElement).toBe(addBox("tag")));
+  });
+
+  it("moves focus with the sheet's buttons when it asks about deleting, and reads the question", async () => {
+    fakeApi();
+    await renderAt("/manage/tags");
+    await screen.findByRole("list", { name: "Tags" });
+    openRow(/^Weeknight/);
+
+    fireEvent.click(sheet("Change tag").getByRole("button", { name: "Delete" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Delete this tag?" });
+    expect(document.activeElement).toBe(within(dialog).getByRole("button", { name: "Keep it" }));
+    const question = document.getElementById(dialog.getAttribute("aria-describedby") ?? "");
+    expect(question?.textContent).toContain("will be taken off 3 recipes");
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "Keep it" }));
+
+    expect(document.activeElement).toBe(
+      sheet("Change tag").getByRole("button", { name: "Delete" }),
+    );
+  });
+
+  it("goes to the box whose name was refused, so the problem is read out", async () => {
+    fakeApi();
+    await renderAt("/manage/tags");
+    await screen.findByRole("list", { name: "Tags" });
+
+    fireEvent.change(addBox("tag"), { target: { value: "holiday" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+    await screen.findByText("That is already a tag.");
+    expect(document.activeElement).toBe(addBox("tag"));
+
+    openRow(/^Weeknight/);
+    const name = sheet("Change tag").getByLabelText("Name");
+    fireEvent.change(name, { target: { value: "Holiday" } });
+    fireEvent.click(sheet("Change tag").getByRole("button", { name: "Save" }));
+    await sheet("Change tag").findByText("That is already a tag.");
+    await waitFor(() => expect(document.activeElement).toBe(name));
+  });
+
+  it("says first in the sheet whether the entry is used and why it cannot be deleted", async () => {
+    fakeApi();
+    await renderAt("/manage/units");
+    await screen.findByRole("list", { name: "Units" });
+    openRow(/^cup/);
+
+    const dialog = screen.getByRole("dialog", { name: "Change unit" });
+    const reason = within(dialog).getByText(/A unit that recipes use cannot be deleted/);
+    const name = within(dialog).getByLabelText("Name");
+    // The reason comes before the first box, not after the last.
+    expect(reason.compareDocumentPosition(name) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("lets an entry be read and not changed while the device is offline, and says why in the sheet", async () => {
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+    fakeApi();
+    await renderAt("/manage/tags");
+    await screen.findByRole("list", { name: "Tags" });
+    expect(addBox("tag").disabled).toBe(true);
+
+    openRow(/^Weeknight/);
+    const change = sheet("Change tag");
+
+    expect(change.getByText(/You are offline\. This can be read/)).toBeTruthy();
+    expect((change.getByLabelText("Name") as HTMLInputElement).readOnly).toBe(true);
+    expect((change.getByRole("button", { name: "Save" }) as HTMLButtonElement).disabled).toBe(true);
   });
 });
 

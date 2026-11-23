@@ -1,5 +1,5 @@
 import { ArrowDown, ArrowUp, CloudOff, Plus, Trash2 } from "lucide-react";
-import { type FormEvent, useId, useState } from "react";
+import { type FormEvent, useEffect, useId, useRef, useState } from "react";
 import { Button } from "../../ui/Button";
 import { DividerLinks } from "../../ui/DividerTabs";
 import { FieldProblem, TextField } from "../../ui/Field";
@@ -46,6 +46,8 @@ export type ManageWords = {
   title: string;
   /** "tag". */
   one: string;
+  /** "tags". */
+  many: string;
   /** What an entry is counted in: "recipe" or "food". */
   usedBy: "recipe" | "food";
   /** One sentence on what the list is for, shown when it is empty. */
@@ -113,9 +115,28 @@ export function ManageListScreen({
   const [problem, setProblem] = useState<{ message: string; field?: "name" } | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState<"add" | "save" | "delete" | "move" | null>(null);
+  /** What just happened, said aloud: a sheet that changes the page announces the result itself. */
+  const [said, setSaid] = useState("");
   const addId = useId();
   const addProblemId = useId();
   const findId = useId();
+  const questionId = useId();
+  const addBox = useRef<HTMLInputElement>(null);
+  const boxes = useRef<HTMLDivElement>(null);
+  const keepButton = useRef<HTMLButtonElement>(null);
+  const deleteButton = useRef<HTMLButtonElement>(null);
+  const wasConfirming = useRef(false);
+
+  // The sheet swaps its buttons when it asks about deleting. Focus goes with the swap:
+  // to "Keep it" when the question appears, and back to Delete if the cook keeps the entry.
+  useEffect(() => {
+    if (confirming) {
+      keepButton.current?.focus();
+    } else if (wasConfirming.current) {
+      deleteButton.current?.focus();
+    }
+    wasConfirming.current = confirming;
+  }, [confirming]);
 
   const open = entries?.find((entry) => entry.id === openId) ?? null;
   const readOnly = offline || signedOut;
@@ -149,8 +170,11 @@ export function ManageListScreen({
     if (outcome.ok) {
       setAdding("");
       setAddProblem(null);
+      setSaid(`${name} added.`);
     } else {
       setAddProblem(outcome.message);
+      // The problem is tied to the box, so going to the box reads it out.
+      addBox.current?.focus();
     }
   };
 
@@ -160,10 +184,19 @@ export function ManageListScreen({
     const outcome = await change();
     setBusy(null);
     if (outcome.ok) {
+      const name = kind === "save" ? String(values.name ?? "").trim() : (open?.name ?? "");
       close();
+      setSaid(kind === "save" ? `${name} saved.` : `${name} deleted.`);
+      if (kind === "delete") {
+        // The row that opened the sheet is gone, so focus has nowhere to return to.
+        requestAnimationFrame(() => addBox.current?.focus());
+      }
     } else {
       setConfirming(false);
       setProblem(outcome);
+      if (outcome.field === "name") {
+        requestAnimationFrame(() => boxes.current?.querySelector("input")?.focus());
+      }
     }
   };
 
@@ -173,22 +206,35 @@ export function ManageListScreen({
     }
     if (String(values.name ?? "").trim() === "") {
       setProblem({ field: "name", message: `A ${words.one} needs a name.` });
+      boxes.current?.querySelector("input")?.focus();
       return;
     }
     void run("save", () => onSave(open, values));
   };
 
+  const position = open && entries ? entries.findIndex((entry) => entry.id === open.id) : -1;
+
+  /** True when the open entry can move that way. The buttons stay focusable either way, so focus is never lost. */
+  const canMove = (by: -1 | 1) =>
+    !readOnly &&
+    busy === null &&
+    entries !== null &&
+    position + by >= 0 &&
+    position + by < entries.length;
+
   const move = async (by: -1 | 1) => {
-    if (!open || !onMove) {
+    if (!open || !onMove || !entries || !canMove(by)) {
       return;
     }
     setBusy("move");
     const outcome = await onMove(open, by);
     setBusy(null);
     setProblem(outcome.ok ? null : outcome);
+    if (outcome.ok) {
+      setSaid(`${open.name} moved to place ${position + by + 1} of ${entries.length}.`);
+    }
   };
 
-  const position = open && entries ? entries.findIndex((entry) => entry.id === open.id) : -1;
   const cannotDelete = open !== null && keepIfUsed && open.use > 0;
 
   return (
@@ -198,7 +244,16 @@ export function ManageListScreen({
         to="/manage"
         links={[{ key: "manage", label: "Manage", stock: "plain" }]}
       />
-      <Page joined title={words.title} aside={entries ? count(entries.length, words.one) : null}>
+      <Page
+        joined
+        title={words.title}
+        aside={
+          entries ? `${entries.length} ${entries.length === 1 ? words.one : words.many}` : null
+        }
+      >
+        <p className="sr-only" role="status">
+          {said}
+        </p>
         {offline ? (
           <Notice icon={<CloudOff aria-hidden="true" size="1.125rem" className="flex-none" />}>
             You are offline. The lists can be read; changing them needs a connection.
@@ -251,6 +306,7 @@ export function ManageListScreen({
               <div className="flex flex-wrap gap-2">
                 <input
                   id={addId}
+                  ref={addBox}
                   type="text"
                   autoComplete="off"
                   enterKeyHint="done"
@@ -340,10 +396,16 @@ export function ManageListScreen({
         open={open !== null}
         onClose={close}
         title={confirming ? `Delete this ${words.one}?` : `Change ${words.one}`}
+        describedBy={confirming ? questionId : undefined}
         footer={
           confirming ? (
             <>
-              <Button variant="quiet" disabled={busy !== null} onClick={() => setConfirming(false)}>
+              <Button
+                ref={keepButton}
+                variant="quiet"
+                disabled={busy !== null}
+                onClick={() => setConfirming(false)}
+              >
                 Keep it
               </Button>
               <Button
@@ -358,6 +420,7 @@ export function ManageListScreen({
             <>
               {cannotDelete ? null : (
                 <Button
+                  ref={deleteButton}
                   variant="quiet"
                   icon={<Trash2 aria-hidden="true" size="1.25rem" />}
                   disabled={readOnly || busy !== null}
@@ -374,17 +437,37 @@ export function ManageListScreen({
         }
       >
         {open && confirming ? (
-          <p className="px-4 py-4">
+          <p id={questionId} className="px-4 py-4">
             <span className="font-semibold">{open.name}</span>{" "}
             {open.use === 0
               ? `is not used by any ${words.usedBy}. It will be deleted for everyone in the household.`
               : `will be taken off ${count(open.use, words.usedBy)} and deleted for everyone in the household. The ${words.usedBy}s stay.`}
           </p>
         ) : open ? (
-          <div className="grid gap-4 px-4 py-4">
+          <div ref={boxes} className="grid gap-4 px-4 py-4">
+            {readOnly ? (
+              <Notice icon={<CloudOff aria-hidden="true" size="1.125rem" className="flex-none" />}>
+                {offline
+                  ? "You are offline. This can be read; changing it needs a connection."
+                  : "You have been signed out. This can be read; changing it needs you signed in."}
+              </Notice>
+            ) : null}
             {problem && !problem.field ? <Notice problem>{problem.message}</Notice> : null}
+            {/* First, because it says whether this can be deleted, and why not when it cannot. */}
+            <p className="text-sm">
+              {open.use === 0
+                ? `Not used by any ${words.usedBy}.`
+                : `Used in ${count(open.use, words.usedBy)}.`}{" "}
+              {cannotDelete
+                ? `A ${words.one} that recipes use cannot be deleted. It can always be renamed.`
+                : open.use > 0
+                  ? `A new name shows on ${open.use === 1 ? "it" : "all of them"} at once.`
+                  : ""}
+            </p>
+
             <TextField
               label="Name"
+              readOnly={readOnly}
               value={String(values.name ?? "")}
               error={problem?.field === "name" ? problem.message : undefined}
               onChange={(name) => {
@@ -400,6 +483,7 @@ export function ManageListScreen({
                   label={field.label}
                   hint={field.hint}
                   verbatim={field.verbatim}
+                  readOnly={readOnly}
                   value={String(values[field.key] ?? "")}
                   onChange={(text) => setValues((now) => ({ ...now, [field.key]: text }))}
                 />
@@ -408,6 +492,7 @@ export function ManageListScreen({
                   <input
                     type="checkbox"
                     checked={values[field.key] === true}
+                    disabled={readOnly}
                     onChange={(event) =>
                       setValues((now) => ({ ...now, [field.key]: event.target.checked }))
                     }
@@ -423,6 +508,7 @@ export function ManageListScreen({
                   <span className="mb-1 block text-sm font-semibold">{field.label}</span>
                   <select
                     value={String(values[field.key] ?? "")}
+                    disabled={readOnly}
                     onChange={(event) =>
                       setValues((now) => ({ ...now, [field.key]: event.target.value }))
                     }
@@ -448,7 +534,7 @@ export function ManageListScreen({
                   <Button
                     variant="quiet"
                     icon={<ArrowUp aria-hidden="true" size="1.125rem" />}
-                    disabled={readOnly || busy !== null || position <= 0}
+                    aria-disabled={canMove(-1) ? undefined : true}
                     onClick={() => void move(-1)}
                   >
                     Move up
@@ -456,7 +542,7 @@ export function ManageListScreen({
                   <Button
                     variant="quiet"
                     icon={<ArrowDown aria-hidden="true" size="1.125rem" />}
-                    disabled={readOnly || busy !== null || position >= entries.length - 1}
+                    aria-disabled={canMove(1) ? undefined : true}
                     onClick={() => void move(1)}
                   >
                     Move down
@@ -464,17 +550,6 @@ export function ManageListScreen({
                 </div>
               </div>
             ) : null}
-
-            <p className="text-sm">
-              {open.use === 0
-                ? `Not used by any ${words.usedBy}.`
-                : `Used in ${count(open.use, words.usedBy)}.`}{" "}
-              {cannotDelete
-                ? `A ${words.one} that recipes use cannot be deleted. It can always be renamed.`
-                : open.use > 0
-                  ? `A new name shows on ${open.use === 1 ? "it" : "all of them"} at once.`
-                  : ""}
-            </p>
           </div>
         ) : null}
       </Sheet>

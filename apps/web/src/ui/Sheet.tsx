@@ -14,12 +14,15 @@ export function Sheet({
   children,
   footer,
   tall = false,
+  describedBy,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   children: ReactNode;
   footer?: ReactNode;
+  /** The id of the words that say what the sheet is asking, so they are read when it opens or changes. */
+  describedBy?: string;
   /**
    * Keeps the sheet at its full height whatever it holds. For a sheet with a
    * search box: the box then stays near the top, clear of the on-screen keyboard.
@@ -46,6 +49,7 @@ export function Sheet({
     <dialog
       ref={ref}
       aria-labelledby={titleId}
+      aria-describedby={describedBy}
       onClose={onClose}
       // A click that lands on the dialog itself, not on its content, is on the backdrop.
       onClick={(event) => {
@@ -66,7 +70,7 @@ export function Sheet({
               onClick={onClose}
               className="transition-rf inline-flex min-h-touch min-w-touch items-center justify-center gap-1.5 rounded-md px-3 text-sm font-semibold hover:bg-surface-sunk"
             >
-              <X aria-hidden="true" size="1.25rem" />
+              <X aria-hidden="true" size="1.25rem" className="flex-none" />
               Close
             </button>
           </div>

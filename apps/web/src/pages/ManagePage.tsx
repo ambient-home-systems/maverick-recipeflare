@@ -52,6 +52,7 @@ const WORDS: Record<ManageListKey, ManageWords> = {
   categories: {
     title: "Categories",
     one: "category",
+    many: "categories",
     usedBy: "recipe",
     purpose:
       "A category is one of a few broad groups, such as Dinner or Dessert. Each becomes a divider over the recipe list, in its own colour.",
@@ -59,18 +60,21 @@ const WORDS: Record<ManageListKey, ManageWords> = {
   tags: {
     title: "Tags",
     one: "tag",
+    many: "tags",
     usedBy: "recipe",
     purpose: "A tag is anything else you sort by: Weeknight, Grandma, Freezes well.",
   },
   tools: {
     title: "Tools",
     one: "tool",
+    many: "tools",
     usedBy: "recipe",
     purpose: "A tool is equipment a recipe needs, such as a slow cooker or a stand mixer.",
   },
   foods: {
     title: "Foods",
     one: "food",
+    many: "foods",
     usedBy: "recipe",
     purpose:
       "A food is what an ingredient line refers to. Foods are added as recipes are typed in, so this list fills by itself.",
@@ -78,12 +82,14 @@ const WORDS: Record<ManageListKey, ManageWords> = {
   units: {
     title: "Units",
     one: "unit",
+    many: "units",
     usedBy: "recipe",
     purpose: "A unit is what an amount is measured in, such as a cup or a gram.",
   },
   labels: {
     title: "Labels",
     one: "label",
+    many: "labels",
     usedBy: "food",
     purpose:
       "A label groups foods, such as Produce or Dairy. Labels become the store aisles when shopping lists arrive.",

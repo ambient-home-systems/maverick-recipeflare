@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { ButtonHTMLAttributes, ReactNode, Ref } from "react";
 
 type Variant = "primary" | "add" | "quiet";
 
@@ -17,6 +17,7 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   icon?: ReactNode;
   /** Shows a working state and blocks further presses. */
   busy?: boolean;
+  ref?: Ref<HTMLButtonElement>;
 };
 
 export function Button({
@@ -34,7 +35,7 @@ export function Button({
       type={type}
       disabled={disabled || busy}
       aria-busy={busy || undefined}
-      className={`transition-rf inline-flex min-h-touch items-center justify-center gap-2 rounded-md px-5 text-base font-semibold disabled:cursor-not-allowed disabled:opacity-55 ${VARIANTS[variant]} ${className}`}
+      className={`transition-rf inline-flex min-h-touch items-center justify-center gap-2 rounded-md px-5 text-base font-semibold disabled:cursor-not-allowed disabled:opacity-55 aria-disabled:cursor-not-allowed aria-disabled:opacity-55 ${VARIANTS[variant]} ${className}`}
       {...rest}
     >
       {icon}

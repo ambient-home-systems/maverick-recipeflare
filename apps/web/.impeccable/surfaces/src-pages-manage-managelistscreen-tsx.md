@@ -30,7 +30,11 @@ DECISIONS:
 - A name that is taken is a problem under the name box, naming the kind: "That is already a tag."
 - Adding is a box and a button at the top of the list. Rule red is not used: it is for adding a recipe.
 - Labels are put in order with Move up and Move down in the label's sheet, and the list shows them in that order.
-- Foods get a "Find a food" box once there are more than a dozen.
+- Any list gets a box to find an entry once it holds more than a dozen. In practice that is foods, and units from the start.
+- The sheet says first whether the entry is used and whether it can be deleted, above its boxes, so the reason is never below the fold.
+- A change is announced: "Holiday deleted." After a delete, focus goes to the add box, because the row that opened the sheet is gone.
+
+FINISH: reviewed by the finish reviewer on 23 Nov 2026, verdict "ship after fixes", eight fixes, seven made: the plural of "category"; a spoken result for every change; focus that follows the sheet's buttons as they swap, with the delete question tied to the dialog; a refused name read out by going to its box; boxes that cannot be typed in offline or signed out, with the reason in the sheet; the use line and the reason an entry cannot be deleted moved to the top of the sheet; the Close icon kept its size at 200% text. Not made: hiding "Open the mock screens" outside development. The owner still reviews screens there, so it stays until the last mock-only screen is connected.
 
 ## Unresolved
 
