@@ -104,15 +104,16 @@ describe("the recipe view", () => {
     expect(facts().Makes).toBe("18 cookies");
   });
 
-  it("marks a line with no amount as written when the recipe is scaled, and not otherwise", async () => {
+  it("marks a line that was left alone when the recipe is scaled, and not otherwise", async () => {
     await renderAt(LENTIL);
-    expect(ingredients().queryByText("as written")).toBeNull();
+    expect(ingredients().queryByText("not doubled")).toBeNull();
     cleanup();
 
     await renderAt(`${LENTIL}?scale=2`);
-    expect(lines()).toContain("6 cups water or vegetable stockas written");
+    // The mark says what was not done, because that is what the cook must do by hand.
+    expect(lines()).toContain("6 cups water or vegetable stocknot doubled");
     expect(lines()).toContain("4 tbsp olive oil");
-    expect(ingredients().getAllByText("as written")).toHaveLength(3);
+    expect(ingredients().getAllByText("not doubled")).toHaveLength(3);
     // The note counts them, and does not claim they have no amount: one says "6 cups".
     expect(ingredients().getByRole("status").textContent).toBe(
       "Doubled. 3 lines are shown as written and were not changed; work those out yourself. Amounts in the steps are not changed.",

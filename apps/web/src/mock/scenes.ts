@@ -89,6 +89,29 @@ export function validateMockReviewSearch(raw: Record<string, unknown>): {
   return scene === "link" ? {} : { scene };
 }
 
+/** States of cook mode that depend on the device and the connection, not on the recipe. */
+export const COOK_SCENES = ["cooking", "offline", "signed-out", "no-screen-lock"] as const;
+export type CookScene = (typeof COOK_SCENES)[number];
+export const COOK_SCENE_LABELS: Record<CookScene, string> = {
+  cooking: "Cooking",
+  offline: "Offline",
+  "signed-out": "Signed out",
+  "no-screen-lock": "Screen cannot stay on",
+};
+
+export type MockCookSearch = { scale?: 0.5 | 2 | 3; scene?: Exclude<CookScene, "cooking"> };
+
+export function validateMockCookSearch(raw: Record<string, unknown>): MockCookSearch {
+  const scale = parseScale(raw.scale);
+  const scene = (COOK_SCENES as readonly unknown[]).includes(raw.scene)
+    ? (raw.scene as CookScene)
+    : "cooking";
+  return {
+    ...(scale === 1 ? {} : { scale }),
+    ...(scene === "cooking" ? {} : { scene }),
+  };
+}
+
 export function validateMockAddSearch(raw: Record<string, unknown>): { scene?: "offline" } {
   return raw.scene === "offline" ? { scene: "offline" } : {};
 }

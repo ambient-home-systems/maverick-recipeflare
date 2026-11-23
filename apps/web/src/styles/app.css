@@ -2,6 +2,16 @@
 @import "@fontsource-variable/atkinson-hyperlegible-next/wght.css";
 @import "./tokens.css";
 
+/* Cook mode puts the ingredients beside the steps on a tablet on its side, and
+   on a phone on its side too, where a bar along the bottom would leave one step. */
+@custom-variant beside {
+  @media (min-width: 60rem), (orientation: landscape) and (min-width: 40rem) {
+    @slot;
+  }
+}
+/* A screen too short to spare a line: a phone on its side. */
+@custom-variant short (@media (max-height: 30rem));
+
 /* Tailwind utilities are generated from the tokens, so `bg-surface` or
    `text-ink` follow the theme without a `dark:` variant anywhere. */
 @theme inline {

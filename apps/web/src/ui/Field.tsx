@@ -35,9 +35,11 @@ type FieldProps = {
 };
 
 /** A small outlined word beside a label or a row: "check", "new", "as written". */
-export function Mark({ children }: { children: ReactNode }) {
+export function Mark({ children, large = false }: { children: ReactNode; large?: boolean }) {
   return (
-    <span className="rounded-sm border border-rule-strong px-1.5 py-0.5 text-sm font-semibold">
+    <span
+      className={`rounded-sm border border-rule-strong px-1.5 py-0.5 font-semibold ${large ? "text-base" : "text-sm"}`}
+    >
       {children}
     </span>
   );

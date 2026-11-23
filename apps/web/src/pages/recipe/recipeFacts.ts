@@ -20,6 +20,20 @@ export const SCALE_DONE: Record<Scale, string> = {
   3: "Tripled",
 };
 
+/**
+ * What to call a line that was left alone while the rest were scaled. It says
+ * what was not done to it, because that is what the cook has to do by hand.
+ */
+export function notScaledLabel(scale: number): string {
+  if (scale === 0.5) {
+    return "not halved";
+  }
+  if (scale === 2) {
+    return "not doubled";
+  }
+  return scale === 3 ? "not tripled" : "not scaled";
+}
+
 /** The scale named in a page address, or 1 for anything else. */
 export function parseScale(value: unknown): Scale {
   const number = typeof value === "string" ? Number(value) : value;

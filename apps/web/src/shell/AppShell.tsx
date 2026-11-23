@@ -1,5 +1,5 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { NAV_ITEMS, type NavItem } from "./nav";
+import { isFullScreen, NAV_ITEMS, type NavItem } from "./nav";
 
 /** Inside the mock harness the navigation leads to mock screens, where one is drawn. */
 function target(item: NavItem, pathname: string): NavItem["to"] | NonNullable<NavItem["mockTo"]> {
@@ -55,6 +55,14 @@ function NavLink({
  */
 export function AppShell() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+
+  if (isFullScreen(pathname)) {
+    return (
+      <main id="page" tabIndex={-1} className="outline-none">
+        <Outlet />
+      </main>
+    );
+  }
 
   return (
     <div className="flex min-h-dvh flex-col md:flex-row">

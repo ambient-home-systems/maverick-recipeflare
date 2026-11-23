@@ -13,6 +13,14 @@ export type NavItem = {
 };
 
 /**
+ * Cook mode fills the screen: it has no header and no navigation, only its own
+ * "Done". Its address ends in "/cook", or is under "/mock/cook".
+ */
+export function isFullScreen(pathname: string): boolean {
+  return /(^|\/)cook(\/|$)/.test(pathname);
+}
+
+/**
  * The app's destinations. Phase 4 adds the planner and the shopping list; the
  * bar and the rail are built to take five.
  */

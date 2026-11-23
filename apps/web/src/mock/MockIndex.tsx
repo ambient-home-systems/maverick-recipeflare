@@ -38,7 +38,7 @@ const READY = [
   },
 ] as const;
 
-const COMING = ["Cook mode"];
+const COMING: string[] = [];
 
 /**
  * The mock harness: screens drawn from fixture recipes, for reviewing the
@@ -87,6 +87,20 @@ export function MockIndex() {
               <span className="block text-sm">
                 Sections, reordering, pickers and photos, with the problem, leaving and conflict
                 states.
+              </span>
+            </Link>
+          </li>
+          <li className="border-b border-rule last:border-b-0">
+            <Link
+              to="/mock/cook/$slug"
+              params={{ slug: "roast-chicken-with-lemon-and-thyme" }}
+              search={{}}
+              className="transition-rf block min-h-touch px-4 py-3 no-underline hover:bg-surface-sunk"
+            >
+              <span className="block text-lg font-semibold">Cook mode</span>
+              <span className="block text-sm">
+                Full screen, large type, steps and ingredients to tick off. Also reached from Cook
+                on any recipe.
               </span>
             </Link>
           </li>

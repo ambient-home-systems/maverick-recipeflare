@@ -12,6 +12,7 @@ import { useState } from "react";
 import { Button } from "../../ui/Button";
 import { LinkChip } from "../../ui/Chip";
 import { type DividerLink, DividerLinks } from "../../ui/DividerTabs";
+import { Mark } from "../../ui/Field";
 import { EmptyState, Notice } from "../../ui/Notice";
 import { Page } from "../../ui/Page";
 import { SectionHead } from "../../ui/SectionHead";
@@ -21,6 +22,7 @@ import { PhotoViewer, type ViewerPhoto } from "./PhotoViewer";
 import {
   isTitleOnly,
   linkHost,
+  notScaledLabel,
   nutritionFacts,
   recipeFacts,
   SCALE_DONE,
@@ -353,9 +355,7 @@ export function RecipeViewScreen({
                         >
                           <IngredientText item={item} scale={scale} />
                           {scaled && !isScalable(item) ? (
-                            <span className="rounded-sm border border-rule-strong px-1.5 py-0.5 text-sm font-semibold">
-                              as written
-                            </span>
+                            <Mark>{notScaledLabel(scale)}</Mark>
                           ) : null}
                         </li>
                       ))}
