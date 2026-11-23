@@ -24,7 +24,7 @@
 // Deploy to Cloudflare button, so it must not depend on GitHub.
 
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -106,6 +106,70 @@ function runRedacted(label, command, args) {
   }
 }
 
+/** JSON with comments and trailing commas, as wrangler.jsonc is written, parsed. */
+function parseJsonc(text) {
+  let out = "";
+  let inString = false;
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    if (inString) {
+      out += char;
+      if (char === "\\") {
+        out += text[++i] ?? "";
+      } else if (char === '"') {
+        inString = false;
+      }
+    } else if (char === '"') {
+      inString = true;
+      out += char;
+    } else if (char === "/" && text[i + 1] === "/") {
+      while (i < text.length && text[i] !== "\n") {
+        i++;
+      }
+      out += "\n";
+    } else if (char === "/" && text[i + 1] === "*") {
+      i = text.indexOf("*/", i + 2);
+      if (i === -1) {
+        break;
+      }
+      i++;
+    } else {
+      out += char;
+    }
+  }
+  return JSON.parse(out.replace(/,(\s*[}\]])/g, "$1"));
+}
+
+/**
+ * The queues this environment's Worker consumes or sends dead letters to
+ * without also producing to them. Wrangler creates a queue the Worker has a
+ * producer binding for on the first deploy; it refuses to deploy a consumer of
+ * a queue that does not exist.
+ */
+function queuesToEnsure(envName) {
+  const config = parseJsonc(readFileSync(join(root, "wrangler.jsonc"), "utf8"));
+  const queues = (envName ? config.env?.[envName]?.queues : config.queues) ?? {};
+  const produced = new Set((queues.producers ?? []).map((producer) => producer.queue));
+  const named = (queues.consumers ?? []).flatMap((consumer) => [
+    consumer.queue,
+    consumer.dead_letter_queue,
+  ]);
+  return [...new Set(named)].filter(
+    (name) => typeof name === "string" && /^[a-z0-9-]{1,63}$/.test(name) && !produced.has(name),
+  );
+}
+
+/** True if a command succeeds. Nothing it prints is shown: a queue's details include its ID. */
+function succeeds(command, args) {
+  const result = spawnSync(command, args, {
+    cwd: root,
+    stdio: "ignore",
+    shell: process.platform === "win32",
+    env: { ...process.env, CI: process.env.CI ?? "true" },
+  });
+  return result.status === 0;
+}
+
 function hasMigrations() {
   return (
     existsSync(migrationsDir) && readdirSync(migrationsDir).some((name) => !name.startsWith("."))
@@ -147,6 +211,16 @@ if (dryRun) {
   ]);
 } else {
   console.log("\ndeploy: no database migrations to apply");
+}
+
+if (!dryRun) {
+  for (const queue of queuesToEnsure(env)) {
+    if (succeeds("pnpm", ["exec", "wrangler", "queues", "info", queue])) {
+      console.log(`\ndeploy: queue ${queue} exists`);
+    } else {
+      runRedacted(`create queue ${queue}`, "pnpm", ["exec", "wrangler", "queues", "create", queue]);
+    }
+  }
 }
 
 const secrets = SECRET_NAMES.map((name) => [name, process.env[name]?.trim() ?? ""]).filter(
