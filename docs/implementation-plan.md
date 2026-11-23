@@ -533,6 +533,16 @@ If parameter chunking ever becomes awkward, the fallback is to pass each child l
 
 **Reading a recipe** is one batch of selects (recipe, ingredients with food and unit, steps, notes, organizers, assets): one query, one consistent snapshot. Selects name their columns, because D1 caps a result at 100 columns.
 
+**As built in T1.1** (`apps/worker/src/db/recipes.ts`):
+
+- The reads before the batch are themselves one batch: the recipe as it stands, the slugs that could collide, and the foods, units and organizers the recipe names. The write batch ends with the six selects that read a recipe, so the saved recipe comes back from the same transaction. A save is therefore two round trips, and a test counts them.
+- The read also checks the recipe's references. A food, unit or organizer that does not exist, or an organizer of the wrong kind, is answered with the path of the field before anything is written. The foreign keys still catch a deletion that lands between the read and the write.
+- A version that is already stale at the read is answered as a conflict without attempting the write. The trigger remains the guard for two saves that both read before either wrote; a test runs that race.
+- An unchanged title keeps its slug, even a numbered one. A changed title takes the lowest free slug, not counting the recipe's own.
+- A recipe's categories, tags and tools have no order of their own and come back sorted by name.
+- Nutrition is stored as only the values that were filled in, or null.
+- `source_url` is canonicalized by `canonicalUrl()` in the shared package, which T1.12 will also use to notice a second import of one page.
+
 ### 4.7 Mapping to aiomealie
 
 Checked against the models in aiomealie 2.1.4. "Required" means the model has no default, so a missing or null value fails Home Assistant's parsing.

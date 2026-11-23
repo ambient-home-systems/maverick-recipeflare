@@ -6,7 +6,7 @@ Guidance for Claude Code working in this repository.
 
 Maverick Recipeflare (Recipeflare for short) is a household recipe app on Cloudflare: one TypeScript Worker serving a React PWA and a JSON API, with D1, R2, Queues and, in later phases, Workers AI and Durable Objects. One household per install. Licensed AGPL-3.0-only.
 
-**Status: Phase 0 is complete (T0.1 to T0.13); its gate passed on 23 Nov 2026. Phase 1 starts with T1.1.** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, the database schema with its migrations, and sign-in (the auth middleware, the Access and dev providers, `/api/v1/me`) exist. No product screen is connected to data, and the only tables written are `household` and `members`, at a first sign-in. When a pull request changes a command or path below, it updates this file in the same pull request.
+**Status: Phase 0 is complete (T0.1 to T0.13); its gate passed on 23 Nov 2026. Phase 1 is built through T1.1 (the recipe repository: save, load, delete).** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, the database schema with its migrations, and sign-in (the auth middleware, the Access and dev providers, `/api/v1/me`) exist. No product screen is connected to data, and no API route reads or writes a recipe yet. When a pull request changes a command or path below, it updates this file in the same pull request.
 
 ## Read first
 
@@ -32,6 +32,7 @@ apps/worker/          Hono API, queue consumer, auth, Drizzle schema, migrations
   src/app.ts          createApp(): the routes, and which of them need a member
   src/auth/           The auth middleware, one file per identity provider, members
   src/db/schema.ts    The tables. Change it, then run pnpm db:generate
+  src/db/recipes.ts   The recipe repository: createRecipe, updateRecipe, loadRecipe, deleteRecipe
   migrations/         One folder per migration; applied by Wrangler, in order
 apps/web/             Vite React PWA; builds to apps/web/dist, served as static assets
   src/styles/         tokens.css (the design tokens) and app.css (Tailwind theme, base styles)
@@ -117,8 +118,10 @@ To be signed in locally, copy `.dev.vars.example` to `.dev.vars` and run `pnpm d
 
 ### Database (D1)
 
-- A recipe save is at most two reads and one `db.batch()`. Do not add statements outside the batch that the save depends on.
-- At most 100 bound parameters per statement. Chunk multi-row inserts with the shared helper. Pass `IN` lists as one JSON parameter expanded with `json_each`.
+- A recipe save is at most two reads and one `db.batch()`. As built it is one batch of reads, then one batch that writes and reads the result back. Do not add statements outside the batch that the save depends on; a test counts the round trips.
+- At most 100 bound parameters per statement. Chunk multi-row inserts with `chunkRows()` and state every column of each row, so the count per row is known. Pass `IN` lists as one JSON parameter expanded with `json_each` (`inJson()`).
+- Columns that share a name across joined tables need their own names in a batched select, because a D1 batch returns rows keyed by column name. Booleans come back from a batch as 0 and 1.
+- A recipe's search text is assembled only by `buildSearchText()`. Anything that changes a name the text contains rewrites the row through it.
 - Never build SQL by concatenating values; bind them. Never pass user text to FTS `MATCH` without the query builder.
 - `LIKE` patterns are capped at 50 bytes. Use the FTS index or a range scan.
 - A recipe's children (ingredients, steps, notes, organizer links) are replaced on every save with their IDs preserved. No table may have a foreign key to those child rows.
@@ -175,6 +178,7 @@ To be signed in locally, copy `.dev.vars.example` to `.dev.vars` and run `pnpm d
 - Web tests use Testing Library on happy-dom. Render a screen with `renderAt(path)` from `src/test-utils.tsx`, which mounts the whole app at an address. Stub `fetch` with `vi.stubGlobal`; stubs and mocks are reset after each test by the config.
 - Test tooling (`vitest`, the Cloudflare plugin, happy-dom) is installed at the workspace root only. Do not add `vitest` to a package: a second copy breaks the run.
 - Storage is isolated per test file, not per test. Use distinct IDs within a file, or reset and re-apply migrations.
+- `test/helpers.ts` has `seedLists()`, which gives a test file the fixtures' member, foods, units, labels and organizers, and `countingDatabase()`, which counts round trips.
 - A Worker test that needs a signed-in member builds its own app with `createApp({ fetchKeys })` and states every auth setting itself, as `test/auth.test.ts` does, so that a developer's `.dev.vars` cannot change the result. Test email addresses are at `example.com`.
 - Worker tests apply the real migration files before each test file (`test/apply-migrations.ts`), so a schema change needs its migration before its tests can pass.
 - New behaviour comes with a test. A bug fix comes with a test that fails without it.
