@@ -14,6 +14,7 @@ import {
   fixtureOrganizers,
   fixtureUnits,
   importNeedsReview,
+  importPastedText,
 } from "@recipeflare/schema/fixtures";
 import { getRouteApi, Link, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useMemo, useRef, useState } from "react";
@@ -277,11 +278,16 @@ export function MockReview() {
   const { scene = "link" } = reviewRoute.useSearch();
   const navigate = useNavigate();
   const mock = useMockLists();
-  const draft = importNeedsReview.result?.draft;
+  const fromText = scene === "pasted";
+  const draft = (fromText ? importPastedText : importNeedsReview).result?.draft;
 
   const prepared = useMemo(() => {
     if (!draft) {
       return null;
+    }
+    const lists = { units: fixtureUnits, foods: fixtureFoods, organizers: fixtureOrganizers };
+    if (fromText) {
+      return prepareReview(draft, lists, ingredientParser(lists));
     }
     // The page's main picture arrives as the cover, and can be removed like any other.
     const cover: Asset = {
@@ -296,9 +302,8 @@ export function MockReview() {
       originalFilename: null,
       createdAt: FIXTURE_TIME,
     };
-    const lists = { units: fixtureUnits, foods: fixtureFoods, organizers: fixtureOrganizers };
     return prepareReview(draft, lists, ingredientParser(lists), [cover]);
-  }, [draft]);
+  }, [draft, fromText]);
 
   if (!prepared) {
     return null;
@@ -307,8 +312,9 @@ export function MockReview() {
   const fromCard = scene === "card";
 
   const review: Review = {
-    from: fromCard ? "a photo of a card" : "recipes.example.com",
-    sourceUrl: fromCard ? undefined : (importNeedsReview.sourceUrl ?? undefined),
+    from: fromCard ? "a photo of a card" : fromText ? "pasted text" : "recipes.example.com",
+    sourceUrl: fromCard || fromText ? undefined : (importNeedsReview.sourceUrl ?? undefined),
+    byAi: fromText,
     attention: prepared.attention,
     flaggedRows: prepared.flaggedRows,
     flaggedParts: prepared.flaggedParts,
@@ -334,11 +340,18 @@ export function MockReview() {
             { id: "back", url: cardBack, alt: "The back of the card" },
           ],
         }
-      : {
-          title: "Original",
-          caption: "The picture from the page. Open the page to check the rest against it.",
-          photos: [{ id: "page", url: pagePicture, alt: "The picture from the page" }],
-        },
+      : fromText
+        ? {
+            title: "Original",
+            caption: "The text as you pasted it.",
+            text: importPastedText.result?.sourceText ?? undefined,
+            photos: [],
+          }
+        : {
+            title: "Original",
+            caption: "The picture from the page. Open the page to check the rest against it.",
+            photos: [{ id: "page", url: pagePicture, alt: "The picture from the page" }],
+          },
   };
 
   return (
@@ -376,6 +389,10 @@ export function MockReview() {
             </li>
           ))}
         </ul>
+        <p className="mt-3 text-sm">
+          “From pasted text” is a draft an AI model wrote up, with two things it was unsure of and
+          the pasted text to check it against.
+        </p>
         <p className="mt-3 text-sm">
           “From a card” shows where the photographed card will sit in Phase 2: it takes turns with
           the recipe on a phone and sits beside it on a tablet held sideways. Every picture here is

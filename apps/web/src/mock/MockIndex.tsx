@@ -25,7 +25,7 @@ const READY = [
   {
     to: "/mock/add",
     name: "Add a recipe",
-    detail: "The two ways a recipe starts: typed in, or from a link.",
+    detail: "The ways a recipe starts: typed in, from a link, or from pasted text.",
   },
   {
     to: "/mock/new",
@@ -35,7 +35,7 @@ const READY = [
   {
     to: "/mock/review",
     name: "Reviewing an import",
-    detail: "What a link brought in, with what to check and the original beside it.",
+    detail: "What a link or pasted text brought in, with what to check and the original beside it.",
   },
 ] as const;
 

@@ -1,5 +1,5 @@
 import type { ImportJob } from "@recipeflare/schema";
-import { Link2, LoaderCircle, RotateCw, Trash2, TriangleAlert } from "lucide-react";
+import { ClipboardPaste, Link2, LoaderCircle, RotateCw, Trash2, TriangleAlert } from "lucide-react";
 import { Button } from "../../ui/Button";
 
 /** What went wrong, in plain words, and what to try. Anything else shows the job's own message. */
@@ -8,7 +8,8 @@ const FAILURES: Record<string, string> = {
   blocked:
     "The site does not let apps read its pages. On a computer, the bookmark on the Add page sends it from your browser. Otherwise it is best typed in.",
   no_recipe:
-    "No recipe was found on that page. Pasting a recipe's text will be possible in a later version.",
+    "No recipe was found on that page. If the page shows one, copy its text and use Paste text on the Add page.",
+  too_thin: "There was not enough there to make a recipe from.",
   not_queued: "The import could not be started. Try again.",
   ai_limit: "Today's allowance for importing with AI is used up. Try again tomorrow.",
   ai_unavailable: "The AI that reads recipes could not be reached. Try again later.",
@@ -17,8 +18,11 @@ const FAILURES: Record<string, string> = {
   unsupported: "This kind of import is not available yet.",
 };
 
-/** The site a link points at, without the "www". */
-export function importHost(job: Pick<ImportJob, "sourceUrl">): string {
+/** Where an import came from, in a word or two: the site a link points at, without the "www", or "pasted text". */
+export function importHost(job: Pick<ImportJob, "sourceUrl" | "kind">): string {
+  if (job.kind === "text") {
+    return "pasted text";
+  }
   try {
     return new URL(job.sourceUrl ?? "").hostname.replace(/^www\./, "");
   } catch {
@@ -37,7 +41,8 @@ export function importStatus(job: ImportJob): string {
     case "queued":
       return "Waiting to start";
     case "running":
-      return "Reading the page";
+      // A link is read as the page states it. Text is written up by a model.
+      return job.kind === "text" || job.stage === "build" ? "Writing it up" : "Reading the page";
     case "needs_review":
       return "Ready to review";
     case "failed":
@@ -50,8 +55,9 @@ export function importStatus(job: ImportJob): string {
 }
 
 /**
- * An import from a link, shown above the recipes until a person has dealt with
- * it. It is not a recipe yet: it has no category colour and does not open one.
+ * An import, from a link or from pasted text, shown above the recipes until a
+ * person has dealt with it. It is not a recipe yet: it has no category colour
+ * and does not open one.
  */
 export function ImportRow({
   job,
@@ -66,8 +72,10 @@ export function ImportRow({
 }) {
   const working = job.status === "queued" || job.status === "running";
   const failed = job.status === "failed";
-  const host = importHost(job);
+  const fromText = job.kind === "text";
+  const host = fromText ? "Pasted text" : importHost(job);
   const title = job.result?.draft.title.trim() || host;
+  const Icon = fromText ? ClipboardPaste : Link2;
 
   return (
     <li className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-rule px-4 py-2.5">
@@ -75,7 +83,7 @@ export function ImportRow({
         aria-hidden="true"
         className="grid size-12 flex-none place-items-center rounded-sm bg-stock-plain text-ink"
       >
-        <Link2 size="1.375rem" />
+        <Icon size="1.375rem" />
       </span>
       {/* A failure's reason needs room: its text is wide enough to push the actions onto their own line. */}
       <span className={`flex-1 ${failed ? "min-w-[16rem]" : "min-w-[8rem]"}`}>

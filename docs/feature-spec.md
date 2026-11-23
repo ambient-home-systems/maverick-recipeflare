@@ -233,7 +233,7 @@ The cook types a line the way it is written on the card. The rule-based parser (
 - Tags and categories from the page are preselected only if the household already has them. Others are offered as unselected suggestions.
 - The page's main image becomes the cover and can be removed in review.
 - If a recipe with the same link exists, review mode says so and links to it. The import can still be saved.
-- Failures say what happened in plain words and what to try: the site could not be reached, the site blocked the request, or the page has no recipe data. For the last, the message says that pasting the text arrives with Phase 2.
+- Failures say what happened in plain words and what to try: the site could not be reached, the site blocked the request, or the page has no recipe data. For the last, the message says to copy the page's text and use Paste text on the Add page ([section 12](#12-import-with-ai-phase-2)).
 - A site that refuses the request is said to not let apps read its pages. The row says that on a computer the bookmark on the Add page sends the recipe from the browser, and that otherwise it is best typed in. "Try again" stays, because it costs nothing. (Reworded on 23 Nov 2026: the first wording, "Trying again sometimes works", was not true of a refusal.)
 - **Sending a recipe from the browser.** On a computer, the Add page offers a bookmark, "Send to Recipeflare", to drag to the browser's bookmarks bar. Pressed on a recipe's page, it opens the app's Add page with what that page says about its recipe. The Add page names the recipe and the site and asks: "Import this recipe" or "Not now". Nothing is imported unasked. From there it is an import like any other: a row on the list, then review. If the page describes no recipe, the Add page says so. The bookmark is not offered on a phone, which has no bookmarks bar; a phone's way in is the share sheet, in a later phase. (Asked for by the owner on 23 Nov 2026, after a large recipe site refused the app's server and no change to the request got past it.)
 - A failed import can be retried from its row.
@@ -297,7 +297,7 @@ The cook types a line the way it is written on the card. The rule-based parser (
 
 Listed so that gate testing does not record these as workarounds.
 
-- Import from photos or pasted text; AI of any kind.
+- Import from photos or pasted text; AI of any kind. (Pasted text has since been built, in Phase 2: [section 12](#12-import-with-ai-phase-2).)
 - Step durations, per-step ingredients and timers.
 - Meal planning, shopping lists, Home Assistant.
 - Favourites, ratings, comments, cookbooks, the made-it timeline.
@@ -305,3 +305,18 @@ Listed so that gate testing does not record these as workarounds.
 - Editing offline.
 - Trash, undo and version history.
 - Passkey login, invitations and member management beyond signing in through Access.
+
+## 12. Import with AI (Phase 2)
+
+Added with the Phase 2 tasks, each as it is built. The [Phase 2 plan](phase-2-plan.md) has the rules every AI step follows; this section says what the cook sees.
+
+**Decisions**
+
+- **Paste text** (T2.3). The Add page has a third way in, below the link: a box for a recipe's text, copied from a message, a document or a web page, and "Import text". The page says an AI model writes it up and that it is checked before anything is saved. Up to 50,000 characters; more is turned away on the page, before anything is sent.
+- A pasted import is a row on the list like a link's. It is called "Pasted text" until it has a title, and says "Writing it up" while a model is at work.
+- **Review says who wrote the draft.** For a draft a model made, the top of review reads "Written up by AI from pasted text. Check it against the original: it can misread." A draft read from a page's own recipe data says "Read from" and the site, as before.
+- **The original is the text as pasted**, beside the draft: the same switch on a phone, the same two columns on a wide screen. It is shown exactly as pasted, misspellings included, so the draft can be checked word against word.
+- **Doubt is said, not hidden.** Each thing the model was unsure of, and each line or step that has a word the pasted text does not, is listed among the things to check, names its line ("1/2 tsp baking powder: …", "Step 4: …") and is marked "check" where it is. The line is kept as the model wrote it; the cook decides. None of it stops a save.
+- **Lines are read by the same rules as typed ones.** The model copies each ingredient line as text. Amounts, units and foods are then read by the parser the editor uses, so a pasted recipe and a typed one behave alike, and a food the household does not have is confirmed at save in the same way.
+- **Failures** say what happened: there was not enough there to make a recipe from; the day's allowance for importing with AI is used up; the AI could not be reached; the AI could not make a recipe of it; or importing with AI is not working and whoever looks after the app can check it. "Try again" and "Remove" are offered as for a link.
+- **No recipe is made up.** Text with no recipe in it fails; it is not padded out. A recipe with a gap in it keeps its gap, and review says what is missing, as it does for a link.

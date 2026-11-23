@@ -1,5 +1,13 @@
-import { UrlImportRequest } from "@recipeflare/schema";
-import { Bookmark, CloudOff, Link2, MonitorUp, PencilLine, Plus } from "lucide-react";
+import { LIMITS, TextImportRequest, UrlImportRequest } from "@recipeflare/schema";
+import {
+  Bookmark,
+  ClipboardPaste,
+  CloudOff,
+  Link2,
+  MonitorUp,
+  PencilLine,
+  Plus,
+} from "lucide-react";
 import { type FormEvent, useEffect, useId, useRef, useState } from "react";
 import { Button } from "../../ui/Button";
 import { FIELD } from "../../ui/field";
@@ -10,12 +18,14 @@ import { Page } from "../../ui/Page";
 export type SentRecipe = { host: string; recipeName: string | null } | { problem: string };
 
 /**
- * Where a recipe starts: typed in, brought in from a link, or sent from the
- * cook's own browser with a bookmark. Photographing a card joins these in Phase 2.
+ * Where a recipe starts: typed in, brought in from a link, written up from
+ * text pasted in, or sent from the cook's own browser with a bookmark.
+ * Photographing a card joins these later in Phase 2.
  */
 export function AddScreen({
   onType,
   onImport,
+  onPaste,
   importing = false,
   importProblem,
   sent,
@@ -28,6 +38,11 @@ export function AddScreen({
   onType?: () => void;
   /** Starts an import from a link that has passed the shared schema's check. Without it, importing is not offered. */
   onImport?: (url: string) => void;
+  /**
+   * Starts an import from text pasted in, which an AI model writes up as a
+   * recipe. Without it, pasting is not offered.
+   */
+  onPaste?: (text: string) => void;
   /** True while the import is being handed over. */
   importing?: boolean;
   /** Why the import could not be started, in a sentence. The link is still in the box. */
@@ -45,10 +60,17 @@ export function AddScreen({
 }) {
   const [url, setUrl] = useState("");
   const [typed, setTyped] = useState<string | null>(null);
+  const [text, setText] = useState("");
+  const [pasted, setPasted] = useState<string | null>(null);
+  // Which way in was used last: its button shows the work, and its form what the server said.
+  const [used, setUsed] = useState<"link" | "text" | null>(null);
   const sentRecipe = sent && !("problem" in sent) ? sent : null;
-  // What is wrong with the link as typed comes first; then what the server said,
+  // What is wrong with what was typed comes first; then what the server said,
   // which belongs to the sent page when that is what was being imported.
-  const problem = typed ?? (sentRecipe ? null : importProblem) ?? null;
+  const said = (form: "link" | "text") =>
+    sentRecipe || (used !== null && used !== form) ? null : (importProblem ?? null);
+  const problem = typed ?? (used === "text" ? null : said("link"));
+  const textProblem = pasted ?? (used === "text" ? said("text") : null);
   const [pressedHere, setPressedHere] = useState(false);
   // React does not write a script into a link's address. A bookmark has to be one, so it is set by hand.
   const bookmark = useRef<HTMLAnchorElement>(null);
@@ -59,6 +81,8 @@ export function AddScreen({
   }, [bookmarklet]);
   const urlId = useId();
   const problemId = useId();
+  const textId = useId();
+  const textProblemId = useId();
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -72,7 +96,24 @@ export function AddScreen({
       return;
     }
     setTyped(null);
+    setUsed("link");
     onImport?.(request.data.url);
+  };
+
+  const submitText = (event: FormEvent) => {
+    event.preventDefault();
+    const request = TextImportRequest.safeParse({ kind: "text", text });
+    if (!request.success) {
+      setPasted(
+        text.trim() === ""
+          ? "Paste a recipe's text first."
+          : `That is more text than can be read at once. Paste the recipe by itself: up to ${LIMITS.pastedText.toLocaleString("en")} characters.`,
+      );
+      return;
+    }
+    setPasted(null);
+    setUsed("text");
+    onPaste?.(request.data.text);
   };
 
   return (
@@ -179,8 +220,55 @@ export function AddScreen({
               <Notice problem>{problem}</Notice>
             </div>
           ) : null}
-          <Button type="submit" className="mt-4" disabled={offline} busy={importing}>
+          <Button
+            type="submit"
+            className="mt-4"
+            disabled={offline || (importing && used === "text")}
+            busy={importing && used !== "text"}
+          >
             Import
+          </Button>
+        </form>
+      ) : null}
+
+      {onPaste ? (
+        <form noValidate onSubmit={submitText} className="border-t border-rule px-4 py-5">
+          <h2 className="flex items-center gap-2 text-lg font-bold">
+            <ClipboardPaste aria-hidden="true" size="1.25rem" />
+            Paste text
+          </h2>
+          <p className="mt-1 max-w-[38ch]">
+            Paste a recipe copied from a message, a document or a web page. An AI model writes it up
+            as a recipe, and you check it against what you pasted before anything is saved.
+          </p>
+          <label htmlFor={textId} className="mt-4 mb-1 block text-sm font-semibold">
+            Recipe text
+          </label>
+          <textarea
+            id={textId}
+            rows={6}
+            autoComplete="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            value={text}
+            disabled={offline}
+            aria-invalid={textProblem ? true : undefined}
+            aria-describedby={textProblem ? textProblemId : undefined}
+            onChange={(event) => setText(event.target.value)}
+            className={`${FIELD} max-w-[34rem] py-2`}
+          />
+          {textProblem ? (
+            <div id={textProblemId} className="mt-2 max-w-[34rem]">
+              <Notice problem>{textProblem}</Notice>
+            </div>
+          ) : null}
+          <Button
+            type="submit"
+            className="mt-4"
+            disabled={offline || (importing && used !== "text")}
+            busy={importing && used === "text"}
+          >
+            Import text
           </Button>
         </form>
       ) : null}

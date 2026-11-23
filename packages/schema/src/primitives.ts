@@ -26,6 +26,10 @@ export const LIMITS = {
   assets: 30,
   /** One uploaded file: 15 MB. */
   uploadBytes: 15 * 1024 * 1024,
+  /** Text pasted in to be made into a recipe: far more than any recipe, and still one model call. */
+  pastedText: 50_000,
+  /** One thing an importer was unsure of, in a sentence. */
+  doubtLength: 300,
   /** 99 hours 59 minutes. */
   durationSeconds: 99 * 3600 + 59 * 60,
 } as const;

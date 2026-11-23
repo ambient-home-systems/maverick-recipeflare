@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { DraftIssue, RecipeDraft } from "./draft";
-import { Id, Timestamp } from "./primitives";
+import { Id, LIMITS, Timestamp } from "./primitives";
 
 /** How much of a page a browser may send: enough for any recipe page, and no more. */
 export const SENT_PAGE_LIMITS = { blocks: 40, blockLength: 400_000, totalLength: 600_000 } as const;
@@ -19,10 +19,17 @@ export const ImportJobStatus = z.enum([
 ]);
 export type ImportJobStatus = z.infer<typeof ImportJobStatus>;
 
+/** How a draft was read: from what a page states in structured data, or by a model. */
+export const ReadBy = z.enum(["structured-data", "ai"]);
+export type ReadBy = z.infer<typeof ReadBy>;
+
 /** What an importer hands to the review screen. */
 export const ImportResult = z.object({
   draft: RecipeDraft,
   issues: z.array(DraftIssue),
+  /** The text the draft was made from, to check it against. Null for a link read from structured data. */
+  sourceText: z.string().nullable().default(null),
+  readBy: ReadBy.default("structured-data"),
 });
 export type ImportResult = z.infer<typeof ImportResult>;
 
@@ -65,3 +72,14 @@ export const UrlImportRequest = z.object({
   page: SentPage.pick({ siteName: true, blocks: true }).optional(),
 });
 export type UrlImportRequest = z.infer<typeof UrlImportRequest>;
+
+/** Body of `POST /imports` for text pasted in: a recipe copied from anywhere, to be made into a draft. */
+export const TextImportRequest = z.object({
+  kind: z.literal("text"),
+  text: z.string().trim().min(1).max(LIMITS.pastedText),
+});
+export type TextImportRequest = z.infer<typeof TextImportRequest>;
+
+/** Body of `POST /imports`. */
+export const ImportRequest = z.discriminatedUnion("kind", [UrlImportRequest, TextImportRequest]);
+export type ImportRequest = z.infer<typeof ImportRequest>;

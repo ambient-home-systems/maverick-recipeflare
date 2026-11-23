@@ -37,6 +37,16 @@ export const DraftStep = z.object({
 });
 export type DraftStep = z.infer<typeof DraftStep>;
 
+/**
+ * Something the importer was unsure of, for the cook to check: a smudged
+ * amount, a word it could not find in the source. `where` names the part:
+ * `title`, `description`, `ingredient:3`, `step:0`, `note:1`. Ingredients and
+ * steps are counted from zero across all sections, as a step's
+ * `ingredientIndexes` are.
+ */
+export const DraftDoubt = z.object({ where: z.string(), why: z.string() });
+export type DraftDoubt = z.infer<typeof DraftDoubt>;
+
 export const RecipeDraft = z.object({
   title: z.string().default(""),
   description: z.string().default(""),
@@ -72,8 +82,51 @@ export const RecipeDraft = z.object({
   suggestedCategories: z.array(z.string()).default([]),
   suggestedTags: z.array(z.string()).default([]),
   suggestedTools: z.array(z.string()).default([]),
+  /** What the importer was unsure of. Said, not hidden: review lists each one. */
+  doubts: z.array(DraftDoubt).default([]),
 });
 export type RecipeDraft = z.infer<typeof RecipeDraft>;
+
+/** The part of a draft a doubt points at, or null when `where` names none. */
+export type DoubtTarget =
+  | { part: "title" | "description" }
+  | { part: "ingredient" | "step" | "note"; index: number };
+
+/** Reads a doubt's `where`: "title", "ingredient:3". */
+export function doubtTarget(where: string): DoubtTarget | null {
+  const [part, position, ...rest] = where.trim().toLowerCase().split(":");
+  if (rest.length > 0) {
+    return null;
+  }
+  if (part === "title" || part === "description") {
+    return position === undefined ? { part } : null;
+  }
+  if (part === "ingredient" || part === "step" || part === "note") {
+    const index = Number(position);
+    return position !== undefined && position !== "" && Number.isInteger(index) && index >= 0
+      ? { part, index }
+      : null;
+  }
+  return null;
+}
+
+/** Where in a draft the `index`-th item of its sections is, as a path. Null when there is none. */
+function pathOfItem(
+  sections: readonly { items?: readonly unknown[]; steps?: readonly unknown[] }[],
+  key: "ingredientSections" | "stepSections",
+  index: number,
+): (string | number)[] | null {
+  const list = key === "ingredientSections" ? "items" : "steps";
+  let left = index;
+  for (let section = 0; section < sections.length; section++) {
+    const length = sections[section]?.[list]?.length ?? 0;
+    if (left < length) {
+      return [key, section, list, left];
+    }
+    left -= length;
+  }
+  return null;
+}
 
 /** `RecipeDraft` as JSON Schema, for a model's structured-output request. */
 export function recipeDraftJsonSchema(): Record<string, unknown> {
@@ -89,6 +142,8 @@ export const DraftIssueCode = z.enum([
   "bad_ingredient_reference",
   "unmatched_unit",
   "unmatched_food",
+  /** The importer was unsure of something, and says so. */
+  "doubt",
 ]);
 export type DraftIssueCode = z.infer<typeof DraftIssueCode>;
 
@@ -147,6 +202,21 @@ export function checkDraft(draft: RecipeDraft): DraftIssue[] {
       }
     });
   });
+  for (const doubt of draft.doubts) {
+    const target = doubtTarget(doubt.where);
+    let path: (string | number)[] | null = null;
+    if (target?.part === "title" || target?.part === "description") {
+      path = [target.part];
+    } else if (target?.part === "ingredient") {
+      path = pathOfItem(draft.ingredientSections, "ingredientSections", target.index);
+    } else if (target?.part === "step") {
+      path = pathOfItem(draft.stepSections, "stepSections", target.index);
+    } else if (target?.part === "note") {
+      path = target.index < draft.notes.length ? ["notes", target.index] : null;
+    }
+    // A doubt about nothing that can be found is still said: it is about the recipe as a whole.
+    issues.push({ code: "doubt", path: path ?? [], message: doubt.why });
+  }
   return issues;
 }
 

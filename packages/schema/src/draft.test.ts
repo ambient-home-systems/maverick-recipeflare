@@ -1,6 +1,6 @@
 import Ajv2020 from "ajv/dist/2020";
 import { describe, expect, it } from "vitest";
-import { checkDraft, draftToInput, RecipeDraft, recipeDraftJsonSchema } from "./draft";
+import { checkDraft, doubtTarget, draftToInput, RecipeDraft, recipeDraftJsonSchema } from "./draft";
 import {
   fixtureFoods,
   fixtureId,
@@ -8,8 +8,9 @@ import {
   fixtureOrganizers,
   fixtureUnits,
   importNeedsReview,
+  importPastedText,
 } from "./fixtures";
-import { ImportJob, UrlImportRequest } from "./import-job";
+import { ImportJob, ImportRequest, TextImportRequest, UrlImportRequest } from "./import-job";
 import { type DraftLists, unitMatcher } from "./matching";
 import { RecipeCreate } from "./recipe";
 
@@ -478,7 +479,7 @@ describe("import jobs", () => {
       status: "needs_review",
       stage: null,
       sourceUrl: "https://example.com/r",
-      result: { draft, issues: checkDraft(draft) },
+      result: { draft, issues: checkDraft(draft), sourceText: null, readBy: "structured-data" },
       error: null,
       attempts: 1,
       recipeId: null,
@@ -515,5 +516,103 @@ describe("import jobs", () => {
     expect(UrlImportRequest.safeParse({ kind: "photo", url: "https://example.com" }).success).toBe(
       false,
     );
+  });
+
+  it("takes pasted text, trimmed, up to its limit and no further", () => {
+    expect(TextImportRequest.parse({ kind: "text", text: "  Pancakes\n1 cup flour  " }).text).toBe(
+      "Pancakes\n1 cup flour",
+    );
+    expect(TextImportRequest.safeParse({ kind: "text", text: "   " }).success).toBe(false);
+    expect(TextImportRequest.safeParse({ kind: "text", text: "x".repeat(50_000) }).success).toBe(
+      true,
+    );
+    expect(TextImportRequest.safeParse({ kind: "text", text: "x".repeat(50_001) }).success).toBe(
+      false,
+    );
+  });
+
+  it("tells a link from pasted text by its kind", () => {
+    expect(ImportRequest.parse({ kind: "url", url: "https://example.com/r" }).kind).toBe("url");
+    expect(ImportRequest.parse({ kind: "text", text: "Pancakes" }).kind).toBe("text");
+    expect(ImportRequest.safeParse({ kind: "text", url: "https://example.com/r" }).success).toBe(
+      false,
+    );
+  });
+
+  it("reads a result stored before results said how they were read", () => {
+    const draft = RecipeDraft.parse({ title: "x" });
+    const stored = { ...importNeedsReview, result: { draft, issues: [] } };
+
+    expect(ImportJob.parse(stored).result).toMatchObject({
+      sourceText: null,
+      readBy: "structured-data",
+    });
+  });
+
+  it("has a fixture import made from pasted text, with its text and its doubts", () => {
+    expect(ImportJob.parse(importPastedText)).toEqual(importPastedText);
+    expect(importPastedText.result?.readBy).toBe("ai");
+    expect(importPastedText.result?.sourceText).toContain("Lemon Bars");
+    expect(importPastedText.result?.issues.map((issue) => issue.code)).toEqual(["doubt", "doubt"]);
+  });
+});
+
+describe("doubts", () => {
+  it("reads where a doubt points", () => {
+    expect(doubtTarget("title")).toEqual({ part: "title" });
+    expect(doubtTarget(" Description ")).toEqual({ part: "description" });
+    expect(doubtTarget("ingredient:3")).toEqual({ part: "ingredient", index: 3 });
+    expect(doubtTarget("step:0")).toEqual({ part: "step", index: 0 });
+    expect(doubtTarget("note:1")).toEqual({ part: "note", index: 1 });
+  });
+
+  it.each([
+    "",
+    "ingredient",
+    "ingredient:",
+    "ingredient:-1",
+    "ingredient:1.5",
+    "step:two",
+    "title:0",
+    "oven",
+    "step:1:2",
+  ])("reads %j as pointing nowhere", (where) => {
+    expect(doubtTarget(where)).toBeNull();
+  });
+
+  it("become issues that say what was in doubt and where it is in the draft", () => {
+    const draft = RecipeDraft.parse({
+      title: "Lemon Bars",
+      ingredientSections: [
+        { title: "Base", items: [{ originalText: "1 cup flour" }, { originalText: "butter" }] },
+        { title: "Top", items: [{ originalText: "2 eggs" }] },
+      ],
+      stepSections: [{ steps: [{ text: "Bake." }] }],
+      notes: [{ text: "Keeps a week." }],
+      doubts: [
+        { where: "title", why: "The title is smudged." },
+        { where: "ingredient:2", why: "The amount could be 2 or 3." },
+        { where: "step:0", why: "No time is given." },
+        { where: "note:0", why: "Hard to read." },
+        { where: "ingredient:9", why: "Something was crossed out." },
+      ],
+    });
+
+    expect(checkDraft(draft)).toEqual([
+      { code: "doubt", path: ["title"], message: "The title is smudged." },
+      {
+        code: "doubt",
+        path: ["ingredientSections", 1, "items", 0],
+        message: "The amount could be 2 or 3.",
+      },
+      { code: "doubt", path: ["stepSections", 0, "steps", 0], message: "No time is given." },
+      { code: "doubt", path: ["notes", 0], message: "Hard to read." },
+      // It points at a line the draft does not have, and is still said.
+      { code: "doubt", path: [], message: "Something was crossed out." },
+    ]);
+  });
+
+  it("are no part of a draft that has none", () => {
+    expect(RecipeDraft.parse({ title: "x" }).doubts).toEqual([]);
   });
 });

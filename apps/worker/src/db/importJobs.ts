@@ -4,6 +4,7 @@ import {
   ImportJob,
   type ImportJobKind,
   newId,
+  type ReadBy,
   type RecipeDraft,
 } from "@recipeflare/schema";
 import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
@@ -22,6 +23,8 @@ export type JobInput = {
   url?: string;
   /** The page as the cook's browser read it, when it was sent from there. */
   page?: { siteName: string | null; blocks: string[] };
+  /** Text the cook pasted in. */
+  text?: string;
 };
 
 /** One call a job made to a model: what it was for, who answered and what it cost. */
@@ -29,6 +32,8 @@ export type AiCallRecord = {
   task: string;
   profile: string;
   model: string;
+  /** Which wording of the prompt was used. */
+  prompt: string | null;
   milliseconds: number;
   inputTokens: number | null;
   outputTokens: number | null;
@@ -230,7 +235,7 @@ export async function countAiImports(
 export async function finishImportJob(
   db: D1Database,
   id: string,
-  result: { draft: RecipeDraft; issues: DraftIssue[] },
+  result: { draft: RecipeDraft; issues: DraftIssue[]; sourceText?: string | null; readBy?: ReadBy },
   work?: JobWork,
 ): Promise<void> {
   const at = now();

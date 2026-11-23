@@ -3,7 +3,7 @@ import { AddScreen } from "../pages/add/AddScreen";
 
 const route = getRouteApi("/mock/add");
 
-/** The two ways a recipe starts. Importing leads back to the list, where the import shows as a row. */
+/** The ways a recipe starts. Importing leads back to the list, where the import shows as a row. */
 export function MockAdd() {
   const { scene } = route.useSearch();
   const navigate = route.useNavigate();
@@ -15,6 +15,7 @@ export function MockAdd() {
         offline={offline}
         onType={() => navigate({ to: "/mock/new", search: {} })}
         onImport={() => navigate({ to: "/mock/list", search: { scene: "imports" } })}
+        onPaste={() => navigate({ to: "/mock/list", search: { scene: "imports" } })}
       />
       <aside
         aria-label="Mock controls"
@@ -22,8 +23,8 @@ export function MockAdd() {
       >
         <h2 className="text-base font-bold">Mock controls</h2>
         <p className="mt-1 text-sm">
-          Not part of the screen. Import leads to the list with sample imports in progress, whatever
-          the link.
+          Not part of the screen. Either import leads to the list with sample imports in progress,
+          whatever was typed.
         </p>
         <p className="mt-1 text-sm">
           <Link

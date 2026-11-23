@@ -125,6 +125,10 @@ Signed in as the owner, open `/mock` on the hostname and press **Check the AI co
 - If the check says a setting names something that does not exist, `AI_PROFILE` is mistyped.
 - A member who is not the owner is told the check is for the owner.
 
+### Try an import
+
+Once the check passes, on the Add page paste a recipe's text under **Paste text** and press **Import text**. The list shows it being written up, then offers **Review**, where the draft sits beside the text you pasted. For T2.3 of the Phase 2 plan, do this on staging with three recipes from different kinds of source, such as a message, a document and a web page's text, and say how each came out.
+
 ### Settings
 
 Each is optional. Add it as an environment **variable** of the GitHub environment (`staging` or `production`), and deploy.
@@ -151,7 +155,7 @@ Workers AI's own free allowance is 10,000 Neurons a day for the account. The Wor
 
 ### On a computer
 
-`pnpm dev`, the tests and the end-to-end run never reach a model and need no Cloudflare account: Workers AI has no local version, and a real call is billed. To try a real model from a computer, sign Wrangler in and start the Worker without `--local`:
+`pnpm dev`, the tests and the end-to-end run never reach a model and need no Cloudflare account: Workers AI has no local version, and a real call is billed. With `AI_MODE=stand-in` in `.dev.vars`, as `.dev.vars.example` has it, a scripted stand-in reads pasted text by a few simple rules, so the screens can be tried. It works on localhost only and is never set on a deployed Worker. To try a real model from a computer, take that line out, sign Wrangler in and start the Worker without `--local`:
 
 ```bash
 pnpm exec wrangler dev

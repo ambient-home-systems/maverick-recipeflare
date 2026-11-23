@@ -18,8 +18,9 @@ function startProblem(error: unknown): string {
 }
 
 /**
- * Where a recipe starts. Typing one in opens the editor. A link is handed to
- * the server, and the list then shows the import as a row with its progress.
+ * Where a recipe starts. Typing one in opens the editor. A link, or text
+ * pasted in, is handed to the server, and the list then shows the import as a
+ * row with its progress.
  * A page sent by the browser's bookmark arrives in the address and is offered
  * for import; it is not imported unasked, because any site could open such an address.
  */
@@ -35,7 +36,8 @@ export function AddPage() {
     <AddScreen
       offline={!online}
       onType={() => navigate({ to: "/recipes/new" })}
-      onImport={(url) => start.mutate({ url }, { onSuccess: toList })}
+      onImport={(url) => start.mutate({ kind: "url", url }, { onSuccess: toList })}
+      onPaste={(text) => start.mutate({ kind: "text", text }, { onSuccess: toList })}
       importing={start.isPending}
       importProblem={start.isError ? startProblem(start.error) : undefined}
       sent={
@@ -48,7 +50,7 @@ export function AddPage() {
       onImportSent={() => {
         if (sent?.ok) {
           const { url, siteName, blocks } = sent.page;
-          start.mutate({ url, page: { siteName, blocks } }, { onSuccess: toList });
+          start.mutate({ kind: "url", url, page: { siteName, blocks } }, { onSuccess: toList });
         }
       }}
       onDismissSent={() => {

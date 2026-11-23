@@ -5,7 +5,9 @@ import {
   fixtureRecipes,
   fixtureUnits,
   importNeedsReview,
+  importPastedText,
   importRunning,
+  pastedLemonBars,
 } from "@recipeflare/schema/fixtures";
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -89,7 +91,10 @@ function fakeApi(
         ...importRunning,
         id: newId(),
         status: "queued",
-        sourceUrl: String(body.url),
+        stage: null,
+        ...(body.kind === "text"
+          ? { kind: "text" as const, sourceUrl: null }
+          : { sourceUrl: String(body.url) }),
       };
       jobs.set(job.id, job);
       return Response.json(job, { status: 202 });
@@ -187,6 +192,162 @@ describe("starting an import from Add", () => {
     expect(await screen.findByText("The import could not be started. Try again.")).toBeTruthy();
     expect(box.value).toBe("https://recipes.example.com/plum-cake");
     expect(router.state.location.pathname).toBe("/add");
+  });
+});
+
+describe("starting an import from pasted text", () => {
+  it("hands the text to the server and shows the import on the list, being written up", async () => {
+    const api = fakeApi({ jobs: [] });
+    const { router } = await renderAt("/add");
+
+    fireEvent.change(await screen.findByLabelText("Recipe text"), {
+      target: { value: `\n${pastedLemonBars}\n` },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Import text" }));
+
+    await waitFor(() => expect(router.state.location.pathname).toBe("/"));
+    expect(api.sent("POST", "/imports")[0]?.body).toEqual({ kind: "text", text: pastedLemonBars });
+    const imports = await screen.findByRole("list", { name: "Imports" });
+    expect(imports.textContent).toContain("Pasted text");
+    expect(imports.textContent).toContain("Waiting to start");
+  });
+
+  it("does not ask the server when nothing was pasted", async () => {
+    const api = fakeApi({ jobs: [] });
+    await renderAt("/add");
+
+    fireEvent.click(await screen.findByRole("button", { name: "Import text" }));
+
+    expect(await screen.findByText("Paste a recipe's text first.")).toBeTruthy();
+    expect(api.sent("POST")).toEqual([]);
+  });
+
+  it("does not send more text than can be read at once", async () => {
+    const api = fakeApi({ jobs: [] });
+    await renderAt("/add");
+
+    fireEvent.change(await screen.findByLabelText("Recipe text"), {
+      target: { value: "flour ".repeat(9000) },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Import text" }));
+
+    expect(await screen.findByText(/more text than can be read at once/)).toBeTruthy();
+    expect(api.sent("POST")).toEqual([]);
+  });
+
+  it("says so under the text, not under the link, when the import could not be started", async () => {
+    fakeApi({ jobs: [], refuseStart: true });
+    await renderAt("/add");
+    const box = (await screen.findByLabelText("Recipe text")) as HTMLTextAreaElement;
+
+    fireEvent.change(box, { target: { value: pastedLemonBars } });
+    fireEvent.click(screen.getByRole("button", { name: "Import text" }));
+
+    const problem = await screen.findByText("The import could not be started. Try again.");
+    expect(box.getAttribute("aria-describedby")).toBe(problem.closest("[id]")?.id);
+    expect(screen.getByLabelText("Recipe page address").getAttribute("aria-invalid")).toBeNull();
+    expect(box.value).toBe(pastedLemonBars);
+  });
+});
+
+describe("an import being written up from text", () => {
+  it("says so on its row", async () => {
+    fakeApi({
+      jobs: [{ ...importRunning, kind: "text", sourceUrl: null, stage: null }],
+    });
+    await renderAt("/");
+
+    const imports = await screen.findByRole("list", { name: "Imports" });
+    expect(imports.textContent).toContain("Pasted text");
+    expect(imports.textContent).toContain("Writing it up");
+  });
+
+  it("says why there was nothing to make a recipe from", async () => {
+    fakeApi({
+      jobs: [
+        {
+          ...importRunning,
+          kind: "text",
+          sourceUrl: null,
+          stage: null,
+          status: "failed",
+          error: { code: "too_thin", message: "There was not enough there to make a recipe from." },
+        },
+      ],
+    });
+    await renderAt("/");
+
+    const imports = await screen.findByRole("list", { name: "Imports" });
+    expect(imports.textContent).toContain("There was not enough there to make a recipe from.");
+    expect(within(imports).getByRole("button", { name: "Remove" })).toBeTruthy();
+  });
+});
+
+describe("reviewing an import an AI model wrote up from pasted text", () => {
+  const PASTED = `/imports/${importPastedText.id}/review`;
+
+  it("says a model wrote it, and lists what the model was unsure of", async () => {
+    fakeApi({ jobs: [importPastedText] });
+    await renderAt(PASTED);
+
+    expect((await reviewOpen()).value).toBe("Lemon Bars");
+    expect(screen.getByText(/Written up by AI from/).textContent).toContain(
+      "Written up by AI from pasted text. Check it against the original: it can misread.",
+    );
+    // Among whatever else there is to check, such as foods the household does not have.
+    expect(screen.getByRole("heading", { name: /things to check$/ })).toBeTruthy();
+    expect(
+      screen.getByRole("button", {
+        name: '1/2 tsp baking powder: Has a word that is not in the text: "powder".',
+      }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", {
+        name: "Step 4: The text does not say how long to bake the second time.",
+      }),
+    ).toBeTruthy();
+  });
+
+  it("marks the line and the step in doubt, and not the steps that are not", async () => {
+    fakeApi({ jobs: [importPastedText] });
+    await renderAt(PASTED);
+    await reviewOpen();
+
+    const marked = screen
+      .getAllByText("check")
+      .map((mark) => mark.closest("button")?.textContent ?? "")
+      .filter((text) => text !== "");
+    expect(marked.some((text) => text.includes("baking powder"))).toBe(true);
+    expect(marked.filter((text) => text.includes("Edit step"))).toHaveLength(1);
+    expect(marked.find((text) => text.includes("Edit step"))).toContain("Bake again until set.");
+  });
+
+  it("shows the text as it was pasted, to check the draft against", async () => {
+    fakeApi({ jobs: [importPastedText] });
+    await renderAt(PASTED);
+    await reviewOpen();
+
+    const original = screen.getByRole("complementary", { name: "Original" });
+    expect(within(original).getByText("The text as you pasted it.")).toBeTruthy();
+    // As pasted, misspelling and all.
+    expect(original.querySelector("[data-original-text]")?.textContent).toBe(pastedLemonBars);
+    // There is no page to open and no picture.
+    expect(screen.queryByRole("link", { name: /Open the page/ })).toBeNull();
+    expect(within(original).queryByRole("img")).toBeNull();
+  });
+
+  it("saves like any other import", async () => {
+    const api = fakeApi({ jobs: [importPastedText] });
+    const { router } = await renderAt(PASTED);
+    await reviewOpen();
+
+    fireEvent.click(screen.getByRole("button", { name: "Save recipe" }));
+    const foods = await screen.findByRole("dialog", { name: /Add \d+ foods?\?/ });
+    fireEvent.click(within(foods).getByRole("button", { name: /^Add/ }));
+
+    await waitFor(() => expect(router.state.location.pathname).toBe("/recipes/lemon-bars"));
+    const saved = api.sent("POST", "/recipes")[0]?.body;
+    expect(saved).toMatchObject({ title: "Lemon Bars", importJobId: importPastedText.id });
   });
 });
 

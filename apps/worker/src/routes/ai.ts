@@ -28,10 +28,10 @@ export const aiRoutes = (runner?: AiRunner) =>
       return c.json(errorBody("forbidden", "Only the owner can check the AI connection"), 403);
     }
     const { task, model } = c.req.valid("json");
-    const ai = runner ?? aiFor(c.env);
     let profile = "";
     let requested = model ?? "";
     try {
+      const ai = runner ?? aiFor(c.env, c.req.url);
       const chosen = ai.profile();
       profile = chosen.name;
       requested = model ?? chosen.models[task].id;
