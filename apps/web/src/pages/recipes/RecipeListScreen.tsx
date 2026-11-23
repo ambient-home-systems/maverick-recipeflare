@@ -1,7 +1,7 @@
 import type { ImportJob, RecipeSummary } from "@recipeflare/schema";
 import { Link } from "@tanstack/react-router";
 import { ArrowDownUp, ChevronDown, CloudOff, Link2, ListFilter, Plus } from "lucide-react";
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "../../ui/Button";
 import { RemovableChip } from "../../ui/Chip";
 import { type DividerTab, DividerTabs } from "../../ui/DividerTabs";
@@ -37,8 +37,19 @@ type RecipeListScreenProps = {
   tags: ListOption[];
   tools: ListOption[];
   foods: ListOption[];
-  /** The recipes that match, in order. Null while they load. */
+  /** The recipes that match, in order, as far as they have been loaded. Null while the first arrive. */
   recipes: RecipeSummary[] | null;
+  /** How many recipes match in all. Left out, it is the number given in `recipes`. */
+  total?: number;
+  /** True when there are more matching recipes to load. */
+  hasMore?: boolean;
+  loadingMore?: boolean;
+  onLoadMore?: () => void;
+  /** True when the recipes could not be fetched. Any already on screen stay. */
+  failed?: boolean;
+  onRetry?: () => void;
+  /** True when the sign-in session has run out. The shell says so and offers the way back in. */
+  signedOut?: boolean;
   /** How many recipes the household has in all. Zero is the first run. Null while loading. */
   libraryCount: number | null;
   /** Imports that still need a person, newest first. */
@@ -100,6 +111,37 @@ function SortSelect({ state, onChange }: { state: ListState; onChange: (sort: Li
   );
 }
 
+/**
+ * Calls `onSeen` when the element the returned ref is put on scrolls into
+ * view. Pass `undefined` while there is nothing to load or a load is under way.
+ */
+function useLoadMoreWhenSeen(onSeen: (() => void) | undefined) {
+  const element = useRef<HTMLLIElement>(null);
+  const seen = useRef(onSeen);
+  seen.current = onSeen;
+  const active = onSeen !== undefined;
+
+  useEffect(() => {
+    const target = element.current;
+    if (!active || !target || typeof IntersectionObserver === "undefined") {
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          seen.current?.();
+        }
+      },
+      // Start a little before the row is reached, so the list rarely shows it.
+      { rootMargin: "400px 0px" },
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [active]);
+
+  return element;
+}
+
 /** Says what was asked for when nothing matches it. */
 function nothingMatches(state: ListState, category: ListCategory | undefined): string {
   const q = state.q.trim();
@@ -127,6 +169,13 @@ export function RecipeListScreen({
   tools,
   foods,
   recipes,
+  total,
+  hasMore = false,
+  loadingMore = false,
+  onLoadMore,
+  failed = false,
+  onRetry,
+  signedOut = false,
   libraryCount,
   imports = [],
   offline = false,
@@ -138,8 +187,10 @@ export function RecipeListScreen({
   onRemoveImport,
 }: RecipeListScreenProps) {
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const loading = recipes === null;
+  const loading = recipes === null && !failed && !signedOut;
   const firstRun = libraryCount === 0;
+  const matching = total ?? recipes?.length ?? 0;
+  const more = useLoadMoreWhenSeen(hasMore && !loadingMore ? onLoadMore : undefined);
   const narrowed = isNarrowed(state);
   const filters = filterCount(state);
 
@@ -161,11 +212,11 @@ export function RecipeListScreen({
   }));
 
   let count = "";
-  if (!loading && !firstRun) {
+  if (recipes !== null && !firstRun) {
     count =
       narrowed && libraryCount !== null && !category
-        ? `${recipes.length} of ${libraryCount}`
-        : plural(recipes.length);
+        ? `${matching} of ${libraryCount}`
+        : plural(matching);
   }
 
   const showImports = imports.length > 0 && !narrowed && !offline;
@@ -196,12 +247,22 @@ export function RecipeListScreen({
         aside={loading ? "Loading" : count}
       >
         <p className="sr-only" role="status">
-          {loading ? "Loading recipes" : firstRun ? "" : `${plural(recipes.length)} listed`}
+          {loading
+            ? "Loading recipes"
+            : firstRun || recipes === null
+              ? ""
+              : `${plural(matching)} listed`}
         </p>
 
         {offline ? (
           <Notice icon={<CloudOff aria-hidden="true" size="1.125rem" className="flex-none" />}>
             You are offline. These are the recipes saved on this device.
+          </Notice>
+        ) : null}
+
+        {failed && !signedOut && recipes !== null ? (
+          <Notice problem>
+            The list could not be brought up to date. What is shown may be out of date.
           </Notice>
         ) : null}
 
@@ -255,7 +316,29 @@ export function RecipeListScreen({
           </ul>
         ) : null}
 
-        {loading ? (
+        {recipes === null && signedOut ? (
+          <EmptyState title="Sign in to see your recipes">
+            This device has no copy of the recipes to show until you sign in again.
+          </EmptyState>
+        ) : recipes === null && failed ? (
+          <>
+            <Notice problem>The recipes could not be loaded.</Notice>
+            <EmptyState
+              title="Could not load the recipes"
+              actions={
+                onRetry ? (
+                  <Button variant="quiet" onClick={onRetry}>
+                    Try again
+                  </Button>
+                ) : null
+              }
+            >
+              {offline
+                ? "This device is offline. Try again when it has a connection."
+                : "Something went wrong between here and the server. Nothing has been lost."}
+            </EmptyState>
+          </>
+        ) : recipes === null ? (
           <ul aria-hidden="true">
             {SKELETON_ROWS.map((row) => (
               <RecipeRowSkeleton key={row} />
@@ -317,6 +400,15 @@ export function RecipeListScreen({
                 showCategory={!category}
               />
             ))}
+            {hasMore ? (
+              // The next thirty load as this row comes into view. The button is for
+              // anyone that does not happen for, and says what is going on meanwhile.
+              <li ref={more} className="border-t border-rule px-4 py-3">
+                <Button variant="quiet" busy={loadingMore} onClick={onLoadMore}>
+                  Show more recipes
+                </Button>
+              </li>
+            ) : null}
           </ul>
         )}
       </Page>
@@ -329,7 +421,7 @@ export function RecipeListScreen({
         tags={tags}
         tools={tools}
         foods={foods}
-        resultCount={loading ? null : recipes.length}
+        resultCount={recipes === null ? null : matching}
       />
     </>
   );

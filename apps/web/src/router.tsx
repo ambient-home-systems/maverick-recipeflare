@@ -16,6 +16,7 @@ import {
 import { AddPage } from "./pages/AddPage";
 import { ManagePage } from "./pages/ManagePage";
 import { RecipesPage } from "./pages/RecipesPage";
+import { type ListSearch, parseListSearch, toListSearch } from "./pages/recipes/listState";
 import { AppShell } from "./shell/AppShell";
 import { EmptyState } from "./ui/Notice";
 import { Page } from "./ui/Page";
@@ -89,8 +90,16 @@ const mockCookRoute = createRoute({
   component: lazyRouteComponent(() => import("./mock/MockCook"), "MockCook"),
 });
 
+// What the list shows is in its address: the search text, the filters and the sort.
+const recipesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/",
+  validateSearch: (raw: Record<string, unknown>): ListSearch => toListSearch(parseListSearch(raw)),
+  component: RecipesPage,
+});
+
 const routeTree = rootRoute.addChildren([
-  at("/", RecipesPage),
+  recipesRoute,
   at("/add", AddPage),
   at("/manage", ManagePage),
   at("/mock", MockIndex),

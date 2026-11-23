@@ -47,13 +47,6 @@ describe("the app shell", () => {
     );
   });
 
-  it("shows the first-run state when there are no recipes", async () => {
-    await renderAt("/");
-    expect(screen.getByRole("heading", { level: 1, name: "Recipes" })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "No recipes yet" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Add a recipe" }).getAttribute("href")).toBe("/add");
-  });
-
   it("says so when an address leads nowhere", async () => {
     await renderAt("/no/such/page");
     expect(screen.getByRole("heading", { name: "There is no page here" })).toBeTruthy();

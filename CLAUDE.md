@@ -6,7 +6,7 @@ Guidance for Claude Code working in this repository.
 
 Maverick Recipeflare (Recipeflare for short) is a household recipe app on Cloudflare: one TypeScript Worker serving a React PWA and a JSON API, with D1, R2, Queues and, in later phases, Workers AI and Durable Objects. One household per install. Licensed AGPL-3.0-only.
 
-**Status: Phase 0 is complete (T0.1 to T0.13); its gate passed on 23 Nov 2026. Phase 1 is built through T1.5 (the recipe repository, the recipes API with search and filters, the API for organizers, foods, units and labels, and the ingredient line parser).** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, the database schema with its migrations, and sign-in (the auth middleware, the Access and dev providers, `/api/v1/me`) exist. No product screen is connected to data yet. When a pull request changes a command or path below, it updates this file in the same pull request.
+**Status: Phase 0 is complete (T0.1 to T0.13); its gate passed on 23 Nov 2026. Phase 1 is built through T1.6 (the recipe repository, the recipes API with search and filters, the API for organizers, foods, units and labels, the ingredient line parser, and the recipe list on real data).** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, the database schema with its migrations, and sign-in (the auth middleware, the Access and dev providers, `/api/v1/me`) exist. The recipe list at `/` is the one product screen connected to data; the recipe view, the editor and cook mode are still mock screens only. When a pull request changes a command or path below, it updates this file in the same pull request.
 
 ## Read first
 
@@ -39,9 +39,11 @@ apps/worker/          Hono API, queue consumer, auth, Drizzle schema, migrations
   migrations/         One folder per migration; applied by Wrangler, in order
 apps/web/             Vite React PWA; builds to apps/web/dist, served as static assets
   src/styles/         tokens.css (the design tokens) and app.css (Tailwind theme, base styles)
-  src/shell/          The frame every screen sits in: header and navigation
+  src/api/            client.ts (api(), the three errors), queries.ts (TanStack Query hooks), session.ts
+  src/shell/          The frame every screen sits in: header, navigation, the signed-out band
   src/ui/             Shared components: Button, DividerTabs, RecipeRow, Page, Notice, Sheet, Chip, Field, Picker
-  src/pages/          Product screens. A screen is given its data as props and fetches nothing itself
+  src/pages/          Product screens. A screen is given its data as props and fetches nothing itself.
+                      A page (RecipesPage.tsx) is the container that fetches and hands the screen its data
   src/mock/           The /mock harness: the same screens fed from fixtures, for design review
 packages/schema/      @recipeflare/schema: Zod schemas, types, formatting, fixtures
 scripts/              Small Node scripts used by the root package scripts
@@ -103,6 +105,14 @@ To be signed in locally, copy `.dev.vars.example` to `.dev.vars` and run `pnpm d
 - Text boxes have no grey placeholder. A placeholder is ink at regular weight; a label above the box is better.
 - A panel over the page is the `Sheet` component, a native modal dialog. It is the only thing that casts a shadow.
 - A screen's main actions go in a bar that sticks to the bottom at `bottom-[var(--rf-nav-height)]`, so it sits on top of the phone's navigation bar. The navigation takes its height from the same token; change one only through the token.
+
+### Web data
+
+- Every request goes through `api()` in `apps/web/src/api/client.ts`, with a schema from `@recipeflare/schema` for the answer. Do not call `fetch` for the API anywhere else, and do not import the Worker's types into the web app.
+- Server state lives in TanStack Query, through hooks in `queries.ts`. A screen in `src/pages/<area>/` still fetches nothing: its page component calls the hooks and passes props.
+- `api()` uses `redirect: "manual"`. That is how a session that has run out is told from a dropped connection; do not change it.
+- A session that has run out is handled in one place: `api()` marks it, and the shell shows the band with "Sign in again". A screen may take a `signedOut` prop to say what it cannot show; it does not offer its own way back in.
+- What a list shows (search, filters, sort) is in the page address, read with the route's `validateSearch` and written with `navigate({ search, replace: true })`.
 
 ### Recipe editor
 
@@ -186,7 +196,7 @@ To be signed in locally, copy `.dev.vars.example` to `.dev.vars` and run `pnpm d
 
 - Three Vitest projects, run together from the root config: `packages/schema` (tests beside the source), `apps/worker` (tests in `apps/worker/test/`), `apps/web` (tests beside the source).
 - Worker tests run in workerd through `@cloudflare/vitest-plugin` (`cloudflareTest()` in the Vitest config). Import `env` and `exports` from `cloudflare:workers` and call `exports.default.fetch()`; queue and migration helpers come from `cloudflare:test`.
-- Web tests use Testing Library on happy-dom. Render a screen with `renderAt(path)` from `src/test-utils.tsx`, which mounts the whole app at an address. Stub `fetch` with `vi.stubGlobal`; stubs and mocks are reset after each test by the config.
+- Web tests use Testing Library on happy-dom. Render a screen with `renderAt(path)` from `src/test-utils.tsx`, which mounts the whole app at an address with its own query cache and returns the `router` and the `queryClient`. Stub `fetch` with `vi.stubGlobal`; stubs and mocks are reset after each test by the config. `RecipesPage.test.tsx` shows how to stand in for the API, including a session that has run out.
 - Test tooling (`vitest`, the Cloudflare plugin, happy-dom) is installed at the workspace root only. Do not add `vitest` to a package: a second copy breaks the run.
 - Storage is isolated per test file, not per test. Use distinct IDs within a file, or reset and re-apply migrations.
 - `test/helpers.ts` has `seedLists()`, which gives a test file the fixtures' member, foods, units, labels and organizers, and `countingDatabase()`, which counts round trips.

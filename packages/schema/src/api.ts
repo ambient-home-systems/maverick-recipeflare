@@ -95,7 +95,10 @@ export const RecipeListResponse = z.object({
   items: z.array(RecipeSummary),
   page: z.int().min(1),
   perPage: z.int().min(1),
+  /** How many recipes match the search and the filters. */
   total: z.int().min(0),
+  /** How many recipes the household has in all. Zero is a household that has not added one yet. */
+  libraryTotal: z.int().min(0),
 });
 export type RecipeListResponse = z.infer<typeof RecipeListResponse>;
 

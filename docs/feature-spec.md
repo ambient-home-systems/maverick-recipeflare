@@ -207,8 +207,8 @@ The cook types a line the way it is written on the card. The rule-based parser (
 - Sort: recently changed (the default, shown as "Last changed"), newest, title A to Z. While searching, best match is the default, and it is offered only then.
 - A row shows the recipe's photo, or without one its first letter on its category's colour; the title; and one line with the total time, the category, "From" and up to two tags. The line never wraps. Behind a category's divider it leaves the category out, and on a phone it also does so for a recipe that has a source or tags to show.
 - Search text, filters and sort are in the page address, so the back button and a shared link restore them.
-- The list loads 30 recipes at a time as you scroll.
-- States: first run ("No recipes yet" with buttons for new recipe and import, and no search box or filters), no results (saying what was asked for, with a button that clears the search and filters), loading, and offline.
+- The list loads 30 recipes at a time as you scroll. The count beside the title is of every recipe that matches, not of those loaded so far. A "Show more recipes" button at the end of the list does the same for anyone the scrolling does not work for.
+- States: first run ("No recipes yet" with buttons for new recipe and import, and no search box or filters), no results (saying what was asked for, with a button that clears the search and filters), loading, offline, and could not load (saying so, with "Try again"; recipes already on screen stay, with a line saying they may be out of date).
 - Adding a recipe starts from "Add" in the navigation, which is on screen with the list. The list itself has no second add button.
 
 ## 6. Import from a URL
@@ -253,7 +253,7 @@ The cook types a line the way it is written on the card. The rule-based parser (
 - List thumbnails are stored as the list is scrolled. A recipe's full-size photos are stored the first time the recipe is opened.
 - Offline is read-only in Phase 1. New recipe, edit, delete and import are disabled, with a short note saying why.
 - A banner says when the app is offline, and when the data shown may be out of date.
-- When the sign-in session has expired the app keeps showing stored recipes and offers "Sign in again".
+- When the sign-in session has expired the app keeps showing stored recipes and offers "Sign in again". The offer is a band across the top of every page, above the header, and signing in comes back to the page the person was on. The band goes away by itself as soon as a request gets through again.
 
 ## 9. Deleting and undoing
 

@@ -1,6 +1,7 @@
-import { RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { App } from "./App";
+import { createQueryClient } from "./api/queries";
 import { createAppRouter } from "./router";
 import { startTheme } from "./theme/theme";
 import "./styles/app.css";
@@ -14,6 +15,6 @@ startTheme();
 
 createRoot(root).render(
   <StrictMode>
-    <RouterProvider router={createAppRouter()} />
+    <App router={createAppRouter()} queryClient={createQueryClient()} />
   </StrictMode>,
 );

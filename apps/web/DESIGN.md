@@ -473,6 +473,8 @@ Stands in for a photo. The recipe's first letter, 700 weight, on its category's 
 - **Notice:** a full-width band in `notice` with `on-notice` text at label weight, an 18 px icon and one or two sentences, padded 0.625rem by 1rem. A problem always has a warning triangle, supplied by the component; a standing condition brings its own icon. The same band serves a standing condition (offline) and a problem (a save that failed); a problem is announced at once to assistive technology. It is not red.
 - **Empty state:** a 700 title, a paragraph of at most 38ch saying what goes here, and one or two buttons, padded 2.5rem top and bottom. No illustration.
 
+**Signed-out band.** The one notice that belongs to the shell, not to a page: the same notice ground, across the top of every page and above the header, so the header and a page's search band stay one piece. It carries its words and one outlined "Sign in again" link, 44 pixels tall. On a phone it is the part that clears the notch. A page does not repeat the offer; it may say what it cannot show.
+
 ### Section head and facts
 - **Section head:** a `surface-sunk` band with a hairline above and a title-size heading in 700, padded 0.5rem by 1rem. It opens Ingredients, Steps and Notes, and is the closed face of Nutrition, which adds a chevron and opens on a press. A control that belongs to the section sits at the right of the band: the scale switch on Ingredients.
 - **Sub-head:** a section's own title ("For the gravy") in body size, 700, on card white with a hairline above.

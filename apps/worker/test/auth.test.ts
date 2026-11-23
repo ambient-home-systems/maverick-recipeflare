@@ -2,7 +2,7 @@ import { env, exports } from "cloudflare:workers";
 import { ErrorBody, MeResponse } from "@recipeflare/schema";
 import { exportJWK, generateKeyPair, type JWK, SignJWT } from "jose";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { createApp } from "../src/app";
+import { createApp, safeReturnPath } from "../src/app";
 import { isLoopback } from "../src/auth/dev";
 import { displayNameFor } from "../src/auth/members";
 import type { AppEnv } from "../src/auth/types";
@@ -499,5 +499,45 @@ describe("a new member's display name", () => {
     expect(displayNameFor("grace_hopper-jr+recipes@example.com")).toBe("Grace Hopper Jr");
     expect(displayNameFor("cook@example.com")).toBe("Cook");
     expect(displayNameFor("@example.com")).toBe("@example.com");
+  });
+});
+
+describe("signing in again", () => {
+  const refresh = async (returnTo: string, token?: string) =>
+    ask({ path: `/api/v1/auth/refresh?return=${encodeURIComponent(returnTo)}`, token });
+
+  it("sends a signed-in browser back to the page it came from", async () => {
+    const response = await refresh(
+      "/?q=apple pie&tags=holiday",
+      await accessToken("ada@example.com"),
+    );
+
+    expect(response.status).toBe(302);
+    expect(response.headers.get("Location")).toBe("/?q=apple pie&tags=holiday");
+  });
+
+  it("is behind sign-in like everything else, which is what brings the sign-in page up", async () => {
+    expect((await refresh("/")).status).toBe(401);
+  });
+
+  it("never sends anyone to another site", async () => {
+    const token = await accessToken("ada@example.com");
+    for (const elsewhere of [
+      "https://example.com/",
+      "//example.com/",
+      "/\\example.com/",
+      "\\example.com",
+      "javascript:alert(1)",
+      "example.com",
+      "/ok\nSet-Cookie: x=1",
+      "",
+    ]) {
+      const response = await refresh(elsewhere, token);
+
+      expect(response.status).toBe(302);
+      expect(response.headers.get("Location")).toBe("/");
+    }
+    expect(safeReturnPath(undefined)).toBe("/");
+    expect(safeReturnPath("/recipes/apple-pie?scale=2")).toBe("/recipes/apple-pie?scale=2");
   });
 });
