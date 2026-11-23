@@ -5,6 +5,7 @@ import { renderAt } from "../test-utils";
 
 afterEach(() => {
   cleanup();
+  window.localStorage.clear();
 });
 
 const bySlug = (slug: string) => {
@@ -119,17 +120,39 @@ describe("a recipe on the household's own data", () => {
     expect(await screen.findByRole("heading", { name: "Only a title so far" })).toBeTruthy();
   });
 
-  it("offers Edit, which opens the editor on this recipe, and not Cook until cook mode is connected", async () => {
+  it("offers Edit, which opens the editor on this recipe", async () => {
     stubApi(Response.json(LENTIL));
     const { router } = await renderAt(`/recipes/${LENTIL.slug}`);
     await screen.findByRole("heading", { level: 1, name: LENTIL.title });
 
-    expect(screen.queryByRole("button", { name: "Cook" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
 
     await waitFor(() =>
       expect(router.state.location.pathname).toBe(`/recipes/${LENTIL.slug}/edit`),
     );
+  });
+
+  it("offers Cook, which opens cook mode at the scale the recipe was showing", async () => {
+    stubApi(Response.json(LENTIL));
+    const { router } = await renderAt(`/recipes/${LENTIL.slug}?scale=2`);
+    await screen.findByRole("heading", { level: 1, name: LENTIL.title });
+
+    fireEvent.click(screen.getByRole("button", { name: "Cook" }));
+
+    await waitFor(() =>
+      expect(router.state.location.pathname).toBe(`/recipes/${LENTIL.slug}/cook`),
+    );
+    expect(router.state.location.search).toEqual({ scale: 2 });
+    expect(await screen.findByRole("checkbox", { name: "4 tbsp olive oil" })).toBeTruthy();
+  });
+
+  it("does not offer Cook for a recipe that is only a title", async () => {
+    stubApi(Response.json(TOAST));
+    await renderAt(`/recipes/${TOAST.slug}`);
+    await screen.findByRole("heading", { name: "Only a title so far" });
+
+    expect(screen.queryByRole("button", { name: "Cook" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Edit" })).toBeTruthy();
   });
 });
 

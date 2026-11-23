@@ -56,6 +56,13 @@ export function RecipePage() {
       photoUrl={() => undefined}
       offline={!online}
       listTo="/"
+      onCook={(target) =>
+        navigate({
+          to: "/recipes/$slug/cook",
+          params: { slug: target.slug },
+          search: scale === 1 ? {} : { scale },
+        })
+      }
       onEdit={(target) =>
         navigate({ to: "/recipes/$slug/edit", params: { slug: target.slug }, search: {} })
       }

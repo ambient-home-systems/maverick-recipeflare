@@ -75,8 +75,15 @@ function NavLink({
 export function AppShell() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const current = currentItem(pathname);
+  // Whether the page on screen fills the screen is asked of the page that is
+  // on screen, not of the address being gone to. Otherwise the frame changes a
+  // moment before the page does, and the page is put up a second time inside
+  // the new frame: cook mode would start again just as the cook leaves it.
+  const shownPathname = useRouterState({
+    select: (state) => (state.resolvedLocation ?? state.location).pathname,
+  });
 
-  if (isFullScreen(pathname)) {
+  if (isFullScreen(shownPathname)) {
     return (
       <main id="page" tabIndex={-1} className="outline-none">
         <Outlet />
