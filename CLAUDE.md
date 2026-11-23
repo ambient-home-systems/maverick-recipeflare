@@ -6,7 +6,7 @@ Guidance for Claude Code working in this repository.
 
 Maverick Recipeflare (Recipeflare for short) is a household recipe app on Cloudflare: one TypeScript Worker serving a React PWA and a JSON API, with D1, R2, Queues and, in later phases, Workers AI and Durable Objects. One household per install. Licensed AGPL-3.0-only.
 
-**Status: Phase 0 is complete (T0.1 to T0.13); its gate passed on 23 Nov 2026. Phase 1 is built through T1.4 (the recipe repository, the recipes API with search and filters, and the API for organizers, foods, units and labels).** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, the database schema with its migrations, and sign-in (the auth middleware, the Access and dev providers, `/api/v1/me`) exist. No product screen is connected to data yet. When a pull request changes a command or path below, it updates this file in the same pull request.
+**Status: Phase 0 is complete (T0.1 to T0.13); its gate passed on 23 Nov 2026. Phase 1 is built through T1.5 (the recipe repository, the recipes API with search and filters, the API for organizers, foods, units and labels, and the ingredient line parser).** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, the database schema with its migrations, and sign-in (the auth middleware, the Access and dev providers, `/api/v1/me`) exist. No product screen is connected to data yet. When a pull request changes a command or path below, it updates this file in the same pull request.
 
 ## Read first
 
@@ -77,7 +77,7 @@ To be signed in locally, copy `.dev.vars.example` to `.dev.vars` and run `pnpm d
 
 ### Shared schema
 
-- `packages/schema/src` holds one module per concern: `recipe.ts` (the three recipe shapes), `draft.ts` (importer output, `checkDraft`, `draftToInput`), `lists.ts` (organizers, foods, units, labels, members, assets), `sections.ts`, `format.ts`, `slug.ts`, `name-key.ts`, `duration.ts`, `id.ts`, `import-job.ts`, `api.ts`. Import from `@recipeflare/schema`.
+- `packages/schema/src` holds one module per concern: `recipe.ts` (the three recipe shapes), `draft.ts` (importer output, `checkDraft`, `draftToInput`), `parse-ingredient.ts` (the line parser), `matching.ts` (`unitMatcher`, the lists a name is matched against), `lists.ts` (organizers, foods, units, labels, members, assets), `sections.ts`, `format.ts`, `slug.ts`, `url.ts`, `name-key.ts`, `duration.ts`, `id.ts`, `import-job.ts`, `api.ts`. Import from `@recipeflare/schema`.
 - Fixture recipes, lists and import jobs are imported from `@recipeflare/schema/fixtures`, never from the main entry, so they stay out of production bundles. Six are invented and three come from sample cards the owner supplied (ingredient lines as written, steps reworded, no photos). Do not add text copied from a site or a book.
 - Size caps live in `LIMITS` in `primitives.ts`. The one-batch save depends on them; change one only together with the plan's save section.
 - The JSON Schema export of `RecipeDraft` has a snapshot test. When you change the draft on purpose, review the diff and update it with `pnpm test -u`.
@@ -87,6 +87,7 @@ To be signed in locally, copy `.dev.vars.example` to `.dev.vars` and run `pnpm d
 - `RecipeDraft` must stay exportable to JSON Schema: plain objects, arrays, strings, numbers and nullables only. Cross-field checks go in `checkDraft()`.
 - An ingredient line keeps its `originalText`. Parsing fills the structured fields beside it and never overwrites it.
 - The ingredient parser in the shared package is rules only in Phase 1 and must run in the browser with no network. It never creates foods or units.
+- The parser reads only what it is sure of; a wrong reading is worse than none. It never takes a food from inside a longer name ("peanut butter" is not butter). A change to its rules comes with corpus lines in `parse-ingredient.test.ts`, including lines the new rule must leave alone.
 
 ### Design
 
@@ -109,7 +110,7 @@ To be signed in locally, copy `.dev.vars.example` to `.dev.vars` and run `pnpm d
 - There is no form library. Do not add one for a single field.
 - Rows are reordered with dnd-kit through `SortableRows`. Dragging starts from the handle only, so a row scrolls the page as usual.
 - A food the household does not have is a name on the line (`newFood`) until the cook confirms it at save. Typing never creates a food. Units are created only from the unit picker.
-- `src/mock/mockParser.ts` is a stand-in for the line parser and is used by mock screens only. The real parser is T1.5, in the shared package, with the same result shape (`ParsedLine`).
+- The editor reads a line with `ingredientParser()` from the shared package, handed to it as the `parse` prop. `ParsedLine` and `LineParser` are the shared package's types.
 
 ### Cook mode
 

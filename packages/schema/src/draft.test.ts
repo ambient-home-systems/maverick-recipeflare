@@ -1,13 +1,6 @@
 import Ajv2020 from "ajv/dist/2020";
 import { describe, expect, it } from "vitest";
-import {
-  checkDraft,
-  type DraftLists,
-  draftToInput,
-  RecipeDraft,
-  recipeDraftJsonSchema,
-  unitMatcher,
-} from "./draft";
+import { checkDraft, draftToInput, RecipeDraft, recipeDraftJsonSchema } from "./draft";
 import {
   fixtureFoods,
   fixtureId,
@@ -17,6 +10,7 @@ import {
   importNeedsReview,
 } from "./fixtures";
 import { ImportJob, UrlImportRequest } from "./import-job";
+import { type DraftLists, unitMatcher } from "./matching";
 import { RecipeCreate } from "./recipe";
 
 const lists: DraftLists = {
@@ -284,6 +278,57 @@ describe("draftToInput", () => {
       unitId: null,
       foodId: null,
     });
+  });
+
+  it("reads a line that arrived as text only, when it names a food the household has", () => {
+    const { input, issues } = convert({
+      title: "Read By The Parser",
+      ingredientSections: [
+        {
+          title: null,
+          items: [
+            { originalText: "2 tbsp butter, melted" },
+            { originalText: "1 (15-ounce) can black beans, drained" },
+            // The household has no "spaghetti": the line stays as written for the cook to see.
+            { originalText: "8 oz spaghetti" },
+            { originalText: "Salt and pepper to taste" },
+            // The importer's own note wins over the one the parser would read.
+            { originalText: "3 eggs, beaten", note: "at room temperature" },
+          ],
+        },
+      ],
+      stepSections: [{ title: null, steps: [{ text: "Cook." }] }],
+    });
+    const items = input.ingredientSections?.[0]?.items ?? [];
+    const named = (name: string) => fixtureFoods.find((food) => food.name === name)?.id;
+    const unit = (name: string) => fixtureUnits.find((entry) => entry.name === name)?.id;
+
+    expect(items[0]).toMatchObject({
+      originalText: "2 tbsp butter, melted",
+      quantity: 2,
+      unitId: unit("tablespoon"),
+      foodId: named("butter"),
+      note: "melted",
+    });
+    expect(items[1]).toMatchObject({
+      quantity: 1,
+      unitId: unit("can"),
+      foodId: named("black beans"),
+      note: "15-ounce, drained",
+    });
+    expect(items[2]).toMatchObject({ quantity: null, unitId: null, foodId: null, note: "" });
+    expect(items[3]).toMatchObject({ quantity: null, unitId: null, foodId: null });
+    expect(items[4]).toMatchObject({ foodId: named("egg"), note: "at room temperature" });
+    // Every line still carries its words exactly as they arrived.
+    expect(items.map((item) => item.originalText)).toEqual([
+      "2 tbsp butter, melted",
+      "1 (15-ounce) can black beans, drained",
+      "8 oz spaghetti",
+      "Salt and pepper to taste",
+      "3 eggs, beaten",
+    ]);
+    expect(issues).toEqual([]);
+    expect(RecipeCreate.safeParse(input).success).toBe(true);
   });
 
   it("turns a step's ingredient positions into IDs", () => {

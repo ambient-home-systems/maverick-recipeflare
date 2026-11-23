@@ -2,6 +2,7 @@ import {
   type Asset,
   draftToInput,
   type Food,
+  ingredientParser,
   newId,
   type Organizer,
   type OrganizerKind,
@@ -29,7 +30,6 @@ import { EmptyState } from "../ui/Notice";
 import { Page } from "../ui/Page";
 import { assignStocks } from "../ui/stock";
 import { mockRecipe, placeholderPhoto } from "./mockLibrary";
-import { makeMockParser } from "./mockParser";
 import cardBack from "./placeholders/card-back.svg";
 import cardFront from "./placeholders/card-front.svg";
 import pagePicture from "./placeholders/pancakes.svg";
@@ -89,7 +89,7 @@ function useMockLists() {
 
   return {
     lists: { units, foods, organizers },
-    parse: useMemo(() => makeMockParser(units, fixtureFoods), [units]),
+    parse: useMemo(() => ingredientParser({ units, foods: fixtureFoods }), [units]),
     stockFor: (categoryId: string) => stocks.get(categoryId) ?? "plain",
     addedUrl: (asset: Asset) => added.current.get(asset.id),
     onCreateUnit: (name: string) => {
@@ -306,7 +306,7 @@ export function MockReview() {
       originalFilename: null,
       createdAt: FIXTURE_TIME,
     };
-    const parse = makeMockParser(fixtureUnits, fixtureFoods);
+    const parse = ingredientParser({ units: fixtureUnits, foods: fixtureFoods });
     const value = fromInput(conversion.input, [cover]);
     // A food the import named but the household lacks is carried on its line as a new food.
     value.ingredients = value.ingredients.map((row) =>
