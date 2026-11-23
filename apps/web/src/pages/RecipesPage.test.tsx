@@ -440,3 +440,48 @@ describe("when the recipes cannot be loaded", () => {
     expect(rowTitles()).toEqual(["Tomato Soup"]);
   });
 });
+
+describe("the list with no connection", () => {
+  const recipeOnDevice = (n: number, title: string, extra: object = {}) => ({
+    ...summary(n, title),
+    version: 1,
+    yieldQuantity: null,
+    yieldUnit: null,
+    nutrition: null,
+    sourceUrl: null,
+    ingredientSections: [],
+    stepSections: [],
+    notes: [],
+    tools: [],
+    assets: [],
+    createdBy: id(900),
+    ...extra,
+  });
+
+  it("is answered from the recipes copied to this device, and can be searched", async () => {
+    const api = stubApi(page([summary(1, "Tomato Soup")]));
+    const { queryClient, router } = await renderAt("/");
+    await waitFor(() => expect(rowTitles()).toEqual(["Tomato Soup"]));
+    for (const [n, title] of [
+      [1, "Tomato Soup"],
+      [2, "Apple Crumble"],
+      [3, "Plum Cake"],
+    ] as const) {
+      const recipe = recipeOnDevice(n, title);
+      queryClient.setQueryData(["recipes", "one", recipe.slug], recipe);
+    }
+    const before = api.listRequests().length;
+
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+    window.dispatchEvent(new Event("offline"));
+
+    // Every recipe on the device, not only the page that was on screen.
+    await waitFor(() => expect(rowTitles()).toEqual(["Apple Crumble", "Plum Cake", "Tomato Soup"]));
+    expect(screen.getByText(/These are the recipes saved on this device/)).toBeTruthy();
+
+    await router.navigate({ to: "/", search: { q: "plum" } });
+
+    await waitFor(() => expect(rowTitles()).toEqual(["Plum Cake"]));
+    expect(api.listRequests().length).toBe(before);
+  });
+});

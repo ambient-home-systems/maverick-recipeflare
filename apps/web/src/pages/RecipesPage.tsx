@@ -1,7 +1,9 @@
 import { type RecipeSort, slugify } from "@recipeflare/schema";
+import { useIsRestoring, useQueryClient } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { assetUrl } from "../api/assets";
+import { UnreachableError } from "../api/client";
 import {
   type RecipeListRequest,
   useChangeImport,
@@ -15,6 +17,7 @@ import { useOnline } from "../api/useOnline";
 import type { Stock } from "../ui/stock";
 import type { ListOption } from "./recipes/FilterSheet";
 import { effectiveSort, type ListState, parseListSearch, toListSearch } from "./recipes/listState";
+import { listOffline, recipesOnDevice } from "./recipes/offlineList";
 import { type ListCategory, RecipeListScreen } from "./recipes/RecipeListScreen";
 
 const route = getRouteApi("/");
@@ -81,9 +84,31 @@ export function RecipesPage() {
   const ready = state.foods.length === 0 || foods.data !== undefined || foods.isError;
   const list = useRecipeList(request, ready);
 
+  // With no connection, or no way through to the server and nothing fetched
+  // yet, the list is answered from the recipes copied to this device.
+  const queryClient = useQueryClient();
+  const restoring = useIsRestoring();
+  const fromDevice = !online || (list.error instanceof UnreachableError && !list.data);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the request is compared by what it asks for
+  const local = useMemo(() => {
+    // Not before the device's copy has been read back: until then there is nothing to answer from.
+    if (!fromDevice || restoring) {
+      return null;
+    }
+    const copies = recipesOnDevice(queryClient);
+    // A device with no copies has nothing to answer from, which is not the same as no recipes.
+    return copies.length === 0
+      ? null
+      : { items: listOffline(copies, request), librarySize: copies.length };
+  }, [fromDevice, restoring, queryClient, JSON.stringify(request)]);
+
   // The whole library's size, which the list's first page also reports.
   const first = list.data?.pages[0];
-  const recipes = list.data ? list.data.pages.flatMap((page) => page.items) : null;
+  const recipes = local
+    ? local.items
+    : list.data
+      ? list.data.pages.flatMap((page) => page.items)
+      : null;
 
   const change = (next: ListState) => navigate({ search: toListSearch(next), replace: true });
 
@@ -96,15 +121,20 @@ export function RecipesPage() {
       tools={lists.tools}
       foods={lists.foods}
       recipes={recipes}
-      total={first?.total}
-      libraryCount={first ? first.libraryTotal : null}
-      hasMore={list.hasNextPage}
+      total={local ? local.items.length : first?.total}
+      libraryCount={local ? local.librarySize : first ? first.libraryTotal : null}
+      hasMore={!local && list.hasNextPage}
       loadingMore={list.isFetchingNextPage}
       onLoadMore={() => void list.fetchNextPage()}
-      failed={list.isError && !signedOut}
+      failed={
+        // Waiting for a connection with nothing to show is a failure to load, said as one.
+        (list.isError || (list.fetchStatus === "paused" && !list.data && !restoring)) &&
+        !signedOut &&
+        !local
+      }
       onRetry={() => void list.refetch()}
       signedOut={signedOut}
-      offline={!online}
+      offline={!online || local !== null}
       imports={imports.data ?? []}
       onReviewImport={(job) => void navigate({ to: "/imports/$id/review", params: { id: job.id } })}
       onRetryImport={(job) => changeImport.mutate({ id: job.id, action: "retry" })}

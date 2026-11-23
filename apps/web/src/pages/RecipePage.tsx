@@ -29,7 +29,10 @@ export function RecipePage() {
       ?.color ?? "plain";
 
   let problem: "missing" | "error" | "signedOut" | undefined;
-  if (!recipe.data && recipe.error) {
+  if (!recipe.data && recipe.fetchStatus === "paused") {
+    // No connection, and this device has no copy of the recipe.
+    problem = "error";
+  } else if (!recipe.data && recipe.error) {
     problem =
       recipe.error instanceof ApiError && recipe.error.status === 404
         ? "missing"
@@ -53,7 +56,6 @@ export function RecipePage() {
       scale={scale}
       onScale={setScale}
       stockFor={stockFor}
-      // Photos are served from T1.10. Until then a recipe has none.
       photoUrl={assetUrl}
       offline={!online}
       listTo="/"

@@ -27,7 +27,7 @@ import { ApiError, api, SignedOutError } from "./client";
  * answer would be the same. One that never arrived is tried once more.
  */
 export function createQueryClient(): QueryClient {
-  return new QueryClient({
+  const client = new QueryClient({
     defaultOptions: {
       queries: {
         staleTime: 30_000,
@@ -36,6 +36,12 @@ export function createQueryClient(): QueryClient {
       },
     },
   });
+  // Recipes and the household's lists are the device's copy for offline use,
+  // so they are never dropped for being unused. A recipe that is gone is
+  // dropped by the copy itself (`sync.ts`).
+  client.setQueryDefaults(["recipes", "one"], { gcTime: Number.POSITIVE_INFINITY });
+  client.setQueryDefaults(["lists"], { gcTime: Number.POSITIVE_INFINITY });
+  return client;
 }
 
 /** What the list is asked for. Categories, tags and tools by slug; foods by ID. */

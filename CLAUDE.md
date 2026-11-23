@@ -6,7 +6,7 @@ Guidance for Claude Code working in this repository.
 
 Maverick Recipeflare (Recipeflare for short) is a household recipe app on Cloudflare: one TypeScript Worker serving a React PWA and a JSON API, with D1, R2, Queues and, in later phases, Workers AI and Durable Objects. One household per install. Licensed AGPL-3.0-only.
 
-**Status: Phase 0 is complete (T0.1 to T0.13); its gate passed on 23 Nov 2026. Phase 1 is built through T1.12, and T1.14 (the recipe repository, the recipes API with search and filters, the API for organizers, foods, units and labels, the ingredient line parser, the recipe list, the recipe view, the editor, the manage screens and cook mode on real data, photos, and importing a recipe from a link through the import jobs). T1.13 (offline) is not.** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, the database schema with its migrations, and sign-in (the auth middleware, the Access and dev providers, `/api/v1/me`) exist. The recipe list at `/`, the recipe view at `/recipes/<slug>`, the editor at `/recipes/new` and `/recipes/<slug>/edit`, cook mode at `/recipes/<slug>/cook`, the manage screens at `/manage`, importing from a link at `/add` and its review at `/imports/<id>/review` are connected to data, photos included. Attachments have no screen yet. Nothing is kept on the device yet, so cook mode needs a connection to open. When a pull request changes a command or path below, it updates this file in the same pull request.
+**Status: Phase 0 is complete (T0.1 to T0.13); its gate passed on 23 Nov 2026. Phase 1 is built through T1.14 (the recipe repository, the recipes API with search and filters, the API for organizers, foods, units and labels, the ingredient line parser, the recipe list, the recipe view, the editor, the manage screens and cook mode on real data, photos, importing a recipe from a link through the import jobs, and installing the app and using it offline). T1.15 and T1.16 (the end-to-end run, the gate) are not.** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, the database schema with its migrations, and sign-in (the auth middleware, the Access and dev providers, `/api/v1/me`) exist. The recipe list at `/`, the recipe view at `/recipes/<slug>`, the editor at `/recipes/new` and `/recipes/<slug>/edit`, cook mode at `/recipes/<slug>/cook`, the manage screens at `/manage`, importing from a link at `/add` and its review at `/imports/<id>/review` are connected to data, photos included. Attachments have no screen yet. Recipes and the photos that have been shown are kept on the device, so the list, a recipe and cook mode open with no connection. When a pull request changes a command or path below, it updates this file in the same pull request.
 
 ## Read first
 
@@ -45,6 +45,9 @@ apps/web/             Vite React PWA; builds to apps/web/dist, served as static 
   src/styles/         tokens.css (the design tokens) and app.css (Tailwind theme, base styles)
   src/api/            client.ts (api(), the three errors), queries.ts (TanStack Query hooks), session.ts,
                       saveRecipe.ts (the editor's save), assets.ts (assetUrl(), uploads, making a photo smaller)
+                      persist.ts (the cache kept on the device), sync.ts (copying every recipe to the device)
+  src/sw.ts           The service worker; src/sw/rules.ts holds what it keeps, as plain functions
+  public/             The manifest and the icons
   src/shell/          The frame every screen sits in: header, navigation, the signed-out band
   src/ui/             Shared components: Button, DividerTabs, RecipeRow, Page, Notice, Sheet, Chip, Field, Picker
   src/pages/          Product screens. A screen is given its data as props and fetches nothing itself.
@@ -120,6 +123,17 @@ To be signed in locally, copy `.dev.vars.example` to `.dev.vars` and run `pnpm d
 - What a list shows (search, filters, sort) is in the page address, read with the route's `validateSearch` and written with `navigate({ search, replace: true })`. A recipe's scale is in its address the same way.
 - A screen offers an action only when it is given the handler for it: the recipe view shows Cook and Edit when it has `onCook` and `onEdit`. Do not show a button that does nothing.
 - A change (a delete, a save) is a mutation hook in `queries.ts` that invalidates what it made stale. The screen is told when it is under way and when it failed, and says so in a `Notice`.
+
+### Offline
+
+- The service worker (`src/sw.ts`) keeps the app's own files and photos, and nothing else. It never answers a request for the API's JSON, and never a page load under `/api/`.
+- Whether an answer may be kept is `mayKeep()` in `src/sw/rules.ts`: a plain 200 from this origin, not redirected. Do not loosen it. A session that has run out arrives as a redirect to the sign-in page, and that must never be stored in place of a file.
+- The rules the worker follows are plain functions in `src/sw/rules.ts`, with tests. Put a new rule there, not in the event handlers.
+- A new version of the app waits until the app is next opened afresh. Do not add `skipWaiting()`: a page must not run half old and half new.
+- Recipe data offline is the query cache, kept by `persist.ts`. Only whole recipes (`["recipes", "one", slug]`) and the household's lists (`["lists", …]`) are kept. What is read back is not checked against the schema, so a change to a kept shape raises `KEPT_SHAPE`.
+- `sync.ts` copies every recipe to the device through the ordinary list and recipe routes. It runs only in the real app, where `App` is given a persister; `renderAt()` gives none, so tests never start it.
+- Offline the list is answered by `listOffline()` from the copies on the device. A device with no copies shows the could-not-load state, not "No recipes yet".
+- The icons in `public/` are drawn from `icon.svg`. Change the SVG and redraw them; do not edit a PNG.
 
 ### Manage screens
 
