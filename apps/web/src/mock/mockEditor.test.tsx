@@ -15,7 +15,10 @@ const read = (row: HTMLElement) =>
   [...(row.querySelector("[data-testid=line-read]")?.querySelectorAll(".font-semibold") ?? [])]
     .map((part) => part.textContent)
     .join(" · ");
-const rowOf = (text: string) => screen.getByRole("button", { name: `Edit ${text}` }).closest("li");
+/** A row's button is named by what it does and then everything the row shows. */
+const startsWith = (text: string) => (name: string) => name.startsWith(text);
+const rowOf = (text: string) =>
+  screen.getByRole("button", { name: startsWith(`Edit ${text}`) }).closest("li");
 const typeLine = (text: string) => {
   const entry = screen.getByLabelText("Add an ingredient");
   fireEvent.change(entry, { target: { value: text } });
@@ -84,7 +87,11 @@ describe("typing a new recipe", () => {
       fireEvent.change(entry, { target: { value: text } });
       fireEvent.keyDown(entry, { key: "Enter" });
     }
-    expect(stepRows().map((row) => row.textContent)).toEqual(["1Mix.", "2Bake."]);
+    // Each row says what pressing it does, then shows its number and its text.
+    expect(stepRows().map((row) => row.textContent)).toEqual([
+      "Edit step 1: 1Mix.",
+      "Edit step 2: 2Bake.",
+    ]);
   });
 
   it("refuses to save without a title, says how many things are wrong, and marks the field", async () => {
@@ -168,7 +175,7 @@ describe("editing a recipe", () => {
 
   it("opens a line to correct what was read, one line at a time", async () => {
     await renderAt(COOKIES);
-    fireEvent.click(screen.getByRole("button", { name: "Edit 2 1/4 C. flour" }));
+    fireEvent.click(screen.getByRole("button", { name: startsWith("Edit 2 1/4 C. flour") }));
 
     expect((screen.getByLabelText("Line as written") as HTMLInputElement).value).toBe(
       "2 1/4 C. flour",
@@ -188,7 +195,7 @@ describe("editing a recipe", () => {
 
   it("changes the unit from a searchable list, and can create one that is missing", async () => {
     await renderAt(COOKIES);
-    fireEvent.click(screen.getByRole("button", { name: "Edit 2 1/4 C. flour" }));
+    fireEvent.click(screen.getByRole("button", { name: startsWith("Edit 2 1/4 C. flour") }));
 
     fireEvent.click(screen.getByRole("button", { name: "Unit" }));
     fireEvent.change(sheet("Unit").getByLabelText("Find a unit"), { target: { value: "oun" } });
@@ -204,7 +211,7 @@ describe("editing a recipe", () => {
 
   it("names a food that is not in the list without creating it, and marks it new", async () => {
     await renderAt(COOKIES);
-    fireEvent.click(screen.getByRole("button", { name: "Edit 2 1/4 C. flour" }));
+    fireEvent.click(screen.getByRole("button", { name: startsWith("Edit 2 1/4 C. flour") }));
 
     fireEvent.click(screen.getByRole("button", { name: "Food" }));
     fireEvent.change(sheet("Food").getByLabelText("Find a food"), {
@@ -219,7 +226,7 @@ describe("editing a recipe", () => {
 
   it("turns a line back into plain text with Keep as written", async () => {
     await renderAt(COOKIES);
-    fireEvent.click(screen.getByRole("button", { name: "Edit 2 1/4 C. flour" }));
+    fireEvent.click(screen.getByRole("button", { name: startsWith("Edit 2 1/4 C. flour") }));
     fireEvent.click(screen.getByRole("button", { name: "Keep as written" }));
     fireEvent.click(screen.getByRole("button", { name: "Done" }));
     expect(read(rowOf("2 1/4 C. flour") as HTMLElement)).toBe("as written");
@@ -233,7 +240,7 @@ describe("editing a recipe", () => {
         .map((row) => row.querySelector("[aria-label^='Move ']")?.getAttribute("aria-label"));
     expect(order()).toEqual(["Move 2 1/4 C. flour", "Move 1 t. soda", "Move 1 t. salt"]);
 
-    fireEvent.click(screen.getByRole("button", { name: "Edit 2 1/4 C. flour" }));
+    fireEvent.click(screen.getByRole("button", { name: startsWith("Edit 2 1/4 C. flour") }));
     expect((screen.getByRole("button", { name: "Up" }) as HTMLButtonElement).disabled).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: "Down" }));
     expect(order()).toEqual(["Move 1 t. soda", "Move 2 1/4 C. flour", "Move 1 t. salt"]);
@@ -249,13 +256,17 @@ describe("editing a recipe", () => {
     await renderAt(CHICKEN);
     expect(ingredientRows()).toHaveLength(11);
 
-    fireEvent.click(screen.getByRole("button", { name: "Edit the section For the gravy" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: startsWith("Edit the section For the gravy") }),
+    );
     expect((screen.getByLabelText("Section title") as HTMLInputElement).value).toBe(
       "For the gravy",
     );
     fireEvent.click(screen.getByRole("button", { name: "Remove title" }));
     expect(ingredientRows()).toHaveLength(10);
-    expect(screen.getByRole("button", { name: "Edit 2 tbsp all-purpose flour" })).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: startsWith("Edit 2 tbsp all-purpose flour") }),
+    ).toBeTruthy();
 
     fireEvent.click(
       screen.getAllByRole("button", { name: "Add a section title" })[0] as HTMLElement,
@@ -274,10 +285,10 @@ describe("editing a recipe", () => {
 
   it("edits a step in place", async () => {
     await renderAt(COOKIES);
-    fireEvent.click(screen.getByRole("button", { name: "Edit step 1" }));
+    fireEvent.click(screen.getByRole("button", { name: startsWith("Edit step 1") }));
     fireEvent.change(screen.getByLabelText("Step 1"), { target: { value: "Heat the oven." } });
     fireEvent.click(screen.getByRole("button", { name: "Done" }));
-    expect(stepRows()[0]?.textContent).toBe("1Heat the oven.");
+    expect(stepRows()[0]?.textContent).toBe("Edit step 1: 1Heat the oven.");
   });
 
   it("shows the chosen category in its divider colour, and takes it off when pressed", async () => {
@@ -355,7 +366,9 @@ describe("editing a recipe", () => {
     // A row's problem leads to the row, ready to be opened.
     fireEvent.click(list.getByRole("button", { name: /^A section title:/ }));
     await waitFor(() =>
-      expect(document.activeElement?.getAttribute("aria-label")).toBe("Edit the section "),
+      expect(document.activeElement?.textContent).toBe(
+        "Edit the section Section with no title yet",
+      ),
     );
   });
 
@@ -402,7 +415,7 @@ describe("reviewing an import", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /1 food is not among yours yet/ }));
     await waitFor(() =>
-      expect(document.activeElement?.getAttribute("aria-label")).toBe("Edit 1 cup cornmeal"),
+      expect(document.activeElement?.textContent).toMatch(/^Edit 1 cup cornmeal/),
     );
   });
 

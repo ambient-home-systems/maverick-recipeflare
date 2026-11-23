@@ -93,11 +93,7 @@ export function StepList({
                 actions={actions}
               />
             ) : (
-              <ClosedRow
-                onOpen={() => setOpenId(row.id)}
-                label={`Edit the section ${row.title}`}
-                error={error}
-              >
+              <ClosedRow onOpen={() => setOpenId(row.id)} label="Edit the section" error={error}>
                 <DividerClosed row={row} />
               </ClosedRow>
             );
@@ -118,7 +114,11 @@ export function StepList({
             );
           }
           return (
-            <ClosedRow onOpen={() => setOpenId(row.id)} label={`Edit step ${number}`} error={error}>
+            <ClosedRow
+              onOpen={() => setOpenId(row.id)}
+              label={`Edit step ${number}:`}
+              error={error}
+            >
               <span className="flex gap-3">
                 <span aria-hidden="true" className="w-6 flex-none text-lg font-bold leading-snug">
                   {number}

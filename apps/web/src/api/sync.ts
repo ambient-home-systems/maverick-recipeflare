@@ -42,6 +42,9 @@ export async function copyRecipesToDevice(
   queryClient: QueryClient,
   signal?: AbortSignal,
 ): Promise<{ total: number; fetched: number }> {
+  // What the list says is true as of now. Anything this device learns after
+  // this moment is newer than the list, and is not judged by it.
+  const asked = Date.now();
   const summaries = await everySummary(signal);
   const stale = summaries.filter((summary) => {
     const copy = queryClient.getQueryData<Recipe>(keyOf(summary.slug));
@@ -61,7 +64,13 @@ export async function copyRecipesToDevice(
   const slugs = new Set(summaries.map((summary) => summary.slug));
   for (const query of queryClient.getQueryCache().findAll({ queryKey: ["recipes", "one"] })) {
     const slug = query.queryKey[2];
-    if (typeof slug === "string" && !slugs.has(slug) && query.getObserversCount() === 0) {
+    if (
+      typeof slug === "string" &&
+      !slugs.has(slug) &&
+      query.getObserversCount() === 0 &&
+      // A recipe saved or fetched since the list was asked for is not in the list yet.
+      query.state.dataUpdatedAt < asked
+    ) {
       queryClient.removeQueries({ queryKey: query.queryKey, exact: true });
     }
   }

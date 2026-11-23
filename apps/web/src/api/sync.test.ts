@@ -88,12 +88,55 @@ describe("copying the recipes to the device", () => {
       updatedAt: "2027-01-01T00:00:00.000Z",
     };
     library([moved, ...rest]);
+    // A later visit: the copies are older than the list that is about to be asked for.
+    await new Promise((resolve) => setTimeout(resolve, 5));
 
     await copyRecipesToDevice(client);
 
     expect(copyOf(client, gone)).toBeUndefined();
     expect(copyOf(client, renamed)).toBeUndefined();
     expect(copyOf(client, moved)?.title).toBe("Renamed Entirely");
+  });
+
+  it("keeps a recipe saved on this device while the list was on its way", async () => {
+    const [existing, created] = fixtureRecipes;
+    if (!existing || !created) {
+      throw new Error("the fixtures are missing");
+    }
+    const client = new QueryClient();
+    // The list is answered as it stood before the new recipe was saved...
+    let answerList: (response: Response) => void = () => {};
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = new URL(String(input), "http://localhost");
+        if (url.pathname === "/api/v1/recipes") {
+          return new Promise<Response>((resolve) => {
+            answerList = resolve;
+          });
+        }
+        return Response.json(existing);
+      }),
+    );
+    const copying = copyRecipesToDevice(client);
+    await vi.waitFor(() => expect(answerList).not.toHaveLength(0));
+    // ...and the save lands in the cache before that answer arrives.
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    client.setQueryData(["recipes", "one", created.slug], created);
+    answerList(
+      Response.json({
+        items: [toRecipeSummary(existing)],
+        page: 1,
+        perPage: 100,
+        total: 1,
+        libraryTotal: 1,
+      }),
+    );
+
+    await copying;
+
+    expect(copyOf(client, created)?.id).toBe(created.id);
+    expect(copyOf(client, existing)?.id).toBe(existing.id);
   });
 
   it("asks for the library a hundred at a time until it has it all", async () => {

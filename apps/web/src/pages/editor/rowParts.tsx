@@ -69,7 +69,11 @@ export function ClosedRow({
   children,
 }: {
   onOpen: () => void;
-  /** Read out in place of the row's text: "Edit 2 cups flour". */
+  /**
+   * What pressing the row does, said before the row's own text to someone who
+   * cannot see it: "Edit", "Edit step 2:". The row's text follows, so what is
+   * heard includes everything that is shown.
+   */
   label: string;
   error?: string;
   flagged?: boolean;
@@ -79,12 +83,14 @@ export function ClosedRow({
     <>
       <button
         type="button"
-        aria-label={label}
         data-jump
         onClick={onOpen}
         className="transition-rf flex min-h-touch w-full items-center gap-2 py-2 pr-4 pl-1 text-left hover:bg-surface-sunk"
       >
-        <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">{children}</span>
+        <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">
+          <span className="sr-only">{label} </span>
+          {children}
+        </span>
         {flagged ? <Mark>check</Mark> : null}
       </button>
       {error ? (

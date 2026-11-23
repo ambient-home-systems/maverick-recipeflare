@@ -15,9 +15,10 @@
     "lint": "biome check .",
     "format": "biome check --write .",
     "types": "wrangler types apps/worker/worker-configuration.d.ts",
-    "typecheck": "pnpm run types && pnpm -r run typecheck",
+    "typecheck": "pnpm run types && pnpm -r run typecheck && tsc --noEmit -p e2e",
     "test": "vitest run",
     "test:watch": "vitest",
+    "e2e": "playwright test",
     "db:generate": "pnpm --filter @recipeflare/worker exec drizzle-kit generate",
     "db:check": "node scripts/check-migrations.mjs",
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
@@ -25,8 +26,10 @@
     "deploy:staging": "node scripts/deploy.mjs --env staging"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@biomejs/biome": "^2.6.8",
     "@cloudflare/vitest-plugin": "^1.9.0",
+    "@playwright/test": "1.63.0",
     "@types/node": "^26.6.6",
     "happy-dom": "^21.0.4",
     "typescript": "^7.0.2",

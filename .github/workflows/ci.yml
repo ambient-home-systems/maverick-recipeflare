@@ -62,6 +62,24 @@ jobs:
       - name: Check the staging bundle
         run: node scripts/deploy.mjs --env staging --dry-run
 
+      - name: Install the browser for the end-to-end run
+        run: pnpm exec playwright install --with-deps chromium
+
+      # The built app, served by a local Worker with an empty database and
+      # driven in a phone-sized browser: the main path with the network taken
+      # away part-way, an accessibility check of each screen, and a load-time guard.
+      - name: End-to-end run
+        run: pnpm e2e
+
+      - name: Keep what the end-to-end run saw when it failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: end-to-end
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
   deploy-staging:
     name: Deploy to staging
     needs: checks
