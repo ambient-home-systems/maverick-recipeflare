@@ -8,6 +8,8 @@ const FAILURES: Record<string, string> = {
   blocked: "The site blocked the request. Trying again sometimes works.",
   no_recipe:
     "No recipe was found on that page. Pasting a recipe's text will be possible in a later version.",
+  not_queued: "The import could not be started. Try again.",
+  unsupported: "This kind of import is not available yet.",
 };
 
 /** The site a link points at, without the "www". */
@@ -102,25 +104,30 @@ export function ImportRow({
           )}
         </span>
       </span>
-      {job.status === "needs_review" ? (
-        <Button onClick={() => onReview?.(job)}>Review</Button>
+      {/* An action is offered only when there is something to do it. */}
+      {job.status === "needs_review" && onReview ? (
+        <Button onClick={() => onReview(job)}>Review</Button>
       ) : null}
-      {failed ? (
+      {failed && (onRetry || onRemove) ? (
         <span className="flex flex-wrap gap-2">
-          <Button
-            variant="quiet"
-            icon={<RotateCw aria-hidden="true" size="1.125rem" />}
-            onClick={() => onRetry?.(job)}
-          >
-            Try again
-          </Button>
-          <Button
-            variant="quiet"
-            icon={<Trash2 aria-hidden="true" size="1.125rem" />}
-            onClick={() => onRemove?.(job)}
-          >
-            Remove
-          </Button>
+          {onRetry ? (
+            <Button
+              variant="quiet"
+              icon={<RotateCw aria-hidden="true" size="1.125rem" />}
+              onClick={() => onRetry(job)}
+            >
+              Try again
+            </Button>
+          ) : null}
+          {onRemove ? (
+            <Button
+              variant="quiet"
+              icon={<Trash2 aria-hidden="true" size="1.125rem" />}
+              onClick={() => onRemove(job)}
+            >
+              Remove
+            </Button>
+          ) : null}
         </span>
       ) : null}
     </li>

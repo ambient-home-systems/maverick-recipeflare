@@ -1,5 +1,7 @@
 import {
   FoodListResponse,
+  ImportJob,
+  ImportListResponse,
   LabelListResponse,
   OrganizerListResponse,
   RECIPES_PER_PAGE,
@@ -169,5 +171,36 @@ export function useChangeList() {
         body: change.body,
       }),
     onSuccess: () => queryClient.invalidateQueries(),
+  });
+}
+
+/** How often the list asks after imports while one is still being read. */
+export const IMPORT_POLL_MS = 2000;
+
+const isWorking = (job: ImportJob) => job.status === "queued" || job.status === "running";
+
+/**
+ * The imports a person still has to wait for or deal with. While any is being
+ * read the list is asked for again every two seconds, so its progress shows
+ * without a reload; once none is, the asking stops.
+ */
+export function useImports() {
+  return useQuery({
+    queryKey: ["imports"],
+    queryFn: ({ signal }) => api("/imports", { schema: ImportListResponse, signal }),
+    select: (data) => data.items,
+    refetchInterval: (query) => (query.state.data?.items.some(isWorking) ? IMPORT_POLL_MS : false),
+  });
+}
+
+/** Tries a failed import again, or removes an import. Either way the imports are fetched again. */
+export function useChangeImport() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (change: { id: string; action: "retry" | "remove" }) =>
+      change.action === "retry"
+        ? api(`/imports/${change.id}/retry`, { method: "POST", schema: ImportJob })
+        : api(`/imports/${change.id}`, { method: "DELETE" }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["imports"] }),
   });
 }

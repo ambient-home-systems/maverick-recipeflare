@@ -1,7 +1,14 @@
 import { type RecipeSort, slugify } from "@recipeflare/schema";
 import { getRouteApi } from "@tanstack/react-router";
 import { useMemo } from "react";
-import { type RecipeListRequest, useFoods, useOrganizers, useRecipeList } from "../api/queries";
+import {
+  type RecipeListRequest,
+  useChangeImport,
+  useFoods,
+  useImports,
+  useOrganizers,
+  useRecipeList,
+} from "../api/queries";
 import { useSignedOut } from "../api/session";
 import { useOnline } from "../api/useOnline";
 import type { Stock } from "../ui/stock";
@@ -31,6 +38,8 @@ export function RecipesPage() {
 
   const organizers = useOrganizers();
   const foods = useFoods();
+  const imports = useImports();
+  const changeImport = useChangeImport();
 
   const lists = useMemo(() => {
     const entries = organizers.data ?? [];
@@ -95,6 +104,9 @@ export function RecipesPage() {
       onRetry={() => void list.refetch()}
       signedOut={signedOut}
       offline={!online}
+      imports={imports.data ?? []}
+      onRetryImport={(job) => changeImport.mutate({ id: job.id, action: "retry" })}
+      onRemoveImport={(job) => changeImport.mutate({ id: job.id, action: "remove" })}
       links={{ newRecipe: "/recipes/new", importLink: "/add" }}
       recipeLink={(recipe) => ({ to: "/recipes/$slug", params: { slug: recipe.slug } })}
     />

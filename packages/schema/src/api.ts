@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ImportJob } from "./import-job";
 import { Food, Label, Member, Organizer, Unit } from "./lists";
 import { Id } from "./primitives";
 import { Recipe, RecipeSummary } from "./recipe";
@@ -135,3 +136,7 @@ export type DuplicateBody = z.infer<typeof DuplicateBody>;
 /** Body of a 409 `in_use`: a food or unit that recipes use cannot be deleted. */
 export const InUseBody = ErrorBody.extend({ recipeCount: z.int().min(1) });
 export type InUseBody = z.infer<typeof InUseBody>;
+
+/** Body of `GET /api/v1/imports`: the imports a person still has to wait for or deal with, newest first. */
+export const ImportListResponse = z.object({ items: z.array(ImportJob) });
+export type ImportListResponse = z.infer<typeof ImportListResponse>;

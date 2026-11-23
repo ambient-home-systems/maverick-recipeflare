@@ -6,7 +6,7 @@ Guidance for Claude Code working in this repository.
 
 Maverick Recipeflare (Recipeflare for short) is a household recipe app on Cloudflare: one TypeScript Worker serving a React PWA and a JSON API, with D1, R2, Queues and, in later phases, Workers AI and Durable Objects. One household per install. Licensed AGPL-3.0-only.
 
-**Status: Phase 0 is complete (T0.1 to T0.13); its gate passed on 23 Nov 2026. Phase 1 is built through T1.9, and T1.14 (the recipe repository, the recipes API with search and filters, the API for organizers, foods, units and labels, the ingredient line parser, and the recipe list, the recipe view, the editor, the manage screens and cook mode on real data). T1.10 to T1.13 (photos, importing, offline) are not built.** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, the database schema with its migrations, and sign-in (the auth middleware, the Access and dev providers, `/api/v1/me`) exist. The recipe list at `/`, the recipe view at `/recipes/<slug>`, the editor at `/recipes/new` and `/recipes/<slug>/edit`, cook mode at `/recipes/<slug>/cook` and the manage screens at `/manage` are connected to data. Photos and importing from a link are not: the editor has no photo section and Add offers only typing. Nothing is kept on the device yet, so cook mode needs a connection to open. When a pull request changes a command or path below, it updates this file in the same pull request.
+**Status: Phase 0 is complete (T0.1 to T0.13); its gate passed on 23 Nov 2026. Phase 1 is built through T1.9, and T1.14 (the recipe repository, the recipes API with search and filters, the API for organizers, foods, units and labels, the ingredient line parser, and the recipe list, the recipe view, the editor, the manage screens and cook mode on real data). T1.11, the import jobs behind importing, is built too. T1.10, T1.12 and T1.13 (photos, importing from a link, offline) are not.** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, the database schema with its migrations, and sign-in (the auth middleware, the Access and dev providers, `/api/v1/me`) exist. The recipe list at `/`, the recipe view at `/recipes/<slug>`, the editor at `/recipes/new` and `/recipes/<slug>/edit`, cook mode at `/recipes/<slug>/cook` and the manage screens at `/manage` are connected to data. Photos and importing from a link are not: the editor has no photo section and Add offers only typing. Nothing is kept on the device yet, so cook mode needs a connection to open. When a pull request changes a command or path below, it updates this file in the same pull request.
 
 ## Read first
 
@@ -36,6 +36,8 @@ apps/worker/          Hono API, queue consumer, auth, Drizzle schema, migrations
   src/http.ts         jsonBody(), queryParams(), the shared error body
   src/db/recipes.ts   The recipe repository: createRecipe, updateRecipe, loadRecipe, deleteRecipe
   src/db/lists.ts     Organizers, foods, units and labels
+  src/db/importJobs.ts  Import jobs: create, claim, finish, fail, requeue
+  src/imports/        runner.ts (the queue handler and one run), handlers.ts (one handler per kind)
   migrations/         One folder per migration; applied by Wrangler, in order
 apps/web/             Vite React PWA; builds to apps/web/dist, served as static assets
   src/styles/         tokens.css (the design tokens) and app.css (Tailwind theme, base styles)
@@ -191,6 +193,9 @@ To be signed in locally, copy `.dev.vars.example` to `.dev.vars` and run `pnpm d
 - Every import kind uses the `import_jobs` table and the import queue. Do not add Workflows or a second job mechanism.
 - Queue messages carry a job ID and nothing else of substance. Handlers are idempotent and take `fetch` as a parameter.
 - Nothing an importer produces is saved as a recipe until a person confirms it on the review screen.
+- A handler is a function of the job, its input and its tools, registered in `imports/handlers.ts`. It returns a draft and saves nothing. It says how it failed by what it throws: `RetryableImportError`, or `PermanentImportError` with a code the list can explain (`ImportRow.tsx` holds the words for each code).
+- A run starts by claiming the job. Do not run a handler for a job that could not be claimed: that is what makes a message delivered twice harmless.
+- The Worker's default export is an object with `fetch` and `queue`. The dead-letter queue is told from the import queue by its name ending in `-dlq`; keep that ending when naming one.
 
 ### Licensing
 
