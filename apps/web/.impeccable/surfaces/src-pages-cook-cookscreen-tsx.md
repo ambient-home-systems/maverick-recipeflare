@@ -31,10 +31,8 @@ DECISIONS:
 - Signed out, offline and "cannot keep the screen on" are bands under the header. None of them stops the cook.
 - The navy header keeps the tin in view on a screen that has no shell.
 
-FINISH: to be reviewed by the finish reviewer; DESIGN.md is updated for cook mode (header, check row, step sizes, ingredients bar and column).
+FINISH: reviewed by the finish reviewer on 23 Nov 2026, verdict "ship after fixes", eight fixes, all made: the notice bands scroll away with the first step; Done is a quiet outline and asks before leaving mid-recipe; a ticked box is an outline with a tick, and the step the cook is on is set heavier; a ticked step goes to the top and the ending comes into view; an unscaled line says "not doubled"; the ingredients bar is taller and survives large text; a phone on its side gets two columns and a one-line header; the header and its empty track are outlined. From the ceiling notes, the recipe's category colour runs along the foot of the header. DESIGN.md is updated for cook mode (header, check row, step sizes, ingredients bar and column).
 
 ## Unresolved
 
 - Timers and each step's own ingredients arrive with Phase 2's step details.
-- A phone held sideways gets the phone layout, with little room for steps between the header and the bar.
-- Whether Done should ask first when steps are still unticked.

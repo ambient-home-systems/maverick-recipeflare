@@ -50,6 +50,45 @@ describe("cook mode", () => {
     expect(row?.className).toContain("bg-surface-sunk");
     expect(row?.querySelector(".text-cook")).toBeNull();
     expect(row?.className).not.toMatch(/opacity/);
+    // The tick is an outline, not a filled square: the steps still to do must draw the eye, not the done ones.
+    expect(row?.querySelector("[aria-hidden=true]")?.className).not.toContain("bg-primary");
+  });
+
+  it("marks the step the cook is on, and moves the mark on as steps are ticked", async () => {
+    await renderAt(CHICKEN);
+    const current = () => document.querySelector("[aria-current=step]");
+    expect(current()?.textContent).toContain("Heat the oven");
+    expect(current()?.querySelector(".font-semibold")).toBeTruthy();
+
+    fireEvent.click(step(/^Step 1\. Heat the oven/));
+    expect(current()?.textContent).toContain("Stuff the cavity");
+
+    // Ticked out of order, the place is still the first step not done.
+    fireEvent.click(step(/^Step 3\. Roast until/));
+    expect(current()?.textContent).toContain("Stuff the cavity");
+  });
+
+  it("brings the place to the top when a step is ticked, and the ending into view after the last", async () => {
+    const scrolled: { target: string; block?: string }[] = [];
+    Element.prototype.scrollIntoView = function (
+      this: Element,
+      options?: ScrollIntoViewOptions | boolean,
+    ) {
+      scrolled.push({
+        target: this.hasAttribute("data-ending") ? "ending" : (this.textContent ?? "").slice(0, 12),
+        block: typeof options === "object" ? options.block : undefined,
+      });
+    };
+    await renderAt(CHICKEN);
+
+    fireEvent.click(step(/^Step 1\. Heat the oven/));
+    await waitFor(() => expect(scrolled).toHaveLength(1));
+    expect(scrolled[0]).toEqual({ target: "1Step 1.Heat", block: "start" });
+
+    for (const box of screen.getAllByRole("checkbox", { name: /^Step/ }).slice(1)) {
+      fireEvent.click(box);
+    }
+    await waitFor(() => expect(scrolled.at(-1)?.target).toBe("ending"));
   });
 
   it("unticks a step that was ticked by mistake", async () => {
@@ -67,13 +106,25 @@ describe("cook mode", () => {
     );
   });
 
-  it("says so when every step is done", async () => {
-    await renderAt(CHICKEN);
+  it("says so when every step is done, and then leaves without asking", async () => {
+    const { router } = await renderAt(CHICKEN);
     for (const box of screen.getAllByRole("checkbox", { name: /^Step/ })) {
       fireEvent.click(box);
     }
     expect(progress()).toBe("7 of 7 steps done");
     expect(screen.getByText("All 7 steps done.")).toBeTruthy();
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Done" })[0] as HTMLElement);
+    await waitFor(() =>
+      expect(router.state.location.pathname).toBe(
+        "/mock/recipe/roast-chicken-with-lemon-and-thyme",
+      ),
+    );
+  });
+
+  it("carries the recipe's category colour along the foot of the header", async () => {
+    await renderAt(CHICKEN);
+    expect(screen.getByRole("banner").lastElementChild?.className).toContain("bg-stock-salmon");
   });
 
   it("keeps the ticks on the device, so they are still there after leaving and coming back", async () => {
@@ -98,12 +149,41 @@ describe("cook mode", () => {
     expect(progress()).toBe("0 of 15 steps done");
   });
 
-  it("clears the ticks and returns to the recipe on Done", async () => {
+  it("leaves at once when nothing is ticked", async () => {
+    const { router } = await renderAt(CHICKEN);
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    await waitFor(() =>
+      expect(router.state.location.pathname).toBe(
+        "/mock/recipe/roast-chicken-with-lemon-and-thyme",
+      ),
+    );
+  });
+
+  it("asks before leaving in the middle of a recipe, so a stray press does not lose the place", async () => {
+    const { router } = await renderAt(CHICKEN);
+    fireEvent.click(step(/^Step 1\. Heat the oven/));
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+
+    const asking = within(screen.getByRole("dialog", { name: "Finish cooking?" }));
+    expect(asking.getByText(/1 of 7 steps are ticked/)).toBeTruthy();
+    fireEvent.click(asking.getByRole("button", { name: "Keep cooking" }));
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(router.state.location.pathname).toBe("/mock/cook/roast-chicken-with-lemon-and-thyme");
+    expect(progress()).toBe("1 of 7 steps done");
+  });
+
+  it("clears the ticks and returns to the recipe once leaving is confirmed", async () => {
     const { router } = await renderAt(CHICKEN);
     fireEvent.click(step(/^Step 1\. Heat the oven/));
     await waitFor(() => expect(window.localStorage.length).toBe(1));
 
     fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    fireEvent.click(
+      within(screen.getByRole("dialog", { name: "Finish cooking?" })).getByRole("button", {
+        name: "Leave and clear ticks",
+      }),
+    );
     await waitFor(() =>
       expect(router.state.location.pathname).toBe(
         "/mock/recipe/roast-chicken-with-lemon-and-thyme",
@@ -146,7 +226,7 @@ describe("ingredients in cook mode", () => {
 
     expect(column().getByRole("checkbox", { name: "4 tbsp olive oil" })).toBeTruthy();
     expect(
-      column().getByRole("checkbox", { name: /6 cups water or vegetable stock.*as written/ }),
+      column().getByRole("checkbox", { name: /6 cups water or vegetable stock.*not doubled/ }),
     ).toBeTruthy();
     expect(column().getByRole("status").textContent).toBe(
       "Doubled. 3 lines are shown as written and were not changed. Amounts in the steps are not changed.",

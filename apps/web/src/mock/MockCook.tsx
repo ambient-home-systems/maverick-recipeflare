@@ -5,7 +5,7 @@ import { useWakeLock } from "../pages/cook/useWakeLock";
 import { parseScale } from "../pages/recipe/recipeFacts";
 import { EmptyState } from "../ui/Notice";
 import { Page } from "../ui/Page";
-import { mockRecipe } from "./mockLibrary";
+import { mockRecipe, mockStockFor } from "./mockLibrary";
 import { COOK_SCENE_LABELS, COOK_SCENES, type CookScene } from "./scenes";
 
 const route = getRouteApi("/mock/cook/$slug");
@@ -90,6 +90,7 @@ function Cooking({
       wake={scene === "no-screen-lock" ? "unavailable" : wake}
       wakeNoteSeen={scene === "no-screen-lock" ? false : wakeNoteSeen}
       onWakeNoteSeen={markWakeNoteSeen}
+      stock={mockStockFor(recipe.categories[0]?.slug ?? "")}
       offline={scene === "offline"}
       signedOut={scene === "signed-out"}
       after={

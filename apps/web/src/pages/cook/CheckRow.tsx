@@ -5,8 +5,9 @@ import type { ReactNode } from "react";
  * A row that is ticked off: a step that is done, or an ingredient that is out
  * on the counter. The whole row is the target, for a floury knuckle.
  *
- * A ticked row steps back by taking the sunk ground. Its words stay in the one
- * ink and stay readable, because a cook often looks back at the last step.
+ * A ticked row steps back by taking the sunk ground, and its box keeps its
+ * outline and gains a tick. Its words stay in the one ink and stay readable,
+ * because a cook often looks back at the last step.
  */
 export function CheckRow({
   checked,
@@ -30,7 +31,8 @@ export function CheckRow({
       <span
         aria-hidden="true"
         className={`mt-0.5 grid size-7 flex-none place-items-center rounded-sm border-2 ${
-          checked ? "border-primary bg-primary text-on-primary" : "border-rule-strong bg-surface"
+          // A tick in an outline, not a filled square: the rows still to do must be the ones that draw the eye.
+          checked ? "border-rule-strong text-ink" : "border-rule-strong bg-surface"
         }`}
       >
         {checked ? <Check size="1.25rem" strokeWidth={3} /> : null}

@@ -125,7 +125,7 @@ How one recipe is shown for reading. Drawn as a mock screen in T0.8.
 - Only what the recipe states is shown. An empty field leaves no heading, no gap and no "none". A recipe that is only a title says so and points to Edit.
 - Times, servings and yield are a row of short facts. With no total time stated, prep and cook are added.
 - Photos and the original card are small pictures under the description, each with its name and count. Pressing one opens it full screen, where the browser's pinch zoom works, with Previous and Next when there is more than one. The recipe view has no large photo at the top.
-- Scaling is a four-way switch on the Ingredients heading: half, as written, double, triple. Parsed amounts, servings and yield change; times do not. A line kept as typed is not changed, even when its text holds a number, and is marked "as written" while the recipe is scaled. A note under the switch counts those lines and says that amounts inside the steps are not changed either. The scale is kept in the page address.
+- Scaling is a four-way switch on the Ingredients heading: half, as written, double, triple. Parsed amounts, servings and yield change; times do not. A line kept as typed is not changed, even when its text holds a number, and is marked "not doubled" (or "not halved", "not tripled") while the recipe is scaled. A note under the switch counts those lines and says that amounts inside the steps are not changed either. The scale is kept in the page address.
 - Each ingredient line's amount is set heavier than the rest of the line.
 - Steps are numbered, and the numbering restarts in each section.
 - Nutrition is folded away under its heading and lists only the values that were entered.
@@ -232,15 +232,17 @@ The cook types a line the way it is written on the card. The rule-based parser (
 **Decisions**
 
 - Opened with "Cook" on the recipe view, at the scale the recipe was showing. It fills the screen and hides navigation; "Done" returns to the recipe.
+- "Done" asks first when some steps are ticked and some are not, because leaving clears the ticks and a stray press would lose the cook's place. With nothing ticked, or everything, it leaves at once.
 - The screen stays on while cook mode is open, and the header says so. If the browser cannot keep it on, the header says the screen may turn off, and a note says so once, with what to do about it.
 - On a phone: steps in large type, one after another. The whole of a step is its checkbox. Ingredients are in a sheet pulled up from a bar at the bottom of the screen, which is there whichever step is showing and says how many are out. Each ingredient is a checkbox too.
-- On a tablet in landscape: ingredients on the left, steps on the right, each scrolling on its own.
-- Scaling: half, 1, 2 and 3 times, or a servings number when the recipe has servings. Parsed quantities change; free-text lines are shown as typed with a mark that they are not scaled. The scale control is with the ingredients.
+- On a tablet in landscape: ingredients on the left, steps on the right, each scrolling on its own. A phone held on its side gets the same two columns, narrower, and a one-line header.
+- Scaling: half, 1, 2 and 3 times, or a servings number when the recipe has servings. Parsed quantities change; free-text lines are shown as typed with a mark saying what was not done to them ("not doubled", "not halved"), because those are the lines the cook must work out by hand. The scale control is with the ingredients.
 - Checked boxes and the scale are kept on the device for that recipe. They survive a reload, a locked phone and a closed app, and are cleared by "Done", or twelve hours after the last change.
 - Progress is shown three ways: a count and a bar in the header ("3 of 7 steps done"), a count on each section title, and a line when every step is done.
-- Section titles are shown. A checked step steps back and is not hidden: it takes a quieter ground and the ordinary text size, and stays readable, because a cook often looks back at the step before. The steps still to do stay large.
-- Ticking a step brings the next one that is not done into view.
-- Cook mode reads from the device's copy of the recipe, so it works offline and with an expired session. Each is said in a band under the header; a signed-out cook is offered "Sign in again" and can carry on without it.
+- Section titles are shown. A checked step steps back and is not hidden: it takes a quieter ground and the ordinary text size, and stays readable, because a cook often looks back at the step before. The steps still to do stay large, and the step the cook is on, the first not ticked, is set heavier.
+- Ticking a step moves it to the top of the screen, so the next one sits directly under it with one step to look back at. Ticking the last brings the ending into view.
+- The recipe's category colour runs along the foot of the header.
+- Cook mode reads from the device's copy of the recipe, so it works offline and with an expired session. Each is said in a band above the first step, which scrolls away with it; a signed-out cook is offered "Sign in again" and can carry on without it.
 - No timers in Phase 1. Phase 2's step details adds each step's ingredients and stated times to this screen.
 
 ## 8. Offline

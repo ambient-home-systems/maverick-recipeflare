@@ -110,7 +110,8 @@ Not here yet:
 - Cook mode fills the screen. `isFullScreen()` in `apps/web/src/shell/nav.ts` decides which addresses have no header and no navigation: one that ends in `/cook`.
 - Ticks and the scale live on the device, not on the server, in `localStorage` under `recipeflare:cook:<recipe id>` (`cookSession.ts`). They expire twelve hours after the last change and are cleared by Done. Do not send them to the API.
 - A hidden input inside a scrolling list needs a `relative` parent. Without it the input is placed against the page, does not scroll with the list, and makes the whole page scroll. `CheckRow` and the scale switch do this.
-- A done step is never faded. It takes the sunk ground and the ordinary text size.
+- A done step is never faded. It takes the sunk ground and the ordinary text size, and its tick is an outline, not a filled box.
+- `beside:` and `short:` are this app's own Tailwind variants, defined at the top of `app.css`: a screen wide enough for ingredients beside steps (a tablet or a phone on its side), and a screen too short to spare a line.
 
 ### Database (D1)
 

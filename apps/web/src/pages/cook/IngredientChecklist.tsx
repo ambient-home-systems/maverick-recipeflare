@@ -9,7 +9,7 @@ import {
 import { useEffect, useState } from "react";
 import { Mark, TextField } from "../../ui/Field";
 import { readQuantity } from "../editor/editorState";
-import { SCALE_DONE, SCALES } from "../recipe/recipeFacts";
+import { notScaledLabel, SCALE_DONE, SCALES } from "../recipe/recipeFacts";
 import { ScaleControl } from "../recipe/ScaleControl";
 import { CheckRow } from "./CheckRow";
 import type { CookSession } from "./cookSession";
@@ -116,7 +116,9 @@ export function IngredientChecklist({
                       <span>
                         <IngredientText item={item} scale={scale} />
                       </span>
-                      {scale !== 1 && !isScalable(item) ? <Mark>as written</Mark> : null}
+                      {scale !== 1 && !isScalable(item) ? (
+                        <Mark large>{notScaledLabel(scale)}</Mark>
+                      ) : null}
                     </span>
                   </CheckRow>
                 </li>

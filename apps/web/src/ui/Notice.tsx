@@ -4,8 +4,9 @@ import type { ReactNode } from "react";
 /**
  * A band for something the cook should know: a standing condition such as being
  * offline, or a problem such as a save that failed. A problem is announced at
- * once and always carries a warning icon; a condition is not, and brings its own. Both use the same band: red is kept for the title
- * rule and for adding a recipe.
+ * once and always carries a warning icon; a condition is not, and brings its
+ * own. Both use the same band: red is kept for the title rule and for adding a
+ * recipe. The icon sits on the first line of the words, however many lines follow.
  */
 export function Notice({
   icon,
@@ -19,13 +20,14 @@ export function Notice({
   return (
     <p
       role={problem ? "alert" : "status"}
-      className="flex items-center gap-2 bg-notice px-4 py-2.5 text-sm font-semibold text-on-notice"
+      className="flex items-start gap-2 bg-notice px-4 py-2.5 text-sm font-semibold text-on-notice"
     >
-      {icon ??
-        (problem ? (
-          <TriangleAlert aria-hidden="true" size="1.125rem" className="flex-none" />
-        ) : null)}
-      <span>{children}</span>
+      {icon || problem ? (
+        <span className="mt-px flex-none">
+          {icon ?? <TriangleAlert aria-hidden="true" size="1.125rem" />}
+        </span>
+      ) : null}
+      <span className="min-w-0 flex-1">{children}</span>
     </p>
   );
 }
