@@ -173,12 +173,14 @@ const cardBase = { ...base, kind: "photo", sourceUrl: null } as const;
 
 /**
  * A sitting of four cards on its way in: one being read, one being written
- * up, one ready, and one whose photo could not be read. Newest first.
+ * up, one ready, and one whose photo could not be read. Newest first, each
+ * with its place in the sitting.
  */
 export const fixtureCardImports: ImportJob[] = [
   {
     ...cardBase,
     id: fixtureId(IMPORT_JOB_GROUP, 5),
+    card: 4,
     status: "running",
     stage: "read",
     attempts: 1,
@@ -188,6 +190,7 @@ export const fixtureCardImports: ImportJob[] = [
   {
     ...cardBase,
     id: fixtureId(IMPORT_JOB_GROUP, 6),
+    card: 3,
     status: "running",
     stage: "build",
     attempts: 0,
@@ -197,6 +200,7 @@ export const fixtureCardImports: ImportJob[] = [
   {
     ...cardBase,
     id: fixtureId(IMPORT_JOB_GROUP, 7),
+    card: 2,
     status: "needs_review",
     stage: "build",
     result: {
@@ -213,6 +217,7 @@ export const fixtureCardImports: ImportJob[] = [
   {
     ...cardBase,
     id: fixtureId(IMPORT_JOB_GROUP, 8),
+    card: 1,
     status: "failed",
     stage: "read",
     error: { code: "unreadable", message: "Nothing could be read from the photo." },

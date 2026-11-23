@@ -15,10 +15,14 @@ export async function keepPicture(
   tools: ImportTools,
 ): Promise<void> {
   const env = tools.env;
-  // A job that runs again starts clean: what its last attempt stored is replaced.
+  // A job that runs again starts clean: the picture its last attempt fetched
+  // is replaced. Only that one: a photographed card's sides are the job's
+  // too, and they are what the import is made from.
   await removeAssets(
     env,
-    (await assetsOfImport(env.DB, job.id)).map((asset) => asset.id),
+    (await assetsOfImport(env.DB, job.id))
+      .filter((asset) => asset.role === "cover")
+      .map((asset) => asset.id),
   );
   if (!imageUrl) {
     return;

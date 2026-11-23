@@ -38,10 +38,23 @@ type Wanted =
 type CaptureScreenProps = {
   /** The pile so far, in the order the cards were taken. */
   cards: CaptureCard[];
+  /**
+   * The number of the first card in the pile. One, until cards of this sitting
+   * have been sent: those that are left then keep the numbers they had.
+   */
+  numberFrom?: number;
   /** Where the divider-shaped back button leads, in its own words. */
   backLabel: string;
   /** Leaves the screen. Called once the cook has agreed to lose the pile, when there is one. */
   onLeave: () => void;
+  /**
+   * True when the cook has tried to leave some other way, by the navigation or
+   * the back button, and the page is holding them here: the screen then asks
+   * the question its own back button asks.
+   */
+  asked?: boolean;
+  /** The cook chose to stay. */
+  onStay?: () => void;
   /** New photos, each a card of its own: one from the camera, or several chosen from the device. */
   onAddCards?: (photos: File[]) => void;
   /** A photo for the next side of a card. */
@@ -74,8 +87,11 @@ type CaptureScreenProps = {
  */
 export function CaptureScreen({
   cards,
+  numberFrom = 1,
   backLabel,
   onLeave,
+  asked = false,
+  onStay,
   onAddCards,
   onAddSide,
   onRetake,
@@ -103,7 +119,7 @@ export function CaptureScreen({
   const busy = sending !== undefined;
   const latest = cards.at(-1);
   const full = cards.length >= most;
-  const number = (cardId: string) => cards.findIndex((card) => card.id === cardId) + 1;
+  const number = (cardId: string) => cards.findIndex((card) => card.id === cardId) + numberFrom;
 
   // A card that has just joined the pile is brought into view, above the buttons
   // that follow it, and rests on the sunk ground for a moment so the eye finds it.
@@ -151,6 +167,10 @@ export function CaptureScreen({
   };
 
   const leave = () => (cards.length > 0 ? setAsking(true) : onLeave());
+  const stay = () => {
+    setAsking(false);
+    onStay?.();
+  };
   const viewed = viewing ? cards.find((card) => card.id === viewing.cardId) : undefined;
 
   return (
@@ -200,7 +220,7 @@ export function CaptureScreen({
           <>
             <ol aria-label="Cards">
               {cards.map((card, index) => {
-                const name = `Card ${index + 1}`;
+                const name = `Card ${index + numberFrom}`;
                 const last = index === cards.length - 1;
                 const before = joinTarget(cards, card.id);
                 return (
@@ -505,8 +525,8 @@ export function CaptureScreen({
       </Page>
 
       <Sheet
-        open={asking}
-        onClose={() => setAsking(false)}
+        open={asking || asked}
+        onClose={stay}
         title="Leave these cards?"
         footer={
           <>
@@ -519,7 +539,7 @@ export function CaptureScreen({
             >
               Leave
             </Button>
-            <Button onClick={() => setAsking(false)}>Keep going</Button>
+            <Button onClick={stay}>Keep going</Button>
           </>
         }
       >

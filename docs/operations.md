@@ -129,6 +129,8 @@ Signed in as the owner, open `/mock` on the hostname and press **Check the AI co
 
 Once the check passes, on the Add page paste a recipe's text under **Paste text** and press **Import text**. The list shows it being written up, then offers **Review**, where the draft sits beside the text you pasted. For T2.3 of the Phase 2 plan, do this on staging with three recipes from different kinds of source, such as a message, a document and a web page's text, and say how each came out. For T2.4, also import a link to a page that shows a recipe without recipe data, such as a blog post or a forum thread: it should land in review as written up by AI, with the page's words beside it.
 
+For T2.6, photograph cards: on a phone, Add, then **From photos**. Do five printed cards and five handwritten ones, some with a back, and press **Import**. Each should come up on the list as "Card 1", "Card 2" and so on, say "Reading the card" and then "Writing it up", and offer **Review**, where the card's photos sit beside the draft and **Save and next card** goes on to the next. Say how each came out, and above all whether any failed with "Nothing could be read from the photo" or "importing with AI is not working": this is the first time a picture is sent to a model, and the first place a wrong guess about what the models accept would show.
+
 ### Settings
 
 Each is optional. Add it as an environment **variable** of the GitHub environment (`staging` or `production`), and deploy.

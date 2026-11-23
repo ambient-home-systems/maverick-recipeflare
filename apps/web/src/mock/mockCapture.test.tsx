@@ -374,11 +374,15 @@ describe("cards on their way in, on the list", () => {
     const imports = within(await screen.findByRole("list", { name: "Imports" }))
       .getAllByRole("listitem")
       .map((row) => row.textContent ?? "");
-    expect(imports[0]).toContain("Photographed card");
+    // A card with no title yet is called by its place in the sitting, as the pile called it.
+    expect(imports[0]).toContain("Card 4");
     expect(imports[0]).toContain("Reading the card");
+    expect(imports[1]).toContain("Card 3");
     expect(imports[1]).toContain("Writing it up");
     expect(imports[2]).toContain("Lemon Bars");
     expect(imports[2]).toContain("Ready to review");
+    // So a card that could not be read says which paper card to photograph again.
+    expect(imports[3]).toContain("Card 1");
     expect(imports[3]).toContain("Nothing could be read from the photo");
   });
 });
@@ -393,14 +397,16 @@ describe("the way in from Add", () => {
     await waitFor(() => expect(router.state.location.pathname).toBe("/mock/capture"));
   });
 
-  it("is not offered in the app until photographing is connected", async () => {
+  it("is offered in the app, and leads to the page that holds the pile", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => Response.json({ items: [] })),
     );
-    await renderAt("/add");
+    const { router } = await renderAt("/add");
 
-    expect(await screen.findByRole("heading", { name: "Type it in" })).toBeTruthy();
-    expect(screen.queryByRole("heading", { name: "From photos" })).toBeNull();
+    fireEvent.click(await screen.findByRole("button", { name: "Photograph cards" }));
+
+    await waitFor(() => expect(router.state.location.pathname).toBe("/add/photos"));
+    expect(await screen.findByRole("heading", { name: "No cards yet" })).toBeTruthy();
   });
 });

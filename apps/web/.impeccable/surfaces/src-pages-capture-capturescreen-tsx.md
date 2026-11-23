@@ -44,8 +44,8 @@ FINISH: reviewed by the finish reviewer on 23 Nov 2026, verdict "fix", eight fix
 ## Unresolved
 
 - The owner has not been through it on an iPhone and an Android phone: one-sided cards, two-sided cards, a wrong photo removed, sides swapped, twelve cards in a sitting. That is this task's acceptance check.
-- Whether a browser gives the page back with its pile intact after the camera on a phone short of memory. If it does not, the pile has to be kept on the device between shots (T2.6).
-- Whether the import row should show the card's own photo on its tile, and how a failed card says which card of the sitting it was. The list carries neither an import's pictures nor its place in a sitting yet; T2.6 decides.
+- Whether a browser gives the page back with its pile intact after the camera on a phone short of memory. T2.6 connected the screen with the pile in the page's memory; if a phone does throw the page away, the pile has to be kept on the device between shots.
+- Whether the import row should show the card's own photo on its tile. The list does not carry an import's pictures. (How a failed card says which card it was is settled in T2.6: the row is called by the card's number in the sitting.)
 - Where "From photos" sits on the Add page. It is second, under typing; on a phone, where cards are photographed, it may belong first.
 - A tablet, which keeps the capture bar, was not captured in review: the browser used reports a mouse even when it imitates a touch device.
 - How many cards one sitting may hold. The mock stops at 30.

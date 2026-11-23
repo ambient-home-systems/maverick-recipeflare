@@ -163,6 +163,39 @@ export function draftFromReading(reading: Reading, text: string): RecipeDraft {
   });
 }
 
+/**
+ * What a reader was unsure of, placed on the part of the draft it is about:
+ * the first ingredient line or step that has those words, or the title. What
+ * cannot be placed is still said, about the recipe as a whole.
+ */
+export function doubtsAbout(
+  draft: RecipeDraft,
+  unsure: readonly { words: string; why: string }[],
+): DraftDoubt[] {
+  const lines = draft.ingredientSections.flatMap((section) => section.items);
+  const steps = draft.stepSections.flatMap((section) => section.steps);
+  const has = (text: string, words: string) => words !== "" && sourceOf(text).hasRun(words);
+  const doubts: DraftDoubt[] = [];
+  for (const { words, why } of unsure) {
+    const line = lines.findIndex((item) => has(item.originalText, words));
+    const step = line === -1 ? steps.findIndex((item) => has(item.text, words)) : -1;
+    const where =
+      line !== -1
+        ? `ingredient:${line}`
+        : step !== -1
+          ? `step:${step}`
+          : has(draft.title, words)
+            ? "title"
+            : "card";
+    const said = why || "Hard to read on the card.";
+    const sentence = doubtText(where === "card" && words !== "" ? `“${words}”: ${said}` : said);
+    if (!doubts.some((doubt) => doubt.where === where && doubt.why === sentence)) {
+      doubts.push({ where, why: sentence });
+    }
+  }
+  return doubts;
+}
+
 /** Asks a model to copy the recipe out of `text`, and checks what it wrote. */
 export async function buildDraft(text: string, ai: AiRunner): Promise<RecipeDraft> {
   if (text.trim() === "") {

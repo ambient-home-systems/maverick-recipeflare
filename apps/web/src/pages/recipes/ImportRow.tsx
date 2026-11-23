@@ -29,12 +29,12 @@ const FAILURES: Record<string, string> = {
 };
 
 /** Where an import came from, in a word or two: the site a link points at, without the "www", or "pasted text". */
-export function importHost(job: Pick<ImportJob, "sourceUrl" | "kind">): string {
+export function importHost(job: Pick<ImportJob, "sourceUrl" | "kind" | "card">): string {
   if (job.kind === "text") {
     return "pasted text";
   }
   if (job.kind === "photo") {
-    return "a photo of a card";
+    return job.card ? `a photo of card ${job.card}` : "a photo of a card";
   }
   try {
     return new URL(job.sourceUrl ?? "").hostname.replace(/^www\./, "");
@@ -94,7 +94,10 @@ export function ImportRow({
     job.kind === "text"
       ? "Pasted text"
       : job.kind === "photo"
-        ? "Photographed card"
+        ? // Its place in the sitting says which paper card it is, when the list knows it.
+          job.card
+          ? `Card ${job.card}`
+          : "Photographed card"
         : importHost(job);
   const title = job.result?.draft.title.trim() || host;
   const Icon = job.kind === "text" ? ClipboardPaste : job.kind === "photo" ? Camera : Link2;

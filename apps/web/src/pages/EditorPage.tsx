@@ -19,6 +19,7 @@ import {
   useChangeImport,
   useFoods,
   useImport,
+  useImports,
   useOrganizers,
   useRecipe,
   useUnits,
@@ -156,6 +157,16 @@ function Editor({
     [base, round],
   );
 
+  // The next photographed card waiting for review, in the order the cards were taken:
+  // the list is newest first, so it is the last one found.
+  const imports = useImports();
+  const nextCard =
+    importing?.kind === "photo"
+      ? (imports.data ?? []).findLast(
+          (job) => job.kind === "photo" && job.status === "needs_review" && job.id !== importing.id,
+        )
+      : undefined;
+
   // Leaving by the navigation or the back button asks first, as the editor's own Cancel does.
   const blocker = useBlocker({
     shouldBlockFn: () => dirty.current && !leavingOnPurpose.current,
@@ -176,7 +187,12 @@ function Editor({
       {
         onSuccess: (saved) => {
           leavingOnPurpose.current = true;
-          void navigate({ to: "/recipes/$slug", params: { slug: saved.slug }, search: {} });
+          // A sitting of cards is reviewed one after another, without a trip to the list between.
+          if (nextCard) {
+            void navigate({ to: "/imports/$id/review", params: { id: nextCard.id } });
+          } else {
+            void navigate({ to: "/recipes/$slug", params: { slug: saved.slug }, search: {} });
+          }
         },
         onError: (error) => {
           const current = conflictOf(error);
@@ -218,12 +234,18 @@ function Editor({
   const pagePicture = importing?.assets.find((asset) => asset.role === "cover");
   const sourceText = importing?.result?.sourceText ?? null;
   const pasted = importing?.kind === "text";
+  // A photographed card is checked against its photos, not against what a model read from them.
+  const cardSides =
+    importing?.kind === "photo"
+      ? importing.assets.filter((asset) => asset.role === "original")
+      : [];
   const review: Review | undefined =
     importing && prepared
       ? {
           from: importHost(importing),
           sourceUrl: importing.sourceUrl ?? undefined,
           byAi: importing.result?.readBy === "ai",
+          saveLabel: nextCard ? "Save and next card" : undefined,
           attention: prepared.attention,
           flaggedRows: prepared.flaggedRows,
           flaggedParts: prepared.flaggedParts,
@@ -240,26 +262,44 @@ function Editor({
               }
             : undefined,
           original:
-            pagePicture || sourceText
+            cardSides.length > 0
               ? {
                   title: "Original",
-                  caption: sourceText
-                    ? pasted
-                      ? "The text as you pasted it."
-                      : "The words of the page, as they were read."
-                    : "The picture from the page. Open the page to check the rest against it.",
-                  text: sourceText ?? undefined,
-                  photos: pagePicture
-                    ? [
-                        {
-                          id: pagePicture.id,
-                          url: assetUrl(pagePicture, "full"),
-                          alt: "The picture from the page",
-                        },
-                      ]
-                    : [],
+                  caption:
+                    cardSides.length === 1
+                      ? "The card as photographed. Check each line against it."
+                      : "The card as photographed, front first. Check each line against it.",
+                  photos: cardSides.map((side, index) => ({
+                    id: side.id,
+                    url: assetUrl(side, "full"),
+                    alt:
+                      index === 0
+                        ? "The front of the card"
+                        : index === 1
+                          ? "The back of the card"
+                          : `Side ${index + 1} of the card`,
+                  })),
                 }
-              : undefined,
+              : pagePicture || sourceText
+                ? {
+                    title: "Original",
+                    caption: sourceText
+                      ? pasted
+                        ? "The text as you pasted it."
+                        : "The words of the page, as they were read."
+                      : "The picture from the page. Open the page to check the rest against it.",
+                    text: sourceText ?? undefined,
+                    photos: pagePicture
+                      ? [
+                          {
+                            id: pagePicture.id,
+                            url: assetUrl(pagePicture, "full"),
+                            alt: "The picture from the page",
+                          },
+                        ]
+                      : [],
+                  }
+                : undefined,
         }
       : undefined;
 
@@ -528,9 +568,16 @@ function NoReview({ title, children }: { title: string; children: string }) {
   );
 }
 
-/** The editor in review mode, on what an import found. */
+/**
+ * The editor in review mode, on what an import found. Each import gets a page
+ * of its own, so that going on to the next card starts afresh.
+ */
 export function ReviewImportPage() {
   const { id } = reviewRoute.useParams();
+  return <ReviewImport key={id} id={id} />;
+}
+
+function ReviewImport({ id }: { id: string }) {
   const job = useImport(id);
   const lists = useEditorLists();
   // Held from the moment it is first seen ready: saving completes the import,

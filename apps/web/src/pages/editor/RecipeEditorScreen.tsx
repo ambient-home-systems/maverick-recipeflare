@@ -42,6 +42,12 @@ export type Review = {
   flaggedParts: string[];
   /** True when an AI model wrote the draft, not the source's own structured data. The screen says so. */
   byAi?: boolean;
+  /**
+   * What Save says when saving leads on to the next import waiting for review,
+   * so that a sitting of cards is not a trip to the list for each: "Save and
+   * next card". Left out, Save says "Save recipe".
+   */
+  saveLabel?: string;
   suggestions?: Partial<Record<OrganizerKind, string[]>>;
   /** A recipe the household already has from the same link. */
   duplicate?: { title: string; onOpen: () => void };
@@ -822,7 +828,7 @@ export function RecipeEditorScreen({
             busy={saving}
             onClick={() => save()}
           >
-            {mode === "review" ? "Save recipe" : "Save"}
+            {mode === "review" ? (review?.saveLabel ?? "Save recipe") : "Save"}
           </Button>
           <Button variant="quiet" disabled={saving} onClick={leave}>
             {mode === "review" ? "Discard" : "Cancel"}

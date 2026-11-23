@@ -69,7 +69,14 @@ const screens: { name: string; open: (page: Page) => Promise<void> }[] = [
     },
   },
   {
-    // Not connected yet: the screen as the mock draws it, mid-sitting with a card open.
+    name: "photographing cards, before the first card",
+    open: async (page) => {
+      await page.goto("/add/photos");
+      await expect(page.getByRole("button", { name: "Photograph a card" })).toBeVisible();
+    },
+  },
+  {
+    // Mid-sitting with a card open, as the mock draws it: the same screen, with photos to show.
     name: "photographing cards",
     open: async (page) => {
       await page.goto("/mock/capture");
