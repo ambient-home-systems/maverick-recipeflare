@@ -26,7 +26,7 @@ export type ListCategory = ListOption & { stock: Stock };
 
 /** Where the screen's own links lead. The mock harness points them at mock screens. */
 export type ListLinks = {
-  newRecipe: "/add" | "/mock/new";
+  newRecipe: "/recipes/new" | "/mock/new";
   importLink: "/add" | "/mock/add";
 };
 

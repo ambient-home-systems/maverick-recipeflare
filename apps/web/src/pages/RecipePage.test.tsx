@@ -119,13 +119,17 @@ describe("a recipe on the household's own data", () => {
     expect(await screen.findByRole("heading", { name: "Only a title so far" })).toBeTruthy();
   });
 
-  it("does not offer Cook or Edit until those screens are connected", async () => {
+  it("offers Edit, which opens the editor on this recipe, and not Cook until cook mode is connected", async () => {
     stubApi(Response.json(LENTIL));
-    await renderAt(`/recipes/${LENTIL.slug}`);
+    const { router } = await renderAt(`/recipes/${LENTIL.slug}`);
     await screen.findByRole("heading", { level: 1, name: LENTIL.title });
 
     expect(screen.queryByRole("button", { name: "Cook" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Edit" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+
+    await waitFor(() =>
+      expect(router.state.location.pathname).toBe(`/recipes/${LENTIL.slug}/edit`),
+    );
   });
 });
 

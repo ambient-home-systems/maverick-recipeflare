@@ -1,6 +1,6 @@
 import { type Asset, newId, type OrganizerKind, type RecipeInput } from "@recipeflare/schema";
 import { ArrowDown, ChevronDown, Copy, ExternalLink, Plus, Save, Trash2 } from "lucide-react";
-import { type ReactNode, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { Button } from "../../ui/Button";
 import { DividerBack } from "../../ui/DividerTabs";
 import { FieldProblem, Mark, TextArea, TextField } from "../../ui/Field";
@@ -57,23 +57,42 @@ type RecipeEditorScreenProps = {
   parse: LineParser;
   stockFor: (categoryId: string) => Stock;
   photoUrl: (asset: Asset) => string | undefined;
-  onAddPhotos: (group: "photo" | "original", files: File[]) => Asset[];
+  /** Adds photos from the device. Without it the editor has no photo section. */
+  onAddPhotos?: (group: "photo" | "original", files: File[]) => Asset[];
   onCreateUnit: (name: string) => string;
   onCreateOrganizer: (kind: OrganizerKind, name: string) => string;
-  /** Called with a recipe the shared schema accepts, once any new foods have been confirmed. */
-  onSave: (input: RecipeInput, newFoods: string[], assets: Asset[]) => void;
+  /**
+   * Called with a recipe the shared schema accepts, once any new foods have
+   * been confirmed. `newFoodByLine` says which ingredient line, by its ID, is
+   * waiting for which of the new foods.
+   */
+  onSave: (
+    input: RecipeInput,
+    newFoods: string[],
+    assets: Asset[],
+    newFoodByLine: Record<string, string>,
+  ) => void;
   /** Leaves the editor without saving. In review this discards the import. */
   onLeave: () => void;
   /** Where the way back leads, in a few words: the recipe's title, or "All recipes". */
   backLabel: string;
+  /** Called when the cook chooses to stay after being asked about leaving. */
+  onStay?: () => void;
+  /** Told whenever the editor starts or stops holding unsaved changes. */
+  onDirtyChange?: (dirty: boolean) => void;
   /** True while a save is on its way. */
   saving?: boolean;
+  /** Why the last save did not go through, in a sentence. What was typed is still here. */
+  saveProblem?: string;
   /** True when the save was refused because another device saved the recipe first. */
   conflict?: boolean;
   onConflict?: (choice: "reload" | "overwrite" | "keep-editing") => void;
   /** Shows problems before the first save is tried. For drawing the state in the mock. */
   showProblems?: boolean;
-  /** Opens the "leave without saving" question at once. For drawing the state in the mock. */
+  /**
+   * Opens the "leave without saving" question. The page sets it when the cook
+   * tries to go elsewhere with unsaved changes; the mock sets it to draw the state.
+   */
   asking?: boolean;
   review?: Review;
 };
@@ -215,8 +234,11 @@ export function RecipeEditorScreen({
   onCreateOrganizer,
   onSave,
   onLeave,
+  onStay,
+  onDirtyChange,
   backLabel,
   saving = false,
+  saveProblem,
   conflict = false,
   onConflict,
   showProblems = false,
@@ -286,12 +308,31 @@ export function RecipeEditorScreen({
       return;
     }
     setConfirmFoods(null);
-    onSave(checked.input, checked.newFoods, value.assets);
+    onSave(checked.input, checked.newFoods, value.assets, checked.newFoodByLine);
+  };
+
+  // The page asks when the cook is leaving some other way: the navigation, the back button.
+  useEffect(() => {
+    if (asking) {
+      setLeaving(true);
+    }
+  }, [asking]);
+
+  const dirty = isDirty(value, initial);
+  const tellDirty = useRef(onDirtyChange);
+  tellDirty.current = onDirtyChange;
+  useEffect(() => {
+    tellDirty.current?.(dirty);
+  }, [dirty]);
+
+  const stay = () => {
+    setLeaving(false);
+    onStay?.();
   };
 
   const leave = () => {
     // A review always asks: discarding an import cannot be undone.
-    if (mode === "review" || isDirty(value, initial)) {
+    if (mode === "review" || dirty) {
       setLeaving(true);
     } else {
       onLeave();
@@ -340,13 +381,17 @@ export function RecipeEditorScreen({
         </div>
       </div>
 
-      <SectionHead title="Photos and original card" />
-      <PhotoFields
-        assets={value.assets}
-        onChange={(assets) => set("assets", assets)}
-        photoUrl={photoUrl}
-        onAddPhotos={onAddPhotos}
-      />
+      {onAddPhotos ? (
+        <>
+          <SectionHead title="Photos and original card" />
+          <PhotoFields
+            assets={value.assets}
+            onChange={(assets) => set("assets", assets)}
+            photoUrl={photoUrl}
+            onAddPhotos={onAddPhotos}
+          />
+        </>
+      ) : null}
 
       <SectionHead title="Times and amounts" />
       <div className="grid gap-4 px-4 py-4">
@@ -555,6 +600,7 @@ export function RecipeEditorScreen({
     <>
       <DividerBack label={backLabel} onBack={leave} />
       <Page joined title={TITLES[mode]}>
+        {saveProblem ? <Notice problem>{saveProblem}</Notice> : null}
         {/* Problems are announced together, once, when a save is refused. */}
         <div ref={summary} tabIndex={-1} className="outline-none">
           {problemCount > 0 ? (
@@ -731,11 +777,11 @@ export function RecipeEditorScreen({
 
       <Sheet
         open={leaving}
-        onClose={() => setLeaving(false)}
+        onClose={stay}
         title={mode === "review" ? "Discard this import?" : "Leave without saving?"}
         footer={
           <>
-            <Button variant="quiet" onClick={() => setLeaving(false)}>
+            <Button variant="quiet" onClick={stay}>
               Keep editing
             </Button>
             <Button

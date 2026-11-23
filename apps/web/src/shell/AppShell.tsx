@@ -7,12 +7,30 @@ function target(item: NavItem, pathname: string): NavItem["to"] | NonNullable<Na
   return pathname.startsWith("/mock") && item.mockTo ? item.mockTo : item.to;
 }
 
-function isCurrent(item: NavItem, pathname: string): boolean {
+/** How much of the address a destination claims: the length of its longest matching address, or -1. */
+function claim(item: NavItem, pathname: string): number {
   const to = target(item, pathname);
-  if (item.mockAlso?.some((path) => pathname.startsWith(path))) {
-    return true;
+  let best = to === "/" ? (pathname === "/" ? 1 : -1) : pathname.startsWith(to) ? to.length : -1;
+  for (const path of item.also ?? []) {
+    if (pathname === path || pathname.startsWith(`${path}/`)) {
+      best = Math.max(best, path.length);
+    }
   }
-  return to === "/" ? pathname === "/" : pathname.startsWith(to);
+  return best;
+}
+
+/** The destination the address belongs to. The longest claim wins: "/recipes/new" is Add's, not Recipes'. */
+function currentItem(pathname: string): NavItem | undefined {
+  let current: NavItem | undefined;
+  let longest = -1;
+  for (const item of NAV_ITEMS) {
+    const length = claim(item, pathname);
+    if (length > longest) {
+      current = item;
+      longest = length;
+    }
+  }
+  return current;
 }
 
 function NavLink({
@@ -56,6 +74,7 @@ function NavLink({
  */
 export function AppShell() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const current = currentItem(pathname);
 
   if (isFullScreen(pathname)) {
     return (
@@ -89,7 +108,7 @@ export function AppShell() {
             key={item.to}
             item={item}
             to={target(item, pathname)}
-            current={isCurrent(item, pathname)}
+            current={item === current}
           />
         ))}
       </nav>

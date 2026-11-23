@@ -95,7 +95,7 @@ export function RecipesPage() {
       onRetry={() => void list.refetch()}
       signedOut={signedOut}
       offline={!online}
-      links={{ newRecipe: "/add", importLink: "/add" }}
+      links={{ newRecipe: "/recipes/new", importLink: "/add" }}
       recipeLink={(recipe) => ({ to: "/recipes/$slug", params: { slug: recipe.slug } })}
     />
   );

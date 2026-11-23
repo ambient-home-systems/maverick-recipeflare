@@ -319,6 +319,8 @@ export type Checked = {
   input?: RecipeInput;
   /** Food names to create, once the cook has confirmed them. */
   newFoods: string[];
+  /** The ingredient lines waiting for one of those foods: line ID to food name. */
+  newFoodByLine: Record<string, string>;
 };
 
 const NUMBER = "Use a number above zero, such as 6 or 1 1/2.";
@@ -482,8 +484,14 @@ export function checkEditorValue(value: EditorValue): Checked {
       ),
     ),
   ];
+  // Which line asks for which new food, so the save can point each line at the food once it exists.
+  const newFoodByLine = Object.fromEntries(
+    value.ingredients.flatMap((row) =>
+      row.kind === "line" && !row.foodId && row.newFood ? [[row.id, row.newFood]] : [],
+    ),
+  );
   const ok = Object.keys(errors).length === 0 && result.success;
-  return { errors, input: ok ? result.data : undefined, newFoods };
+  return { errors, input: ok ? result.data : undefined, newFoods, newFoodByLine };
 }
 
 /** True when the editor holds something different from what it started with. */

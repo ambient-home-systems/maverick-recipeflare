@@ -5,6 +5,7 @@ import {
   Recipe,
   RecipeListResponse,
   type RecipeSort,
+  UnitListResponse,
 } from "@recipeflare/schema";
 import {
   keepPreviousData,
@@ -85,7 +86,7 @@ export function useRecipeList(request: RecipeListRequest, enabled: boolean) {
 /** Every category, tag and tool, with how many recipes use each. */
 export function useOrganizers() {
   return useQuery({
-    queryKey: ["organizers"],
+    queryKey: ["lists", "organizers"],
     queryFn: ({ signal }) => api("/organizers", { schema: OrganizerListResponse, signal }),
     select: (data) => data.items,
   });
@@ -94,8 +95,17 @@ export function useOrganizers() {
 /** Every food, with how many recipes use each. */
 export function useFoods() {
   return useQuery({
-    queryKey: ["foods"],
+    queryKey: ["lists", "foods"],
     queryFn: ({ signal }) => api("/foods", { schema: FoodListResponse, signal }),
+    select: (data) => data.items,
+  });
+}
+
+/** Every unit, with how many recipes use each. */
+export function useUnits() {
+  return useQuery({
+    queryKey: ["lists", "units"],
+    queryFn: ({ signal }) => api("/units", { schema: UnitListResponse, signal }),
     select: (data) => data.items,
   });
 }

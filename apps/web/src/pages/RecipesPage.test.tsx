@@ -145,7 +145,9 @@ describe("the recipe list on the household's own recipes", () => {
 
     expect(await screen.findByRole("heading", { name: "No recipes yet" })).toBeTruthy();
     expect(screen.getByRole("heading", { level: 1, name: "Recipes" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Type a recipe" }).getAttribute("href")).toBe("/add");
+    expect(screen.getByRole("link", { name: "Type a recipe" }).getAttribute("href")).toBe(
+      "/recipes/new",
+    );
     // Nothing to search or filter yet.
     expect(screen.queryByRole("searchbox")).toBeNull();
   });
