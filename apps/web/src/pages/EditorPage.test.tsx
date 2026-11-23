@@ -205,7 +205,10 @@ const typeStep = (text: string) => {
   fireEvent.change(entry, { target: { value: text } });
   fireEvent.keyDown(entry, { key: "Enter" });
 };
-const rowOf = (text: string) => screen.getByRole("button", { name: `Edit ${text}` }).closest("li");
+/** A row's button is named by what it does and then everything the row shows. */
+const startsWith = (text: string) => (name: string) => name.startsWith(text);
+const rowOf = (text: string) =>
+  screen.getByRole("button", { name: startsWith(`Edit ${text}`) }).closest("li");
 const read = (row: HTMLElement | null | undefined) =>
   [...(row?.querySelector("[data-testid=line-read]")?.querySelectorAll(".font-semibold") ?? [])]
     .map((part) => part.textContent)
@@ -328,7 +331,7 @@ describe("typing a new recipe", () => {
     typeLine("2 cups nuts");
 
     // A unit the household lacks, made from the unit picker of an open line.
-    fireEvent.click(screen.getByRole("button", { name: "Edit 2 cups nuts" }));
+    fireEvent.click(screen.getByRole("button", { name: startsWith("Edit 2 cups nuts") }));
     fireEvent.click(screen.getByRole("button", { name: "Unit" }));
     fireEvent.change(sheet("Unit").getByLabelText("Find a unit"), { target: { value: "handful" } });
     fireEvent.click(sheet("Unit").getByRole("button", { name: "Create the unit “handful”" }));
@@ -365,7 +368,7 @@ describe("typing a new recipe", () => {
     await renderAt("/recipes/new");
     await editorOpen();
     typeLine("2 cups nuts");
-    fireEvent.click(screen.getByRole("button", { name: "Edit 2 cups nuts" }));
+    fireEvent.click(screen.getByRole("button", { name: startsWith("Edit 2 cups nuts") }));
     fireEvent.click(screen.getByRole("button", { name: "Unit" }));
     fireEvent.change(sheet("Unit").getByLabelText("Find a unit"), { target: { value: "handful" } });
     fireEvent.click(sheet("Unit").getByRole("button", { name: "Create the unit “handful”" }));

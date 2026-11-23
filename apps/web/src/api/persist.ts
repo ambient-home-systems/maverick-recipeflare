@@ -19,7 +19,7 @@ const STORE_KEY = "recipeflare:queries";
  */
 export const KEPT_SHAPE = "1";
 
-/** How long after a change the copy on the device is written. A background copy makes many. */
+/** The least time between two writes of the copy. A background copy changes the cache many times. */
 const WRITE_AFTER_MS = 1000;
 
 /** True for what is worth keeping between visits: a whole recipe, or one of the household's lists. */
@@ -30,25 +30,43 @@ export function isKept(query: Pick<Query, "queryKey" | "state">): boolean {
   );
 }
 
-/** Writes the cache to the device's own database, at most once a second, and reads it back at the start. */
+/**
+ * Writes the cache to the device's own database and reads it back at the
+ * start. A change is written at once; changes that follow within a second are
+ * written together at its end, and whatever is still waiting is written when
+ * the page is hidden or left, so that closing the app loses nothing.
+ */
 export function devicePersister(): Persister {
   let waiting: PersistedClient | null = null;
-  let scheduled = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let lastWrite = 0;
   const write = () => {
-    scheduled = false;
+    clearTimeout(timer);
+    timer = undefined;
     const client = waiting;
     waiting = null;
     if (client) {
+      lastWrite = Date.now();
       // A device with no room, or a private window with no database: the app works without the copy.
       set(STORE_KEY, client).catch(() => {});
     }
   };
+  if (typeof window !== "undefined") {
+    window.addEventListener("pagehide", write);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") {
+        write();
+      }
+    });
+  }
   return {
     persistClient: (client) => {
       waiting = client;
-      if (!scheduled) {
-        scheduled = true;
-        setTimeout(write, WRITE_AFTER_MS);
+      const wait = lastWrite + WRITE_AFTER_MS - Date.now();
+      if (wait <= 0) {
+        write();
+      } else if (timer === undefined) {
+        timer = setTimeout(write, wait);
       }
     },
     restoreClient: () => get<PersistedClient>(STORE_KEY).catch(() => undefined),

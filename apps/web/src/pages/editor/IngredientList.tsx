@@ -273,11 +273,7 @@ export function IngredientList({
                 actions={actions()}
               />
             ) : (
-              <ClosedRow
-                onOpen={() => setOpenId(row.id)}
-                label={`Edit the section ${row.title}`}
-                error={error}
-              >
+              <ClosedRow onOpen={() => setOpenId(row.id)} label="Edit the section" error={error}>
                 <DividerClosed row={row} />
               </ClosedRow>
             );
@@ -299,7 +295,7 @@ export function IngredientList({
           return (
             <ClosedRow
               onOpen={() => setOpenId(row.id)}
-              label={`Edit ${row.text}`}
+              label="Edit"
               error={error}
               flagged={flagged.includes(row.id)}
             >

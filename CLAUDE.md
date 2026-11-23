@@ -6,7 +6,7 @@ Guidance for Claude Code working in this repository.
 
 Maverick Recipeflare (Recipeflare for short) is a household recipe app on Cloudflare: one TypeScript Worker serving a React PWA and a JSON API, with D1, R2, Queues and, in later phases, Workers AI and Durable Objects. One household per install. Licensed AGPL-3.0-only.
 
-**Status: Phase 0 is complete (T0.1 to T0.13); its gate passed on 23 Nov 2026. Phase 1 is built through T1.14 (the recipe repository, the recipes API with search and filters, the API for organizers, foods, units and labels, the ingredient line parser, the recipe list, the recipe view, the editor, the manage screens and cook mode on real data, photos, importing a recipe from a link through the import jobs, and installing the app and using it offline). T1.15 and T1.16 (the end-to-end run, the gate) are not.** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, the database schema with its migrations, and sign-in (the auth middleware, the Access and dev providers, `/api/v1/me`) exist. The recipe list at `/`, the recipe view at `/recipes/<slug>`, the editor at `/recipes/new` and `/recipes/<slug>/edit`, cook mode at `/recipes/<slug>/cook`, the manage screens at `/manage`, importing from a link at `/add` and its review at `/imports/<id>/review` are connected to data, photos included. Attachments have no screen yet. Recipes and the photos that have been shown are kept on the device, so the list, a recipe and cook mode open with no connection. When a pull request changes a command or path below, it updates this file in the same pull request.
+**Status: Phase 0 is complete (T0.1 to T0.13); its gate passed on 23 Nov 2026. Phase 1 is built through T1.15 (the recipe repository, the recipes API with search and filters, the API for organizers, foods, units and labels, the ingredient line parser, the recipe list, the recipe view, the editor, the manage screens and cook mode on real data, photos, importing a recipe from a link through the import jobs, installing the app and using it offline, and the end-to-end run). T1.16, the gate run by the household, is not.** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, the database schema with its migrations, and sign-in (the auth middleware, the Access and dev providers, `/api/v1/me`) exist. The recipe list at `/`, the recipe view at `/recipes/<slug>`, the editor at `/recipes/new` and `/recipes/<slug>/edit`, cook mode at `/recipes/<slug>/cook`, the manage screens at `/manage`, importing from a link at `/add` and its review at `/imports/<id>/review` are connected to data, photos included. Attachments have no screen yet. Recipes and the photos that have been shown are kept on the device, so the list, a recipe and cook mode open with no connection. When a pull request changes a command or path below, it updates this file in the same pull request.
 
 ## Read first
 
@@ -55,6 +55,7 @@ apps/web/             Vite React PWA; builds to apps/web/dist, served as static 
   src/mock/           The /mock harness: the same screens fed from fixtures, for design review
 packages/schema/      @recipeflare/schema: Zod schemas, types, formatting, fixtures
 scripts/              Small Node scripts used by the root package scripts
+e2e/                  The end-to-end run (Playwright): the main path, accessibility, load time
 services/fetch-agent/ Placeholder until Phase 3 (yt-dlp and ffmpeg Docker image)
 docs/                 Build plan, implementation plan, feature spec, operations
 ```
@@ -71,7 +72,8 @@ Run from the repository root. Needs Node 22.12 or later and pnpm 10 (`corepack e
 | `pnpm lint` | Biome lint and format check. `pnpm format` applies fixes. Markdown is not formatted |
 | `pnpm test` | All Vitest projects once: `schema` (Node), `worker` (Workers runtime), `web` (happy-dom). `pnpm test:watch` re-runs on change |
 | `pnpm test --project worker` | One project. A file path or `-t "name"` narrows it further |
-| `pnpm typecheck` | Regenerate the Worker's types, then run TypeScript in every package |
+| `pnpm e2e` | The end-to-end run: builds the app, serves it from a local Worker on port 8799 with an empty database of its own, and drives it in a phone-sized Chromium. Needs `pnpm exec playwright install chromium` once, or `PLAYWRIGHT_CHROMIUM_PATH` set to a Chromium already on the machine. A file path narrows it |
+| `pnpm typecheck` | Regenerate the Worker's types, then run TypeScript in every package and in `e2e/` |
 | `pnpm types` | Regenerate `apps/worker/worker-configuration.d.ts` from `wrangler.jsonc`. The file is git-ignored; run this after changing bindings |
 | `pnpm db:generate --name <what_changed>` | Write a migration for a change to `apps/worker/src/db/schema.ts`. Add `--custom` for an empty one to write by hand |
 | `pnpm db:check` | Fail if the schema has a change with no migration. CI runs it |
@@ -146,6 +148,7 @@ To be signed in locally, copy `.dev.vars.example` to `.dev.vars` and run `pnpm d
 
 - The editor's value is `EditorValue` in `apps/web/src/pages/editor/editorState.ts`. It is not the saved shape: numbers are the text typed, and ingredients and steps are flat lists in which a section is a divider row. `checkEditorValue()` turns it into `RecipeInput` and ties every problem to a field or a row. Validation rules stay in the shared schema; the editor only adds what the schema cannot see, such as "lots" typed for servings.
 - There is no form library. Do not add one for a single field.
+- A closed row is one button. It is named by a hidden word or two (`ClosedRow`'s `label`: "Edit", "Edit step 2:") followed by everything the row shows. Do not give it an `aria-label`: that would replace what the row shows, and a screen reader would never say how a line was read.
 - Rows are reordered with dnd-kit through `SortableRows`. Dragging starts from the handle only, so a row scrolls the page as usual.
 - A food the household does not have is a name on the line (`newFood`) until the cook confirms it at save. Typing never creates a food. Units are created only from the unit picker.
 - The editor reads a line with `ingredientParser()` from the shared package, handed to it as the `parse` prop. `ParsedLine` and `LineParser` are the shared package's types.
@@ -254,7 +257,10 @@ To be signed in locally, copy `.dev.vars.example` to `.dev.vars` and run `pnpm d
 - A Worker test that needs a signed-in member builds its own app with `createApp({ fetchKeys })` and states every auth setting itself, as `test/auth.test.ts` does, so that a developer's `.dev.vars` cannot change the result. Test email addresses are at `example.com`.
 - Worker tests apply the real migration files before each test file (`test/apply-migrations.ts`), so a schema change needs its migration before its tests can pass.
 - New behaviour comes with a test. A bug fix comes with a test that fails without it.
-- CI (`.github/workflows/ci.yml`) runs lint, typecheck, the schema-drift check, test, build and a deploy dry run on every pull request and on pushes to `main`. On `main` it then deploys staging. `.github/workflows/deploy.yml` is the manual deploy.
+- The end-to-end run (`e2e/`) is Playwright, not Vitest: specs end in `.spec.ts`. They share one database and run in order, one at a time, so each spec starts by emptying the library (`emptyLibrary()`). It runs against the built app, service worker included, so going offline in a spec is real.
+- The accessibility spec fails on a serious or critical axe finding on any screen it lists. A new screen is added to its list.
+- `@playwright/test` is pinned to an exact version. Move it on purpose, and install the matching browser.
+- CI (`.github/workflows/ci.yml`) runs lint, typecheck, the schema-drift check, test, build, a deploy dry run and the end-to-end run on every pull request and on pushes to `main`. On `main` it then deploys staging. `.github/workflows/deploy.yml` is the manual deploy.
 
 ## Style
 

@@ -19,3 +19,7 @@ worker-configuration.d.ts
 .impeccable/questions/
 .impeccable/build/
 .impeccable/config.local.json
+
+# End-to-end run output
+test-results/
+playwright-report/

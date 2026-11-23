@@ -876,6 +876,14 @@ Tests that must exist before Phase 1 ends:
 - The URL handler maps a set of synthetic JSON-LD fixtures (graph form, sections, arrays, missing fields). Real pages are used for manual gate testing and are not committed.
 - One Playwright run of the main path: create a recipe, find it, open cook mode, go offline, reload.
 
+**The end-to-end run, as built in T1.15** (`e2e/`, `playwright.config.ts`, `scripts/e2e-server.mjs`).
+
+- `pnpm e2e` builds the app and serves it from a local Worker on its own port, with its own database made empty at the start, signed in as an invented member through the dev provider. It never touches the data `pnpm dev` uses. The browser is Chromium at a phone's size.
+- **The main path** is one story: an empty library, a recipe typed in with a photo, new foods confirmed, the recipe found by a word in an ingredient, cook mode, a step ticked, the network taken away, a reload that still opens cook mode with the tick kept, the list answered from the device, then back online to rename the recipe and delete it.
+- **Accessibility.** axe-core checks six screens (list, recipe, editor, cook mode, Add, a manage list) in both themes against the WCAG 2.2 A and AA rules, and the run fails on a serious or critical finding. It is a machine's check: it does not replace using the app with a screen reader.
+- **Load time.** With the processor held to a quarter speed and the network to slow 4G, the list of thirty recipes must show within 12 seconds on a first visit and 6 once installed. As measured when built: 2.4 seconds and 0.8. This imitates a slow phone; it is not one.
+- `@playwright/test` is pinned to one exact version, because a browser is installed for a version.
+
 ### 8.2 CI
 
 GitHub Actions, on every pull request and on pushes to `main`:
@@ -887,7 +895,7 @@ GitHub Actions, on every pull request and on pushes to `main`:
 5. Run the three test projects.
 6. Build the web app.
 
-A red check blocks merge. The Playwright run joins once T1.15 lands.
+A red check blocks merge. The end-to-end run is the last step of the same job, after the build: it installs Chromium and runs `pnpm e2e`. When it fails, what the browser saw is kept as an artifact for a week.
 
 ### 8.3 D1 migrations
 
