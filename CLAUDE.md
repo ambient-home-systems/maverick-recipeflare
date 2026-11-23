@@ -111,7 +111,7 @@ To be signed in locally, copy `.dev.vars.example` to `.dev.vars` and run `pnpm d
 - Rows are ruled, not carded: hairlines in ruling blue, no shadows. No paper textures, handwriting fonts or serif display type.
 - Every link, button and tab is at least 44 by 44 CSS pixels. Use `min-h-touch` and `min-w-touch`.
 - Fonts and icons are self-hosted. Nothing is fetched from a font or icon service, because the app must work offline.
-- Mock screens live under `/mock`, load on demand, and are the only code that imports fixtures. A mock screen renders the product screen from `src/pages/` with fixture data; do not draw a second copy of a screen for the mock. `src/mock/scenes.ts` loads with the router, so it must not import fixtures.
+- Mock screens live under `/mock`, load on demand, and are the only code that imports fixtures. Nothing in the app links to them: they are reached by typing the address. A mock screen renders the product screen from `src/pages/` with fixture data; do not draw a second copy of a screen for the mock. `src/mock/scenes.ts` loads with the router, so it must not import fixtures.
 - Text boxes have no grey placeholder. A placeholder is ink at regular weight; a label above the box is better.
 - A panel over the page is the `Sheet` component, a native modal dialog. It is the only thing that casts a shadow.
 - A screen's main actions go in a bar that sticks to the bottom at `bottom-[var(--rf-nav-height)]`, so it sits on top of the phone's navigation bar. The navigation takes its height from the same token; change one only through the token.

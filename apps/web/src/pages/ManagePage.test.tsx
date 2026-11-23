@@ -159,6 +159,15 @@ const openRow = (name: string | RegExp) => fireEvent.click(screen.getByRole("but
 const addBox = (one: string) => screen.getByLabelText(`Add a ${one}`) as HTMLInputElement;
 
 describe("the index of lists", () => {
+  it("has no way into the mock screens, which are for design review", async () => {
+    fakeApi();
+    await renderAt("/manage");
+    await screen.findByRole("heading", { level: 1 });
+
+    expect(screen.queryByRole("link", { name: /mock/i })).toBeNull();
+    expect(document.querySelector('main a[href^="/mock"]')).toBeNull();
+  });
+
   it("names the six lists with how many entries each has, and leads to each", async () => {
     fakeApi();
     await renderAt("/manage");

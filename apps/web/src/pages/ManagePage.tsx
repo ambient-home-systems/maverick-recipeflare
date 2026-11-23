@@ -5,7 +5,7 @@ import type {
   OrganizerKind,
   UnitEntry,
 } from "@recipeflare/schema";
-import { getRouteApi, Link } from "@tanstack/react-router";
+import { getRouteApi } from "@tanstack/react-router";
 import { ApiError, SignedOutError, UnreachableError } from "../api/client";
 import {
   type ListChange,
@@ -136,27 +136,21 @@ export function ManagePage() {
     labels: labels.data?.length ?? null,
   };
 
+  // Nothing here leads to the mock screens. They are for design review, and are
+  // reached by typing /mock.
   return (
-    <>
-      <ManageIndexScreen
-        groups={GROUPS.map((group) => ({ ...group, count: counts[group.key] }))}
-        // The index is useful with any of its counts; it has failed only when none arrived.
-        failed={queries.every((query) => query.isError && !query.data)}
-        onRetry={() => {
-          for (const query of queries) {
-            void query.refetch();
-          }
-        }}
-        signedOut={signedOut}
-        offline={!online}
-      />
-      <Link
-        to="/mock"
-        className="mx-3 mb-8 inline-flex min-h-touch items-center font-semibold text-ink md:mx-6"
-      >
-        Open the mock screens
-      </Link>
-    </>
+    <ManageIndexScreen
+      groups={GROUPS.map((group) => ({ ...group, count: counts[group.key] }))}
+      // The index is useful with any of its counts; it has failed only when none arrived.
+      failed={queries.every((query) => query.isError && !query.data)}
+      onRetry={() => {
+        for (const query of queries) {
+          void query.refetch();
+        }
+      }}
+      signedOut={signedOut}
+      offline={!online}
+    />
   );
 }
 
