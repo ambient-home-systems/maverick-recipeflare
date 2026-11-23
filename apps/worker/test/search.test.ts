@@ -165,6 +165,9 @@ describe("searching", () => {
     const second = await list({ q: "tomato", perPage: "2", page: "2" });
 
     expect(first.total).toBe(3);
+    // The size of the whole library comes along, whatever was asked for.
+    expect(first.libraryTotal).toBe(5);
+    expect((await list({ q: "🍕" })).libraryTotal).toBe(5);
     expect(first.items).toHaveLength(2);
     expect(second.items.map((item) => item.title)).toEqual(["Garden Salad"]);
   });

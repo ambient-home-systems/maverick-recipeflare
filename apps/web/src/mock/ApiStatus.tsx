@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchHealth, fetchMe } from "../api";
+import { fetchHealth, fetchMe } from "../api/client";
 
 type ApiState = "checking" | "ok" | "unreachable";
 

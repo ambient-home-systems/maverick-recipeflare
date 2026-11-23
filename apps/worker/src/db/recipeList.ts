@@ -110,7 +110,7 @@ type AssetRow = {
 /**
  * One page of the recipe list, with each recipe's cover, categories and tags:
  * the recipes that match the search text and every filter given.
- * One query: a batch of four selects over the same page.
+ * One query: a batch of five selects over the same page.
  */
 export async function listRecipes(
   db: D1Database,
@@ -118,8 +118,16 @@ export async function listRecipes(
 ): Promise<RecipeListResponse> {
   const orm = drizzle(db);
   const chosen = selection(query);
+  const library = orm.all<{ total: number }>(sql`SELECT COUNT(*) AS total FROM recipes`);
   if (!chosen) {
-    return { items: [], page: query.page, perPage: query.perPage, total: 0 };
+    const [all] = await orm.batch([library]);
+    return {
+      items: [],
+      page: query.page,
+      perPage: query.perPage,
+      total: 0,
+      libraryTotal: all[0]?.total ?? 0,
+    };
   }
   const { from, where } = chosen;
   const offset = (query.page - 1) * query.perPage;
@@ -128,7 +136,8 @@ export async function listRecipes(
   // its recipes. A batch is one transaction, so all four see the same recipes.
   const page = sql`SELECT r.id ${paged}`;
 
-  const [count, rows, organizerRows, assetRows] = await orm.batch([
+  const [all, count, rows, organizerRows, assetRows] = await orm.batch([
+    library,
     orm.all<{ total: number }>(sql`SELECT COUNT(*) AS total ${from} ${where}`),
     orm.all<SummaryRow>(
       sql`SELECT r.id, r.slug, r.title, r.description, r.source_name, r.servings,
@@ -194,5 +203,6 @@ export async function listRecipes(
     page: query.page,
     perPage: query.perPage,
     total: count[0]?.total ?? 0,
+    libraryTotal: all[0]?.total ?? 0,
   });
 }

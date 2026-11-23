@@ -7,6 +7,23 @@ import { errorBody } from "./http";
 import { foodRoutes, labelRoutes, organizerRoutes, unitRoutes } from "./routes/lists";
 import { recipeRoutes } from "./routes/recipes";
 
+/**
+ * A path within this app, and nothing else: a redirect must never be made to
+ * lead to another site. Anything that is not plainly a path becomes the home page.
+ */
+export function safeReturnPath(value: string | undefined): string {
+  if (!value?.startsWith("/") || value.startsWith("//") || value.includes("\\")) {
+    return "/";
+  }
+  // A control character has no place in a path, and browsers disagree about what one means.
+  for (const character of value) {
+    if (character < " ") {
+      return "/";
+    }
+  }
+  return value;
+}
+
 export type AppOptions = {
   /** How the Access provider fetches its public keys. Tests pass a stub. */
   fetchKeys?: typeof fetch;
@@ -31,6 +48,10 @@ export function createApp(options: AppOptions = {}) {
       const body: MeResponse = { member: c.get("member") };
       return c.json(body);
     })
+    // Where "Sign in again" leads. A browser arriving here with no session is
+    // shown the sign-in page by Cloudflare Access before the request gets this
+    // far; once signed in, it is sent back to the page it came from.
+    .get("/auth/refresh", (c) => c.redirect(safeReturnPath(c.req.query("return")), 302))
     .route("/recipes", recipeRoutes)
     .route("/organizers", organizerRoutes)
     .route("/foods", foodRoutes)

@@ -1,5 +1,6 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { isFullScreen, NAV_ITEMS, type NavItem } from "./nav";
+import { SessionNotice } from "./SessionNotice";
 
 /** Inside the mock harness the navigation leads to mock screens, where one is drawn. */
 function target(item: NavItem, pathname: string): NavItem["to"] | NonNullable<NavItem["mockTo"]> {
@@ -94,7 +95,9 @@ export function AppShell() {
       </nav>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="on-shell bg-shell px-4 pb-1 pt-[max(0.25rem,env(safe-area-inset-top))] text-on-shell md:hidden">
+        {/* Above the header, so the header and a page's search band stay one piece. */}
+        <SessionNotice />
+        <header className="on-shell bg-shell px-4 pb-1 pt-[max(0.25rem,env(safe-area-inset-top))] text-on-shell md:hidden [.session-notice+&]:pt-1">
           <Link
             to="/"
             className="inline-flex min-h-touch items-center text-xl font-bold text-on-shell no-underline"
