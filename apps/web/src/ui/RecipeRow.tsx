@@ -74,7 +74,7 @@ function MetaLine({
 }
 
 /** A recipe's own page. The mock harness has its own copy of the route. */
-export type RowLink = { to: "/mock/recipe/$slug"; params: { slug: string } };
+export type RowLink = { to: "/recipes/$slug" | "/mock/recipe/$slug"; params: { slug: string } };
 
 type RecipeRowProps = {
   recipe: RecipeSummary;

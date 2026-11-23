@@ -6,7 +6,7 @@ Guidance for Claude Code working in this repository.
 
 Maverick Recipeflare (Recipeflare for short) is a household recipe app on Cloudflare: one TypeScript Worker serving a React PWA and a JSON API, with D1, R2, Queues and, in later phases, Workers AI and Durable Objects. One household per install. Licensed AGPL-3.0-only.
 
-**Status: Phase 0 is complete (T0.1 to T0.13); its gate passed on 23 Nov 2026. Phase 1 is built through T1.6 (the recipe repository, the recipes API with search and filters, the API for organizers, foods, units and labels, the ingredient line parser, and the recipe list on real data).** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, the database schema with its migrations, and sign-in (the auth middleware, the Access and dev providers, `/api/v1/me`) exist. The recipe list at `/` is the one product screen connected to data; the recipe view, the editor and cook mode are still mock screens only. When a pull request changes a command or path below, it updates this file in the same pull request.
+**Status: Phase 0 is complete (T0.1 to T0.13); its gate passed on 23 Nov 2026. Phase 1 is built through T1.7 (the recipe repository, the recipes API with search and filters, the API for organizers, foods, units and labels, the ingredient line parser, and the recipe list and the recipe view on real data).** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, the database schema with its migrations, and sign-in (the auth middleware, the Access and dev providers, `/api/v1/me`) exist. The recipe list at `/` and the recipe view at `/recipes/<slug>` are connected to data; the editor and cook mode are still mock screens only, so the recipe view does not offer Edit or Cook yet. When a pull request changes a command or path below, it updates this file in the same pull request.
 
 ## Read first
 
@@ -112,7 +112,9 @@ To be signed in locally, copy `.dev.vars.example` to `.dev.vars` and run `pnpm d
 - Server state lives in TanStack Query, through hooks in `queries.ts`. A screen in `src/pages/<area>/` still fetches nothing: its page component calls the hooks and passes props.
 - `api()` uses `redirect: "manual"`. That is how a session that has run out is told from a dropped connection; do not change it.
 - A session that has run out is handled in one place: `api()` marks it, and the shell shows the band with "Sign in again". A screen may take a `signedOut` prop to say what it cannot show; it does not offer its own way back in.
-- What a list shows (search, filters, sort) is in the page address, read with the route's `validateSearch` and written with `navigate({ search, replace: true })`.
+- What a list shows (search, filters, sort) is in the page address, read with the route's `validateSearch` and written with `navigate({ search, replace: true })`. A recipe's scale is in its address the same way.
+- A screen offers an action only when it is given the handler for it: the recipe view shows Cook and Edit when it has `onCook` and `onEdit`. Do not show a button that does nothing.
+- A change (a delete, a save) is a mutation hook in `queries.ts` that invalidates what it made stale. The screen is told when it is under way and when it failed, and says so in a `Notice`.
 
 ### Recipe editor
 

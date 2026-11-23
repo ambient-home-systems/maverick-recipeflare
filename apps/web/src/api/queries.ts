@@ -2,10 +2,18 @@ import {
   FoodListResponse,
   OrganizerListResponse,
   RECIPES_PER_PAGE,
+  Recipe,
   RecipeListResponse,
   type RecipeSort,
 } from "@recipeflare/schema";
-import { keepPreviousData, QueryClient, useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  QueryClient,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { ApiError, api, SignedOutError } from "./client";
 
 /**
@@ -89,5 +97,32 @@ export function useFoods() {
     queryKey: ["foods"],
     queryFn: ({ signal }) => api("/foods", { schema: FoodListResponse, signal }),
     select: (data) => data.items,
+  });
+}
+
+/** One recipe, by its slug or its ID. */
+export function useRecipe(idOrSlug: string) {
+  return useQuery({
+    queryKey: ["recipes", "one", idOrSlug],
+    queryFn: ({ signal }) =>
+      api(`/recipes/${encodeURIComponent(idOrSlug)}`, { schema: Recipe, signal }),
+  });
+}
+
+/**
+ * Deletes a recipe. Afterwards nothing the cache holds about recipes can be
+ * trusted: the lists are fetched again, and the recipe itself is forgotten.
+ */
+export function useDeleteRecipe() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (recipe: { id: string; slug: string }) =>
+      api(`/recipes/${recipe.id}`, { method: "DELETE" }),
+    onSuccess: (_nothing, recipe) => {
+      queryClient.removeQueries({ queryKey: ["recipes", "one", recipe.slug] });
+      queryClient.removeQueries({ queryKey: ["recipes", "one", recipe.id] });
+      // The use counts on organizers and foods have changed too.
+      return queryClient.invalidateQueries();
+    },
   });
 }

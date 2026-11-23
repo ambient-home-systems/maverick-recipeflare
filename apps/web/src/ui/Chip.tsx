@@ -79,7 +79,7 @@ export function LinkChip({
   search,
 }: {
   label: string;
-  to: "/mock/list";
+  to: "/" | "/mock/list";
   search: { tags?: string; tools?: string };
 }) {
   return (

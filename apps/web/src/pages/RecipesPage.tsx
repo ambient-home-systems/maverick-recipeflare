@@ -96,6 +96,7 @@ export function RecipesPage() {
       signedOut={signedOut}
       offline={!online}
       links={{ newRecipe: "/add", importLink: "/add" }}
+      recipeLink={(recipe) => ({ to: "/recipes/$slug", params: { slug: recipe.slug } })}
     />
   );
 }

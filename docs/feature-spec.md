@@ -135,6 +135,8 @@ How one recipe is shown for reading. Drawn as a mock screen in T0.8.
 - "Delete recipe" is at the end of the page. It asks first, naming the recipe and saying that its photos go too ([§9](#9-deleting-and-undoing)).
 - Offline, the recipe is shown from the device's copy with a band saying so. Cook still works; Edit and Delete are turned off.
 - An address that leads to no recipe says the recipe may have been renamed or deleted and links to the list. A recipe that could not be loaded says so once and offers "Try again".
+- A delete that does not go through says so at the top of the recipe, which stays on screen unchanged.
+- When the session has run out and the device has no copy of the recipe, the page says so; the way back in is the band at the top of every page.
 
 ## 3. Entering ingredients
 

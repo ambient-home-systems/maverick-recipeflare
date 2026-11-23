@@ -15,7 +15,9 @@ import {
 } from "./mock/scenes";
 import { AddPage } from "./pages/AddPage";
 import { ManagePage } from "./pages/ManagePage";
+import { RecipePage } from "./pages/RecipePage";
 import { RecipesPage } from "./pages/RecipesPage";
+import { parseScale } from "./pages/recipe/recipeFacts";
 import { type ListSearch, parseListSearch, toListSearch } from "./pages/recipes/listState";
 import { AppShell } from "./shell/AppShell";
 import { EmptyState } from "./ui/Notice";
@@ -98,8 +100,20 @@ const recipesRoute = createRoute({
   component: RecipesPage,
 });
 
+const recipeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/recipes/$slug",
+  // The scale is in the address, so a reload or a shared link keeps it.
+  validateSearch: (raw: Record<string, unknown>): { scale?: 0.5 | 2 | 3 } => {
+    const scale = parseScale(raw.scale);
+    return scale === 1 ? {} : { scale };
+  },
+  component: RecipePage,
+});
+
 const routeTree = rootRoute.addChildren([
   recipesRoute,
+  recipeRoute,
   at("/add", AddPage),
   at("/manage", ManagePage),
   at("/mock", MockIndex),
