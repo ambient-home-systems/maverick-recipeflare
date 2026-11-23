@@ -7,6 +7,8 @@
 export const PHOTO_CACHE = "rf-photos-v1";
 /** How many photos are kept before the oldest are let go. */
 export const PHOTO_LIMIT = 800;
+/** The message a freshly loaded page sends a waiting version, to ask it to take over. */
+export const TAKE_OVER = "take-over";
 /** The start of every app-shell cache's name; the rest is the build it came from. */
 export const SHELL_PREFIX = "rf-shell-";
 

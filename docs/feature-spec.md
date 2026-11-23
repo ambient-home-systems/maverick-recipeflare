@@ -262,7 +262,7 @@ The cook types a line the way it is written on the card. The rule-based parser (
 - Offline is read-only in Phase 1. New recipe, edit, delete and import are disabled, with a short note saying why.
 - A banner says when the app is offline, and when the data shown may be out of date.
 - Offline, the list shows every recipe on the device and can be searched and filtered. The search is plainer than online: every word typed must appear in the recipe, and "Best match" orders by title.
-- A new version of the app is fetched in the background and used the next time the app is opened afresh. It never changes under a page that is open.
+- A new version of the app is fetched in the background. Refreshing the page, or opening the app again, moves to it: the page loads itself once more, by itself, within a few seconds. It never changes under a page that someone is using. (Decided by the owner, 23 Nov 2026: a refresh must be enough.)
 - The device keeps up to 800 photos, and lets the oldest go first.
 - When the sign-in session has expired the app keeps showing stored recipes and offers "Sign in again". The offer is a band across the top of every page, above the header, and signing in comes back to the page the person was on. The band goes away by itself as soon as a request gets through again.
 

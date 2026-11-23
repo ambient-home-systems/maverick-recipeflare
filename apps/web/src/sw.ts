@@ -7,6 +7,7 @@ import {
   SHELL_PREFIX,
   servesApp,
   shellVersion,
+  TAKE_OVER,
 } from "./sw/rules";
 
 /**
@@ -17,8 +18,9 @@ import {
  * from then on. Photos are stored as they are first shown. Recipe data is not
  * its business: the app keeps that itself (`api/persist.ts`).
  *
- * A new version of the app is stored beside the old one and takes over the
- * next time the app is opened afresh, so a page never runs half old and half new.
+ * A new version of the app is stored beside the old one and waits. It takes
+ * over when a freshly loaded page asks it to (`registerServiceWorker.ts`), and
+ * every open page then loads itself again, so none runs half old and half new.
  */
 
 declare const self: ServiceWorkerGlobalScope & {
@@ -56,6 +58,13 @@ self.addEventListener("install", (event) => {
       );
     })(),
   );
+});
+
+self.addEventListener("message", (event) => {
+  // Only ever sent by the app's own page, at the moment it loads and before it shows anything.
+  if (event.data === TAKE_OVER) {
+    void self.skipWaiting();
+  }
 });
 
 self.addEventListener("activate", (event) => {
