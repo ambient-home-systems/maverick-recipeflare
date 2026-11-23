@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "pnpm run \"/^dev:.*/\"",
-    "dev:worker": "node scripts/ensure-web-dist.mjs && wrangler dev",
+    "dev:worker": "node scripts/ensure-web-dist.mjs && wrangler dev --local",
     "dev:web": "pnpm --filter @recipeflare/web dev",
     "build": "pnpm --filter @recipeflare/web build",
     "lint": "biome check .",

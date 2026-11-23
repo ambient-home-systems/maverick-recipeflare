@@ -129,6 +129,81 @@ describe("the mock index", () => {
   });
 });
 
+describe("the AI connection check on the mock index", () => {
+  /** The API with `/ai/check` answering as given, and everything else well. */
+  function stubCheck(check: Response) {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) =>
+      String(input).endsWith("/ai/check") ? check.clone() : Response.json({ status: "ok" }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    return fetchMock;
+  }
+  const asked = { profile: "standard", task: "build", requested: "@cf/some/model" };
+
+  it("says which model answered", async () => {
+    const fetchMock = stubCheck(
+      Response.json({
+        ok: true,
+        ...asked,
+        model: "@cf/some/model",
+        milliseconds: 2300,
+        usage: { inputTokens: 40, outputTokens: 9 },
+        logId: "log-7",
+        tries: 1,
+      }),
+    );
+    await renderAt("/mock");
+
+    fireEvent.click(screen.getByRole("button", { name: "Check the AI connection" }));
+
+    const outcome = await screen.findByText(/answered in 2\.3 seconds/);
+    expect(outcome.textContent).toContain("@cf/some/model");
+    expect(outcome.textContent).toContain("Profile: standard");
+    expect(outcome.textContent).toContain("log-7");
+    const call = fetchMock.mock.calls.find(([input]) => String(input).endsWith("/ai/check"));
+    expect(call?.[1]?.method).toBe("POST");
+    expect(call?.[1]?.body).toBe("{}");
+  });
+
+  it("asks the model typed in the box, and says why it did not answer", async () => {
+    const fetchMock = stubCheck(
+      Response.json({
+        ok: false,
+        ...asked,
+        requested: "@cf/old/model",
+        reason: "model",
+        retryable: false,
+        message: "5028: @cf/old/model was deprecated",
+      }),
+    );
+    await renderAt("/mock");
+
+    fireEvent.change(screen.getByLabelText("Model to ask"), { target: { value: "@cf/old/model" } });
+    fireEvent.click(screen.getByRole("button", { name: "Check the AI connection" }));
+
+    const outcome = await screen.findByRole("alert");
+    expect(outcome.textContent).toContain("has been retired");
+    expect(outcome.textContent).toContain("An import would not try again.");
+    expect(outcome.textContent).toContain("5028");
+    const call = fetchMock.mock.calls.find(([input]) => String(input).endsWith("/ai/check"));
+    expect(call?.[1]?.body).toBe(JSON.stringify({ model: "@cf/old/model" }));
+  });
+
+  it("says so when the check is not allowed", async () => {
+    stubCheck(
+      Response.json(
+        { error: { code: "forbidden", message: "Only the owner can check the AI connection" } },
+        { status: 403 },
+      ),
+    );
+    await renderAt("/mock");
+
+    fireEvent.click(screen.getByRole("button", { name: "Check the AI connection" }));
+
+    expect((await screen.findByRole("alert")).textContent).toContain("Only the owner");
+  });
+});
+
 describe("the fixture recipes screen", () => {
   it("lists all nine fixture recipes, most recently changed first", async () => {
     await renderAt("/mock/fixtures");

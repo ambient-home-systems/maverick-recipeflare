@@ -15,6 +15,8 @@ How this install is deployed and what has to be set up by hand. Written for T0.5
 | Import queue | `recipeflare-staging-imports` | `recipeflare-imports` |
 | Dead-letter queue | `recipeflare-staging-imports-dlq` | `recipeflare-imports-dlq` |
 | Images | The `IMAGES` binding, which names no resource | The same |
+| Workers AI | The `AI` binding, which names no resource | The same |
+| AI Gateway | `default`, unless `AI_GATEWAY` names another | The same. One gateway serves both unless they are given different names |
 | Deployed | Automatically, on every merge to `main`, after CI passes | By hand from the Actions tab, after approval |
 | GitHub environment | `staging` | `production` |
 
@@ -110,6 +112,49 @@ The app has no member list of its own to keep. Whoever the Access policy lets in
 - Removing someone from the Access policy stops them signing in. Their recipes stay.
 
 If every request answers "Sign-in is not set up on this server", the `ACCESS_TEAM_DOMAIN` or `ACCESS_AUD` secret is missing from that GitHub environment.
+
+## AI
+
+Importing from photos and text (Phase 2) asks a model on Workers AI, through an AI Gateway. Nothing needs setting up before the first deploy: the binding names no resource, the deploy token needs no new permission as far as the docs say, and Cloudflare makes the gateway called `default` the first time the Worker calls it.
+
+### Check it after a deploy
+
+Signed in as the owner, open `/mock` on the hostname and press **Check the AI connection**. It puts one small question to a model, with nothing of the household's in it, and says which model answered, how long it took and the gateway's log ID. It spends a little of the account's AI allowance each time.
+
+- To see that a retired model is refused and not retried, type `@cf/zai-org/glm-5.3-flash` in **Model to ask** and check again. The answer should say the model has been retired and that an import would not try again.
+- If the check says a setting names something that does not exist, `AI_PROFILE` is mistyped.
+- A member who is not the owner is told the check is for the owner.
+
+### Settings
+
+Each is optional. Add it as an environment **variable** of the GitHub environment (`staging` or `production`), and deploy.
+
+| Variable | Does | When unset |
+| --- | --- | --- |
+| `AI_PROFILE` | Which models do the AI jobs. The profiles are in `apps/worker/src/ai/profiles.ts`: `standard`, `gemma`, `qwen` | `standard` |
+| `AI_GATEWAY` | The name of the AI Gateway every model call goes through. Any name but `default` must be created in the dashboard first | `default` |
+| `AI_LOG_CONTENT` | `true` lets the gateway keep what was asked of a model and what it answered: photos of recipe cards and their text | Not kept. The gateway still records each call's model, time and cost |
+
+A variable that has been set stays set on the Worker after it is removed from GitHub. To go back to a default, set the variable to the default's value and deploy.
+
+### The gateway, once
+
+After the first check has made the gateway, in the Cloudflare dashboard go to **AI** > **AI Gateway** and select `default`.
+
+1. **Spend limit.** Go to **Settings** > **Spend limits** and add a rule: the amount the household is willing to spend on AI in a month, with no model or provider chosen, so that it covers everything. The plan's figure is $5. Past it, the gateway refuses calls until the month ends, and imports fail saying the allowance is used up.
+2. **Logs.** Open **Logs** and look at the entry for the check you ran. It should show the model, the tokens and the time, and no prompt or answer: the app asks the gateway not to keep them. If the prompt is there, turn log collection off under **Settings** > **Logs**, and say so in an issue, because the app's own request was not honoured.
+
+Staging and production share the `default` gateway and so share its spend limit. To give each its own, create two gateways and set `AI_GATEWAY` in each GitHub environment.
+
+Workers AI's own free allowance is 10,000 Neurons a day for the account. The Workers Paid plan bills use beyond it; on the free plan calls fail once it is used up.
+
+### On a computer
+
+`pnpm dev`, the tests and the end-to-end run never reach a model and need no Cloudflare account: Workers AI has no local version, and a real call is billed. To try a real model from a computer, sign Wrangler in and start the Worker without `--local`:
+
+```bash
+pnpm exec wrangler dev
+```
 
 ## The database
 

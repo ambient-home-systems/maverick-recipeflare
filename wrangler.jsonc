@@ -36,6 +36,10 @@
   // Resizes an uploaded photo into the two sizes the app shows. It names no
   // resource. If a resize fails the original photo is served instead.
   "images": { "binding": "IMAGES" },
+  // Workers AI, for reading recipe cards and pages. It names no resource. It
+  // has no local version: `pnpm dev`, the tests and the end-to-end run all
+  // leave it out, and only apps/worker/src/ai/ may use it.
+  "ai": { "binding": "AI" },
   // Imports are jobs on one queue, consumed by this same Worker. Each message
   // is a job's ID. A message that has failed three retries goes to the
   // dead-letter queue, whose consumer, also this Worker, marks the job failed,
@@ -76,6 +80,7 @@
       ],
       "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "recipeflare-staging-media" }],
       "images": { "binding": "IMAGES" },
+      "ai": { "binding": "AI" },
       "queues": {
         "producers": [{ "binding": "IMPORT_QUEUE", "queue": "recipeflare-staging-imports" }],
         "consumers": [

@@ -8,7 +8,8 @@ import {
   fixtureUnits,
 } from "@recipeflare/schema/fixtures";
 import { drizzle } from "drizzle-orm/d1";
-import { createApp } from "../src/app";
+import type { AiBinding, AiRunner } from "../src/ai/runner";
+import { type AppOptions, createApp } from "../src/app";
 import type { AppEnv } from "../src/auth/types";
 import { chunkRows } from "../src/db/chunk";
 import { foods, labels, members, organizers, units } from "../src/db/schema";
@@ -93,6 +94,56 @@ export async function seedLists(db: D1Database): Promise<void> {
   }
 }
 
+/**
+ * A model runner for a test that must not reach a model: using it fails the
+ * test. Tests never call the real one, which bills the real service.
+ */
+export const noAi: AiRunner = {
+  profile: () => {
+    throw new Error("this test was not expected to use a model");
+  },
+  run: () => Promise.reject(new Error("this test was not expected to use a model")),
+};
+
+/** One call a stand-in binding was asked to make. */
+export type AiCall = {
+  model: string;
+  inputs: Record<string, unknown>;
+  options?: Record<string, unknown>;
+};
+
+/** A chat answer as the service gives it, around the text a model wrote. */
+export const chatAnswer = (content: unknown, extra: Record<string, unknown> = {}) => ({
+  model: "@cf/test/stand-in",
+  choices: [
+    {
+      message: { content: typeof content === "string" ? content : JSON.stringify(content) },
+      finish_reason: "stop",
+    },
+  ],
+  usage: { prompt_tokens: 12, completion_tokens: 7 },
+  ...extra,
+});
+
+/**
+ * Stands in for the Workers AI binding. Each call takes the next of
+ * `answers`: an `Error` is thrown, anything else is returned as the service's
+ * answer. The last answer is repeated.
+ */
+export function standInBinding(answers: unknown[]): AiBinding & { calls: AiCall[] } {
+  const calls: AiCall[] = [];
+  return {
+    calls,
+    aiGatewayLogId: "log-1",
+    lastRequestHttpStatusCode: null,
+    run(model, inputs, options) {
+      calls.push({ model, inputs, options });
+      const answer = answers[Math.min(calls.length, answers.length) - 1];
+      return answer instanceof Error ? Promise.reject(answer) : Promise.resolve(answer);
+    },
+  };
+}
+
 const RUNS = new Set(["all", "run", "first", "raw"]);
 
 /**
@@ -151,8 +202,8 @@ export function countingDatabase(real: D1Database) {
  * with the dev sign-in on, so no token is needed. Every auth setting is stated
  * here; nothing comes from a developer's own `.dev.vars`.
  */
-export function signedIn(bindings: Cloudflare.Env, email: string) {
-  const app = createApp();
+export function signedIn(bindings: Cloudflare.Env, email: string, options: AppOptions = {}) {
+  const app = createApp(options);
   const settings = {
     ...bindings,
     AUTH_PROVIDERS: "",

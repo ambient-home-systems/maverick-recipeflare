@@ -36,7 +36,7 @@ import {
   mainEntityPage,
   plainPage,
 } from "./fixtures/recipe-pages";
-import { countingDatabase, seedLists, signedIn } from "./helpers";
+import { countingDatabase, noAi, seedLists, signedIn } from "./helpers";
 
 const db = env.DB;
 
@@ -66,7 +66,7 @@ const JOB = { id: "", kind: "url" } as unknown as ImportJob;
 /** Runs the handler on one page and returns the draft as the runner would store it. */
 async function draftOf(body: string, url = "https://kitchen.example.com/recipes/a-dish") {
   const fetcher = site({ [url]: () => html(body) });
-  return RecipeDraft.parse(await importFromUrl(JOB, { url }, { fetch: fetcher, env }));
+  return RecipeDraft.parse(await importFromUrl(JOB, { url }, { fetch: fetcher, env, ai: noAi }));
 }
 
 async function failureOf(run: Promise<unknown>) {
@@ -192,7 +192,7 @@ describe("reading a recipe from a page", () => {
 describe("fetching the page", () => {
   const url = "https://kitchen.example.com/a";
   const run = (fetcher: typeof fetch, address = url) =>
-    importFromUrl(JOB, { url: address }, { fetch: fetcher, env });
+    importFromUrl(JOB, { url: address }, { fetch: fetcher, env, ai: noAi });
 
   it.each([
     "http://192.168.1.10/recipe",
@@ -390,6 +390,7 @@ describe("an import from a link, from the queue to a saved recipe", () => {
     const outcome = await runImportJob(created.id, IMPORT_HANDLERS, {
       fetch: site({ [url]: () => html(body) }),
       env,
+      ai: noAi,
     });
     expect(outcome).toEqual({ ack: true });
     const job = await loadImportJob(db, created.id);
@@ -428,6 +429,7 @@ describe("an import from a link, from the queue to a saved recipe", () => {
     await runImportJob(created.id, IMPORT_HANDLERS, {
       fetch: site({ [url]: () => html(articlePage) }),
       env,
+      ai: noAi,
     });
 
     expect(await loadImportJob(db, created.id)).toMatchObject({
@@ -543,7 +545,11 @@ describe("an import from a link, from the queue to a saved recipe", () => {
     // The site refuses everything the server asks it for: the page, and the picture.
     const fetcher = vi.fn<typeof fetch>(async () => html("no", { status: 403 }));
 
-    const outcome = await runImportJob(created.id, IMPORT_HANDLERS, { fetch: fetcher, env });
+    const outcome = await runImportJob(created.id, IMPORT_HANDLERS, {
+      fetch: fetcher,
+      env,
+      ai: noAi,
+    });
 
     expect(outcome).toEqual({ ack: true });
     const job = await loadImportJob(db, created.id);
@@ -568,7 +574,7 @@ describe("an import from a link, from the queue to a saved recipe", () => {
     });
     const created = ImportJob.parse(await response.json());
 
-    await runImportJob(created.id, IMPORT_HANDLERS, { fetch: site({}), env });
+    await runImportJob(created.id, IMPORT_HANDLERS, { fetch: site({}), env, ai: noAi });
 
     expect(await loadImportJob(db, created.id)).toMatchObject({
       status: "failed",

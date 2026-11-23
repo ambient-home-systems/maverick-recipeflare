@@ -1,5 +1,6 @@
 import { checkDraft, type ImportJob, type ImportJobKind, RecipeDraft } from "@recipeflare/schema";
 import { z } from "zod";
+import type { AiRunner } from "../ai/runner";
 import {
   claimImportJob,
   failImportJob,
@@ -33,8 +34,11 @@ export class PermanentImportError extends Error {
   }
 }
 
-/** What a handler is given besides the job: nothing it could not be handed in a test. */
-export type ImportTools = { fetch: typeof fetch; env: Env };
+/**
+ * What a handler is given besides the job: nothing it could not be handed in
+ * a test. `ai` is the only way a handler reaches a model.
+ */
+export type ImportTools = { fetch: typeof fetch; env: Env; ai: AiRunner };
 
 /** One kind of import: it reads the source and returns what it found. It saves nothing. */
 export type ImportHandler = (

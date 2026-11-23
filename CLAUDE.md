@@ -6,13 +6,13 @@ Guidance for Claude Code working in this repository.
 
 Maverick Recipeflare (Recipeflare for short) is a household recipe app on Cloudflare: one TypeScript Worker serving a React PWA and a JSON API, with D1, R2, Queues and, in later phases, Workers AI and Durable Objects. One household per install. Licensed AGPL-3.0-only.
 
-**Status: Phase 0 is complete (T0.1 to T0.13); its gate passed on 23 Nov 2026. Phase 1 is built through T1.15 (the recipe repository, the recipes API with search and filters, the API for organizers, foods, units and labels, the ingredient line parser, the recipe list, the recipe view, the editor, the manage screens and cook mode on real data, photos, importing a recipe from a link through the import jobs, installing the app and using it offline, and the end-to-end run). T1.16, the gate run by the household, is not.** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, the database schema with its migrations, and sign-in (the auth middleware, the Access and dev providers, `/api/v1/me`) exist. The recipe list at `/`, the recipe view at `/recipes/<slug>`, the editor at `/recipes/new` and `/recipes/<slug>/edit`, cook mode at `/recipes/<slug>/cook`, the manage screens at `/manage`, importing from a link at `/add` and its review at `/imports/<id>/review` are connected to data, photos and attachments included. Recipes and the photos that have been shown are kept on the device, so the list, a recipe and cook mode open with no connection. When a pull request changes a command or path below, it updates this file in the same pull request.
+**Status: Phase 0 is complete (T0.1 to T0.13); its gate passed on 23 Nov 2026. Phase 1 is built through T1.15 (the recipe repository, the recipes API with search and filters, the API for organizers, foods, units and labels, the ingredient line parser, the recipe list, the recipe view, the editor, the manage screens and cook mode on real data, photos, importing a recipe from a link through the import jobs, installing the app and using it offline, and the end-to-end run). T1.16, the gate run by the household, is not. Phase 2 has begun beside it, by the owner's decision: T2.1 (the AI binding and the model runner) is built.** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, the database schema with its migrations, and sign-in (the auth middleware, the Access and dev providers, `/api/v1/me`) exist. The recipe list at `/`, the recipe view at `/recipes/<slug>`, the editor at `/recipes/new` and `/recipes/<slug>/edit`, cook mode at `/recipes/<slug>/cook`, the manage screens at `/manage`, importing from a link at `/add` and its review at `/imports/<id>/review` are connected to data, photos and attachments included. Recipes and the photos that have been shown are kept on the device, so the list, a recipe and cook mode open with no connection. When a pull request changes a command or path below, it updates this file in the same pull request.
 
 ## Read first
 
 - `docs/build-plan.md` is the design doc: scope, architecture, roadmap, phase gates and the nine decisions. **Its decisions are made. Do not reopen them.** If something in it conflicts with a fact you can verify, stop and say so; do not work around it quietly.
 - `docs/implementation-plan.md` covers Phases 0 and 1: framework, repo layout, data model, shared schema, auth, import jobs, testing and deploys, and the task list (T0.1–T0.13, T1.1–T1.16). Its "Decisions since the build plan" section records later decisions by the owner; where one amends the build plan, it wins.
-- `docs/phase-2-plan.md` is the plan for Phase 2 (AI import): how a staged import runs, the rules every AI step follows, and tasks T2.1 to T2.14. **It is a proposal until the owner approves it. Build nothing from it before then**, and not before the owner has decided whether Phase 2 may start ahead of the Phase 1 gate.
+- `docs/phase-2-plan.md` is the plan for Phase 2 (AI import): how a staged import runs, the rules every AI step follows, the owner's decisions and their defaults, and tasks T2.1 to T2.14. The owner approved it on 23 Nov 2026 and said to build T2.1 to T2.5 ahead of the Phase 1 gate. **Ask before starting a task past T2.5.**
 - `PRODUCT.md` records who the app is for and what it must preserve. `apps/web/DESIGN.md` records the visual system, "Recipe tin", which the owner chose. Read both before any UI work. `apps/web/.impeccable/` holds the design workflow's surface briefs and the design system's machine-readable sidecar.
 - `docs/operations.md` describes deploys and the one-time setup. It names settings and never gives their values.
 - `docs/feature-spec.md` decides how the Phase 1 screens behave. Build screens from it, and change it in the same pull request when a screen has to differ.
@@ -39,6 +39,8 @@ apps/worker/          Hono API, queue consumer, auth, Drizzle schema, migrations
   src/db/lists.ts     Organizers, foods, units and labels
   src/db/importJobs.ts  Import jobs: create, claim, finish, fail, requeue
   src/db/assets.ts    The rows behind photos and attachments
+  src/ai/             The model runner: runner.ts (one call, checked), profiles.ts (which model does what),
+                      failure.ts (what a failed call means). The only code that uses env.AI
   src/media.ts        Files in R2: store (with the two smaller sizes), remove, sweep; sniffType()
   src/imports/        runner.ts (the queue handler and one run), handlers.ts (one handler per kind), url.ts (a link)
   migrations/         One folder per migration; applied by Wrangler, in order
@@ -69,7 +71,7 @@ Run from the repository root. Needs Node 22.12 or later and pnpm 10 (`corepack e
 | Command | Does |
 | --- | --- |
 | `pnpm install` | Install dependencies |
-| `pnpm dev` | Worker (`wrangler dev`, port 8787) and web app (Vite, port 5173) together. Open `http://localhost:5173`; Vite proxies `/api` to the Worker |
+| `pnpm dev` | Worker (`wrangler dev --local`, port 8787) and web app (Vite, port 5173) together. Open `http://localhost:5173`; Vite proxies `/api` to the Worker. No Cloudflare account is needed, and no model can be reached |
 | `pnpm build` | Build the web app into `apps/web/dist` |
 | `pnpm lint` | Biome lint and format check. `pnpm format` applies fixes. Markdown is not formatted |
 | `pnpm test` | All Vitest projects once: `schema` (Node), `worker` (Workers runtime), `web` (happy-dom). `pnpm test:watch` re-runs on change |
@@ -225,6 +227,17 @@ To be signed in locally, copy `.dev.vars.example` to `.dev.vars` and run `pnpm d
 - Review is the editor in review mode, opened by `ReviewImportPage` on a copy made by `prepareReview()`. Discard removes the import; leaving any other way keeps it.
 - Worker tests have no network: `vitest.config.ts` answers every outbound request with a 503. A test that needs a page passes the importer its own `fetch`.
 - The Worker's default export is an object with `fetch` and `queue`. The dead-letter queue is told from the import queue by its name ending in `-dlq`; keep that ending when naming one.
+
+### AI
+
+- Only `apps/worker/src/ai/` uses `env.AI`. Everything else is handed the runner: an import handler as `tools.ai`, a route through `createApp({ ai })` or `aiFor(c.env)`.
+- Tests, `pnpm dev` and the end-to-end run never reach a model: Workers AI has no local version and a real call is billed. The Worker tests set `remoteBindings: false` and Wrangler is started with `--local`; do not remove either, or CI, which has no Cloudflare credentials, stops. A test hands the runner a stand-in (`standInBinding()` and `chatAnswer()` in `test/helpers.ts`); a test that should not use a model passes `noAi`.
+- A model ID is a setting. It lives in a profile in `ai/profiles.ts` and nowhere else; do not write one into a handler, a prompt or a test of behaviour.
+- A model's answer is checked against a Zod schema before anything uses it. An answer that does not fit is asked for once more and then fails; do not loosen the schema to let one through.
+- What a failed call means is decided in `ai/failure.ts`, from the service's own error code. A handler does not catch and retry a model call itself.
+- Every call goes through the gateway and asks it not to keep what was asked and answered. `AI_LOG_CONTENT` is the only thing that changes that.
+- AI settings (`AI_PROFILE`, `AI_GATEWAY`, `AI_LOG_CONTENT`) are deploy variables typed by `AiSettings`, not part of `wrangler.jsonc`.
+- Prompts are this project's own words. Nothing is copied from Mealie.
 
 ### Photos and attachments
 

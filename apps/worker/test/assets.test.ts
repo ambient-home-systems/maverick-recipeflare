@@ -14,7 +14,7 @@ import { createImportJob, loadImportJob } from "../src/db/importJobs";
 import { createRecipe } from "../src/db/recipes";
 import { runImportJob } from "../src/imports/runner";
 import { assetKey, sniffType, storeAsset, sweepUnattachedAssets } from "../src/media";
-import { countingDatabase, seedLists, signedIn } from "./helpers";
+import { countingDatabase, noAi, seedLists, signedIn } from "./helpers";
 
 const db = env.DB;
 const api = signedIn(env, fixtureMember.email ?? "");
@@ -393,7 +393,7 @@ describe("the picture an import brings", () => {
       { kind: "url", sourceUrl: url, input: { url } },
       fixtureMember.id,
     );
-    await runImportJob(created.id, { url: async () => draft }, { fetch: fetcher, env });
+    await runImportJob(created.id, { url: async () => draft }, { fetch: fetcher, env, ai: noAi });
     return ImportDetail.parse(await (await api.get(`/imports/${created.id}`)).json());
   }
 
@@ -439,7 +439,7 @@ describe("the picture an import brings", () => {
       { kind: "url", sourceUrl: page, input: { url: page } },
       fixtureMember.id,
     );
-    const tools = { fetch: pictures(png), env };
+    const tools = { fetch: pictures(png), env, ai: noAi };
     await runImportJob(created.id, { url: async () => DRAFT }, tools);
     // The attempt died after storing the picture, and the message came back.
     await db

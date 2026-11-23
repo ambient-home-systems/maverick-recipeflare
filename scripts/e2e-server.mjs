@@ -49,6 +49,9 @@ const server = spawn(
     "exec",
     "wrangler",
     "dev",
+    // No Cloudflare account is needed or used: the AI binding, the one
+    // binding that only exists remotely, is left out.
+    "--local",
     "--port",
     port,
     "--persist-to",
