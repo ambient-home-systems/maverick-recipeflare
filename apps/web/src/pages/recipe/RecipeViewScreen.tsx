@@ -33,8 +33,8 @@ import { ScaleControl } from "./ScaleControl";
 type RecipeViewScreenProps = {
   /** The recipe. Null while it loads, or when `problem` says why there is none. */
   recipe: Recipe | null;
-  /** Why there is no recipe to show: the address leads nowhere, or loading failed. */
-  problem?: "missing" | "error";
+  /** Why there is no recipe to show: the address leads nowhere, loading failed, or the session ran out. */
+  problem?: "missing" | "error" | "signedOut";
   onRetry?: () => void;
   scale: Scale;
   onScale: (scale: Scale) => void;
@@ -45,11 +45,16 @@ type RecipeViewScreenProps = {
   /** True when the device has no connection and this is the copy saved on it. */
   offline?: boolean;
   /** Where the list lives. The mock harness points it at the mock list. */
-  listTo: "/mock/list";
+  listTo: "/" | "/mock/list";
+  /** Without a handler, the button is not offered. */
   onCook?: (recipe: Recipe) => void;
   onEdit?: (recipe: Recipe) => void;
   /** Called once the cook has confirmed. */
   onDelete?: (recipe: Recipe) => void;
+  /** True while the delete is under way. */
+  deleting?: boolean;
+  /** True when the delete was refused or never arrived. The recipe is still there. */
+  deleteFailed?: boolean;
 };
 
 const ALL: DividerLink = { key: "all", label: "All recipes", stock: "plain" };
@@ -91,6 +96,8 @@ export function RecipeViewScreen({
   onCook,
   onEdit,
   onDelete,
+  deleting = false,
+  deleteFailed = false,
 }: RecipeViewScreenProps) {
   const [viewing, setViewing] = useState<Viewing>(null);
   const [confirming, setConfirming] = useState(false);
@@ -113,6 +120,12 @@ export function RecipeViewScreen({
               }
             >
               It may have been renamed or deleted. Its address changes when its title does.
+            </EmptyState>
+          </Page>
+        ) : problem === "signedOut" ? (
+          <Page joined title="Recipe">
+            <EmptyState title="Sign in to see this recipe">
+              This device has no copy of it to show until you sign in again.
             </EmptyState>
           </Page>
         ) : problem === "error" ? (
@@ -232,6 +245,10 @@ export function RecipeViewScreen({
             You are offline. This is the copy saved on this device; editing and deleting need a
             connection.
           </Notice>
+        ) : null}
+
+        {deleteFailed ? (
+          <Notice problem>The recipe could not be deleted. Nothing has changed.</Notice>
         ) : null}
 
         {titleOnly ? (
@@ -468,6 +485,7 @@ export function RecipeViewScreen({
             variant="quiet"
             icon={<Trash2 aria-hidden="true" size="1.25rem" />}
             disabled={offline}
+            busy={deleting}
             onClick={() => setConfirming(true)}
           >
             Delete recipe
@@ -476,27 +494,31 @@ export function RecipeViewScreen({
 
         {/* The screen's main actions stay within reach of a thumb, above the navigation. */}
         {/* It sticks only on a screen tall enough to spare the room: not on a phone held sideways, nor with very large text. */}
-        <div className="bottom-[var(--rf-nav-height)] z-[5] flex flex-wrap gap-2 border-t border-rule-strong bg-surface px-4 py-2.5 [@media(min-height:36rem)]:sticky">
-          {canCook ? (
-            <Button
-              className="flex-1 md:flex-none md:px-10"
-              icon={<ChefHat aria-hidden="true" size="1.25rem" />}
-              onClick={() => onCook?.(recipe)}
-            >
-              Cook
-            </Button>
-          ) : null}
-          <Button
-            // With nothing to cook from, Edit is what the screen is for.
-            variant={canCook ? "quiet" : "primary"}
-            className={canCook ? "" : "flex-1 md:flex-none md:px-10"}
-            icon={<Pencil aria-hidden="true" size="1.25rem" />}
-            disabled={offline}
-            onClick={() => onEdit?.(recipe)}
-          >
-            Edit
-          </Button>
-        </div>
+        {(canCook && onCook) || onEdit ? (
+          <div className="bottom-[var(--rf-nav-height)] z-[5] flex flex-wrap gap-2 border-t border-rule-strong bg-surface px-4 py-2.5 [@media(min-height:36rem)]:sticky">
+            {canCook && onCook ? (
+              <Button
+                className="flex-1 md:flex-none md:px-10"
+                icon={<ChefHat aria-hidden="true" size="1.25rem" />}
+                onClick={() => onCook?.(recipe)}
+              >
+                Cook
+              </Button>
+            ) : null}
+            {onEdit ? (
+              <Button
+                // With nothing to cook from, Edit is what the screen is for.
+                variant={canCook && onCook ? "quiet" : "primary"}
+                className={canCook && onCook ? "" : "flex-1 md:flex-none md:px-10"}
+                icon={<Pencil aria-hidden="true" size="1.25rem" />}
+                disabled={offline}
+                onClick={() => onEdit(recipe)}
+              >
+                Edit
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
       </Page>
 
       <PhotoViewer

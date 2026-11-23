@@ -87,7 +87,7 @@ export function DividerLinks({
   links,
 }: {
   label: string;
-  to: "/mock/list";
+  to: "/" | "/mock/list";
   links: readonly DividerLink[];
 }) {
   return (
