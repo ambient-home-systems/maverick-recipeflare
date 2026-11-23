@@ -1,0 +1,8 @@
+# Settings for local development. Copy this file to .dev.vars, which is
+# git-ignored and never deployed. `pnpm dev` reads it.
+
+# Signs you in without Cloudflare Access. Works on localhost only.
+AUTH_MODE=dev
+
+# Who you are signed in as. The first person through becomes the owner.
+DEV_MEMBER_EMAIL=cook@example.com

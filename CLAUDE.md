@@ -6,7 +6,7 @@ Guidance for Claude Code working in this repository.
 
 Maverick Recipeflare (Recipeflare for short) is a household recipe app on Cloudflare: one TypeScript Worker serving a React PWA and a JSON API, with D1, R2, Queues and, in later phases, Workers AI and Durable Objects. One household per install. Licensed AGPL-3.0-only.
 
-**Status: Phase 0, through T0.11.** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, and the database schema with its migrations exist. No product screen is connected to data, nothing reads or writes the database yet, and there is no auth. When a pull request changes a command or path below, it updates this file in the same pull request.
+**Status: Phase 0, through T0.12.** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, the database schema with its migrations, and sign-in (the auth middleware, the Access and dev providers, `/api/v1/me`) exist. No product screen is connected to data, and the only tables written are `household` and `members`, at a first sign-in. When a pull request changes a command or path below, it updates this file in the same pull request.
 
 ## Read first
 
@@ -29,6 +29,8 @@ Maverick Recipeflare (Recipeflare for short) is a household recipe app on Cloudf
 ```text
 wrangler.jsonc        Worker config at the repo root (the Deploy button needs it there)
 apps/worker/          Hono API, queue consumer, auth, Drizzle schema, migrations
+  src/app.ts          createApp(): the routes, and which of them need a member
+  src/auth/           The auth middleware, one file per identity provider, members
   src/db/schema.ts    The tables. Change it, then run pnpm db:generate
   migrations/         One folder per migration; applied by Wrangler, in order
 apps/web/             Vite React PWA; builds to apps/web/dist, served as static assets
@@ -65,11 +67,7 @@ Run from the repository root. Needs Node 22.12 or later and pnpm 10 (`corepack e
 
 To see the built app served by the Worker alone, as in production: `pnpm build`, then `pnpm dev:worker`, then open `http://localhost:8787`.
 
-Not here yet:
-
-| Command | Arrives with |
-| --- | --- |
-| Local sign-in through `.dev.vars` (`AUTH_MODE=dev`, `DEV_MEMBER_EMAIL`) | T0.12 |
+To be signed in locally, copy `.dev.vars.example` to `.dev.vars` and run `pnpm db:migrate:local` once. `AUTH_MODE=dev` signs you in as `DEV_MEMBER_EMAIL`, on localhost only: the app opened from a phone by the computer's network address is not signed in. Without `.dev.vars` every API route except health answers 401.
 
 ## Rules that are easy to break
 
@@ -142,9 +140,12 @@ Not here yet:
 
 ### Auth
 
-- Route handlers read the member from the request context. They never read identity from headers, cookies or tokens; that is the middleware's job.
+- Route handlers read the member from the request context with `c.get("member")`. They never read identity from headers, cookies or tokens; that is the middleware's job.
+- A route is registered in `createApp()` after the two middleware lines, so it needs a member and its writes are checked for coming from the app. Only the health route sits above them.
 - A new way to sign in is a new identity provider in `apps/worker/src/auth/`, not a branch in a route.
 - The dev provider must stay refused off localhost.
+- A bad Access token is refused; the request never falls through to another provider.
+- Auth settings (`ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`, `AUTH_MODE`, `DEV_MEMBER_EMAIL`, `AUTH_PROVIDERS`, `AUTH_AUTO_ENROLL`) are secrets or local variables and are typed by `AuthSettings`, not by `wrangler.jsonc`.
 - Our API lives under `/api/v1`. Bare `/api/...` paths are reserved for the Mealie-compatible subset in Phase 4.
 
 ### Import jobs
@@ -174,6 +175,7 @@ Not here yet:
 - Web tests use Testing Library on happy-dom. Render a screen with `renderAt(path)` from `src/test-utils.tsx`, which mounts the whole app at an address. Stub `fetch` with `vi.stubGlobal`; stubs and mocks are reset after each test by the config.
 - Test tooling (`vitest`, the Cloudflare plugin, happy-dom) is installed at the workspace root only. Do not add `vitest` to a package: a second copy breaks the run.
 - Storage is isolated per test file, not per test. Use distinct IDs within a file, or reset and re-apply migrations.
+- A Worker test that needs a signed-in member builds its own app with `createApp({ fetchKeys })` and states every auth setting itself, as `test/auth.test.ts` does, so that a developer's `.dev.vars` cannot change the result. Test email addresses are at `example.com`.
 - Worker tests apply the real migration files before each test file (`test/apply-migrations.ts`), so a schema change needs its migration before its tests can pass.
 - New behaviour comes with a test. A bug fix comes with a test that fails without it.
 - CI (`.github/workflows/ci.yml`) runs lint, typecheck, the schema-drift check, test, build and a deploy dry run on every pull request and on pushes to `main`. On `main` it then deploys staging. `.github/workflows/deploy.yml` is the manual deploy.

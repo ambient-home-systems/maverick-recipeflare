@@ -638,18 +638,28 @@ The middleware runs an ordered list of identity providers. Each inspects the req
 | Access service token | 3 | An Access JWT with `common_name` and no email | Member mapped from the client ID |
 | Passkey session | 6 | Session cookie | Member ID |
 
-A list in configuration (`AUTH_PROVIDERS`) says which providers are on: `access` for our install now, `passkey,token` for a Deploy-button install later. Providers receive the whole request, so Phase 4 can accept only API tokens on the Home Assistant hostname.
+A list in configuration (`AUTH_PROVIDERS`) says which providers are on: `access` for our install now, `passkey,token` for a Deploy-button install later. Unset means `access`. The dev provider is not in the list; it switches itself on ([§6.3](#63-local-development-without-access)). Providers receive the whole request, so Phase 4 can accept only API tokens on the Home Assistant hostname.
+
+A provider that recognises a request but finds it wrong refuses it, and the request does not fall through to the next provider. A bad Access token is a 401 even where the dev provider is on.
 
 Identity then becomes a member:
 
 - An email is looked up in `members`.
 - If the table is empty, the first person through becomes the owner, and the `household` row is created.
-- An unknown email that Access has let through is added as a member. Access's policy is the allowlist, so a second list in the app would only add a place to forget someone. A setting turns this off.
+- An unknown email that Access has let through is added as a member. Access's policy is the allowlist, so a second list in the app would only add a place to forget someone. Setting `AUTH_AUTO_ENROLL` to `false` turns this off; the first person still becomes the owner.
 - A disabled member gets 403.
+
+As built in T0.12:
+
+- The usual request costs one read, the member by email. A first visit adds one batch of two inserts and a second read. Each insert decides for itself whether anyone is here yet, so two first visits at the same moment still give one household and one owner.
+- A new member's display name is made from the email address ("ada.lovelace" becomes "Ada Lovelace"). The household is named "Household". Both can be renamed once the settings screens exist.
+- Everything under `/api/v1` except health is behind the middleware, so an unknown path answers 401 to someone who is not signed in and 404 to a member.
+- `GET /api/v1/me` returns `{ member }`.
+- Errors: 401 `unauthenticated`; 403 `not_a_member`, `member_disabled` or `cross_site_request`; 500 `auth_not_configured` when a setting is missing; 503 `auth_unavailable` when the Access keys cannot be fetched, so that an outage is not mistaken for an expired session.
 
 ### 6.2 Cloudflare Access
 
-- **Validation.** `jose` verifies the token against the keys at `https://<team>.cloudflareaccess.com/cdn-cgi/access/certs`, checking issuer, audience (the application's AUD tag) and expiry. The key set is held in module scope; Access rotates keys every six weeks and keeps the old key valid for seven days, which `jose`'s remote key set handles. A missing or invalid token is rejected even when Access is in front.
+- **Validation.** `jose` verifies the token against the keys at `https://<team>.cloudflareaccess.com/cdn-cgi/access/certs`, checking the signature (RS256 only), issuer, audience (the application's AUD tag) and expiry; a token with no expiry is refused. The key set is held by the provider for the life of the Worker instance; Access rotates keys every six weeks and keeps the old key valid for seven days, which `jose`'s remote key set handles by fetching again when a token names a key it has not seen. A missing or invalid token is rejected even when Access is in front. A valid token with no email address, which is what a service token is, gets 403 until Phase 3 gives service tokens their own provider.
 - **Application type.** A hostname-based self-hosted application on a custom domain, not the Worker-level toggle, because of the WebSocket limitation. Staging gets its own application and AUD tag.
 - **No side doors.** `workers_dev` and `preview_urls` are off for staging and production, so the only hostnames are the protected ones.
 - **Session length.** Set to a month so family phones are rarely sent back to the login page.
@@ -660,11 +670,11 @@ Three things an installed PWA needs behind Access:
 - The service worker must cache only successful same-origin responses, never the redirect to the login page.
 - An expired session shows up as API calls that fail on a redirect. The client detects this with a manual-redirect probe and offers "sign in again", which navigates to `/api/v1/auth/refresh?return=…`. The service worker does not handle navigations under `/api/`, so that request reaches Cloudflare, Access shows its login, and the Worker then redirects back. Cook mode keeps working from the cache meanwhile.
 
-Mutating requests also require a same-origin `Sec-Fetch-Site` or a JSON or binary content type, so the Access cookie cannot be ridden from another site.
+Mutating requests also require a same-origin `Sec-Fetch-Site` or a JSON or binary content type, so the Access cookie cannot be ridden from another site. This is its own small middleware, in front of the member lookup, and it has covered every route since T0.12.
 
 ### 6.3 Local development without Access
 
-`AUTH_MODE=dev` and `DEV_MEMBER_EMAIL` live in `.dev.vars`, which is git-ignored and never deployed. The dev provider is on only when that variable is set and the request's hostname is `localhost` or a loopback address, so a misconfigured deploy cannot enable it. A committed `.dev.vars.example` documents the variables; the Deploy button later reads the same file to prompt for secrets.
+`AUTH_MODE=dev` and `DEV_MEMBER_EMAIL` live in `.dev.vars`, which is git-ignored and never deployed. The dev provider is on only when that variable is set and the request's hostname is `localhost` or a loopback address, so a misconfigured deploy cannot enable it. The local app opened from a phone by the computer's network address is therefore not signed in; phone review happens on staging. A committed `.dev.vars.example` documents the variables; the Deploy button later reads the same file to prompt for secrets.
 
 Tests cover both paths: the dev provider for ordinary API tests, and the Access provider against a key pair generated in the test with the key-set fetch stubbed.
 
@@ -786,7 +796,7 @@ Both deploy jobs run the same root script, `scripts/deploy.mjs`: build, apply mi
 
 - The Wrangler file names resources (`recipeflare`, `recipeflare-staging`) and carries no resource IDs; Wrangler provisions and links by name.
 - Production and staging hostnames are GitHub environment secrets (`APP_HOSTNAME`), passed with `wrangler deploy --domain`. They are secrets, not variables, because a public repository's CI logs are public and GitHub masks only secrets.
-- The Access team domain and each application's audience tag are GitHub environment secrets too (`ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`). The deploy script hands them to Wrangler as Worker secrets.
+- The Access team domain and each application's audience tag are GitHub environment secrets too (`ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`). The deploy script hands them to Wrangler as Worker secrets. `AUTH_AUTO_ENROLL` travels the same way from an optional GitHub environment variable; it identifies nobody.
 - The Cloudflare account ID and API token are GitHub repository secrets.
 - The Wrangler file names each resource and gives no ID; Wrangler creates a named resource on the first deploy and finds it by name afterwards.
 - [`docs/operations.md`](operations.md) describes the steps and names the settings, without values.
@@ -847,7 +857,7 @@ Suggested mix for the gate's ten: at least one with ingredient sections, one wit
 Questions answered since the first version are recorded in [Decisions since the build plan](#decisions-since-the-build-plan). What remains, each with the default this plan assumes so that work can start:
 
 1. **Public library.** The owner wants the option to make the library public. Undecided: which phase; whether public means read-only; the whole library or chosen recipes; and how it works when Cloudflare Access is in front of the hostname. The build plan has public share links in Phase 5, which may be the same feature or a narrower one. Default until decided: nothing is public, and the shell is designed so that a signed-out visitor could be shown a read-only version later.
-2. **Members.** Access admits the household's two adults. Should anyone Access admits become a member automatically on first sign-in? Default: yes, with the first sign-in as owner. Settled in T0.12.
+2. **Members.** Access admits the household's two adults. Should anyone Access admits become a member automatically on first sign-in? Built in T0.12 as the default: yes, with the first sign-in as owner. `AUTH_AUTO_ENROLL=false` turns it off ([§6.1](#61-one-middleware)). Say so if you want it off.
 3. **Drafts on the job, not in `recipes`.** See [Conflicts](#conflicts-with-the-build-plan). Say so if you want imported drafts to appear in the recipe list before review.
 4. **Units.** Is a starting list of about 25 US and metric units right, and should quantities default to fractions?
 5. **What "works offline" covers.** Default: all recipe data syncs to the device, images once viewed. Settled in the spec (T0.3).

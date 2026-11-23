@@ -92,9 +92,22 @@ Migrations run before the new code is uploaded, so each migration must work with
 
 ## Checking a deploy
 
-- In a private browser window, open the hostname. Cloudflare Access should ask you to sign in, and after signing in the page should say that the API is reachable.
+- In a private browser window, open the hostname. Cloudflare Access should ask you to sign in, and after signing in the page at `/mock` should say that the API is reachable and who you are signed in as.
+- Signed in, `/api/v1/me` shows the member the app knows you as.
 - Without signing in, nothing of the app should load.
 - In the deploy log, the Worker should be listed with one address only, shown masked. A `workers.dev` address there means the hostname secret was missing; the script is set to fail before that can happen.
+
+## Members
+
+The app has no member list of its own to keep. Whoever the Access policy lets in is a member.
+
+- **The first person to sign in becomes the owner**, and that sign-in creates the household. On a new install, sign in yourself before sharing the address.
+- Anyone else Access lets in becomes a member the first time they open the app.
+- A member's name starts as the first part of their email address.
+- To stop new people becoming members by themselves, add an environment **variable** named `AUTH_AUTO_ENROLL` with the value `false` to the GitHub environment, and deploy. The first person still becomes the owner. Set it to `true` and deploy to turn it back on.
+- Removing someone from the Access policy stops them signing in. Their recipes stay.
+
+If every request answers "Sign-in is not set up on this server", the `ACCESS_TEAM_DOMAIN` or `ACCESS_AUD` secret is missing from that GitHub environment.
 
 ## The database
 

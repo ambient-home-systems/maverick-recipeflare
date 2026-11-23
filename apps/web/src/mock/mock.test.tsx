@@ -13,8 +13,18 @@ function stubFetch(response: Response | Error) {
     if (response instanceof Error) {
       throw response;
     }
-    return response;
+    // The index asks twice, and a body can be read once.
+    return response.clone();
   });
+  vi.stubGlobal("fetch", fetchMock);
+  return fetchMock;
+}
+
+/** The API as the index sees it: the health route, and `/me` answering as given. */
+function stubApi(me: Response) {
+  const fetchMock = vi.fn(async (input: RequestInfo | URL) =>
+    String(input).endsWith("/me") ? me.clone() : Response.json({ status: "ok" }),
+  );
   vi.stubGlobal("fetch", fetchMock);
   return fetchMock;
 }
@@ -67,6 +77,40 @@ describe("the mock index", () => {
     stubFetch(Response.json({ status: "degraded" }));
     await renderAt("/mock");
     expect(await screen.findByText("The API is not reachable.")).toBeTruthy();
+  });
+
+  it("says who is signed in", async () => {
+    const fetchMock = stubApi(
+      Response.json({
+        member: {
+          id: "01930000-0000-7000-8000-000000000001",
+          email: "ada@example.com",
+          displayName: "Ada Lovelace",
+          role: "owner",
+        },
+      }),
+    );
+    await renderAt("/mock");
+
+    expect(await screen.findByText("Signed in as Ada Lovelace.")).toBeTruthy();
+    expect(fetchMock).toHaveBeenCalledWith("/api/v1/me", expect.anything());
+  });
+
+  it("says so when nobody is signed in", async () => {
+    stubApi(
+      Response.json({ error: { code: "unauthenticated", message: "Sign in" } }, { status: 401 }),
+    );
+    await renderAt("/mock");
+
+    expect(await screen.findByText("Not signed in.")).toBeTruthy();
+    expect(screen.getByText("The API is reachable.")).toBeTruthy();
+  });
+
+  it("says so when sign-in could not be checked", async () => {
+    stubApi(Response.json({ error: { code: "internal_error", message: "No" } }, { status: 500 }));
+    await renderAt("/mock");
+
+    expect(await screen.findByText("Sign-in could not be checked.")).toBeTruthy();
   });
 
   it("switches the theme and remembers the choice", async () => {
