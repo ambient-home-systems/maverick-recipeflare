@@ -146,6 +146,12 @@ Alongside the screens, T0.6 fixes the design tokens (colour in light and dark, t
 - each of the four mock screens has been reviewed on at least one iPhone and one Android phone, and the approval is recorded in the gate pull request;
 - every field on three real family cards has a home in the schema, the aiomealie mapping in [§4.7](#47-mapping-to-aiomealie) has no gaps, and the migrations apply cleanly to staging.
 
+**Gate record, schema half (T0.13, 23 Nov 2026).**
+
+- *The cards.* Each row of the feature spec's card walk-through was followed from the card's fixture to a column: title, the ingredient lines in the card's order with their text as written, steps, cook time, the stated yield, the note about the unclear pen marks, the category and the original-card photo. Nothing on a card lacks a column. Two things are knowingly not kept as data, and the photo keeps both: a card's filing letter, and ingredient groups that have no heading.
+- *The aiomealie mapping.* Every field of every model in aiomealie 2.1.4 was listed again from its source and set against §4.7. Every table and column the mapping names exists in the applied migration, and every field the library requires as a string comes from a column that cannot be null. Two models the table did not list, the group and household summaries, are added; both read the `household` row. One thing for Phase 6 is noted on `UserInfo`. Models for meal plans, shopping lists, ratings and favourites belong to the later tables listed under the mapping.
+- *The migrations* applied to the staging database on 23 Nov 2026: four migrations, and the deploy log shows each one marked done.
+
 ## 3. Repository layout
 
 One pnpm workspace. One deployed Worker.
@@ -551,7 +557,9 @@ Checked against the models in aiomealie 2.1.4. "Required" means the model has no
 | `Food`: `id`, `name`, `description`, `aliases`, `pluralName`, `labelId`, `label`, `createdAt`, `updatedAt` | first four required | Same-named `foods` columns; `label` from `labels` |
 | `Unit`: `name`, `pluralName`, `abbreviation`, `pluralAbbreviation`, `useAbbreviation`, `fraction`, `description`, `aliases`, `standardQuantity`, `standardUnit` | `name` | Same-named `units` columns |
 | `Label`: `id`, `name` | yes | `labels` |
-| `UserInfo`: `id`, `username`, `email`, `fullName` | yes | `members`; `username` derived from the email |
+| `UserInfo`: `id`, `username`, `email`, `fullName` | yes | `members`; `username` derived from the email. `email` is required and `members.email` may be null from Phase 6, so a passkey-only member needs a stand-in address there |
+| `GroupSummary`: `id`, `name`, `slug` | yes | The `household` row, which stands for Mealie's group as well as its household |
+| `HouseholdSummary`: `id`, `groupId`, `name`, `slug`, `group` | yes | The `household` row again; `group` is its name |
 | `Statistics` counts | yes | `COUNT(*)` queries |
 
 Behaviour the Phase 4 facade needs that Phase 1 already allows: a recipe with only a title is valid (Home Assistant creates recipes by name alone); recipes resolve by ID or slug on the same path; lists take `page` and `perPage`, with `perPage=-1` meaning all; and import handlers are plain functions, so `recipes/create/url` can run one inline and return a slug within aiomealie's 10-second timeout instead of going through review.
