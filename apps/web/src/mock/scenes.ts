@@ -5,12 +5,20 @@ import { type ListSearch, parseListSearch, toListSearch } from "../pages/recipes
  * The states of the recipe list that sample data alone cannot reach. This file
  * is loaded with the router, so it must not import fixtures.
  */
-export const LIST_SCENES = ["library", "imports", "loading", "first-run", "offline"] as const;
+export const LIST_SCENES = [
+  "library",
+  "imports",
+  "cards",
+  "loading",
+  "first-run",
+  "offline",
+] as const;
 export type ListScene = (typeof LIST_SCENES)[number];
 
 export const SCENE_LABELS: Record<ListScene, string> = {
   library: "Library",
   imports: "Imports",
+  cards: "Cards coming in",
   loading: "Loading",
   "first-run": "First run",
   offline: "Offline",
@@ -115,4 +123,32 @@ export function validateMockCookSearch(raw: Record<string, unknown>): MockCookSe
 
 export function validateMockAddSearch(raw: Record<string, unknown>): { scene?: "offline" } {
   return raw.scene === "offline" ? { scene: "offline" } : {};
+}
+
+/** States of photographing cards that a camera alone cannot reach, or is slow to reach. */
+export const CAPTURE_SCENES = [
+  "sitting",
+  "empty",
+  "twelve",
+  "sending",
+  "stopped",
+  "offline",
+] as const;
+export type CaptureScene = (typeof CAPTURE_SCENES)[number];
+export const CAPTURE_SCENE_LABELS: Record<CaptureScene, string> = {
+  sitting: "Mid-sitting",
+  empty: "No cards yet",
+  twelve: "Twelve cards",
+  sending: "Sending",
+  stopped: "Sending stopped",
+  offline: "Offline",
+};
+
+export function validateMockCaptureSearch(raw: Record<string, unknown>): {
+  scene?: Exclude<CaptureScene, "sitting">;
+} {
+  const scene = (CAPTURE_SCENES as readonly unknown[]).includes(raw.scene)
+    ? (raw.scene as CaptureScene)
+    : "sitting";
+  return scene === "sitting" ? {} : { scene };
 }

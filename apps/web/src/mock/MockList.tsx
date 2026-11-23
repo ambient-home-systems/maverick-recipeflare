@@ -1,4 +1,4 @@
-import { fixtureImportJobs } from "@recipeflare/schema/fixtures";
+import { fixtureCardImports, fixtureImportJobs } from "@recipeflare/schema/fixtures";
 import { getRouteApi, Link } from "@tanstack/react-router";
 import {
   EMPTY_LIST_STATE,
@@ -23,6 +23,8 @@ const route = getRouteApi("/mock/list");
 const SCENE_NOTES: Record<ListScene, string> = {
   library: "Nine sample recipes. Search, the dividers, the filters and the sort all work.",
   imports: "Three imports from a link above the recipes: one being read, one ready, one refused.",
+  cards:
+    "A sitting of four cards on its way in: one being read, one being written up, one ready, and one whose photo could not be read.",
   loading: "What the list shows while recipes are on their way.",
   "first-run": "A household that has not added a recipe yet.",
   offline: "No connection: the recipes saved on the device, read-only.",
@@ -55,7 +57,9 @@ export function MockList() {
         foods={firstRun ? [] : mockFoods}
         recipes={loading ? null : firstRun ? [] : queryLibrary(state)}
         libraryCount={loading ? null : firstRun ? 0 : mockLibraryCount}
-        imports={scene === "imports" ? fixtureImportJobs : []}
+        imports={
+          scene === "imports" ? fixtureImportJobs : scene === "cards" ? fixtureCardImports : []
+        }
         offline={scene === "offline"}
         links={{ newRecipe: "/mock/new", importLink: "/mock/add" }}
         thumbnailFor={placeholderThumbnail}

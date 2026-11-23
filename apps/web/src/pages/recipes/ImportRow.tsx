@@ -1,5 +1,13 @@
 import type { ImportJob } from "@recipeflare/schema";
-import { ClipboardPaste, Link2, LoaderCircle, RotateCw, Trash2, TriangleAlert } from "lucide-react";
+import {
+  Camera,
+  ClipboardPaste,
+  Link2,
+  LoaderCircle,
+  RotateCw,
+  Trash2,
+  TriangleAlert,
+} from "lucide-react";
 import { Button } from "../../ui/Button";
 
 /** What went wrong, in plain words, and what to try. Anything else shows the job's own message. */
@@ -10,6 +18,7 @@ const FAILURES: Record<string, string> = {
   no_recipe:
     "Nothing could be read from that page. If it shows a recipe, copy its text and use Paste text on the Add page.",
   too_thin: "There was not enough there to make a recipe from.",
+  unreadable: "Nothing could be read from the photo. Try a sharper one, taken in better light.",
   not_queued: "The import could not be started. Try again.",
   ai_limit: "Today's allowance for importing with AI is used up. Try again tomorrow.",
   ai_unavailable: "The AI that reads recipes could not be reached. Try again later.",
@@ -22,6 +31,9 @@ const FAILURES: Record<string, string> = {
 export function importHost(job: Pick<ImportJob, "sourceUrl" | "kind">): string {
   if (job.kind === "text") {
     return "pasted text";
+  }
+  if (job.kind === "photo") {
+    return "a photo of a card";
   }
   try {
     return new URL(job.sourceUrl ?? "").hostname.replace(/^www\./, "");
@@ -41,8 +53,12 @@ export function importStatus(job: ImportJob): string {
     case "queued":
       return "Waiting to start";
     case "running":
-      // A link is read as the page states it. Text is written up by a model.
-      return job.kind === "text" || job.stage === "build" ? "Writing it up" : "Reading the page";
+      // A link is read as the page states it, and a card by a model that reads
+      // its photos. Then, for a card and for text, a model writes the recipe up.
+      if (job.kind === "text" || job.stage === "build") {
+        return "Writing it up";
+      }
+      return job.kind === "photo" ? "Reading the card" : "Reading the page";
     case "needs_review":
       return "Ready to review";
     case "failed":
@@ -55,8 +71,8 @@ export function importStatus(job: ImportJob): string {
 }
 
 /**
- * An import, from a link or from pasted text, shown above the recipes until a
- * person has dealt with it. It is not a recipe yet: it has no category colour
+ * An import, from a link, pasted text or a photographed card, shown above the
+ * recipes until a person has dealt with it. It is not a recipe yet: it has no category colour
  * and does not open one.
  */
 export function ImportRow({
@@ -72,10 +88,15 @@ export function ImportRow({
 }) {
   const working = job.status === "queued" || job.status === "running";
   const failed = job.status === "failed";
-  const fromText = job.kind === "text";
-  const host = fromText ? "Pasted text" : importHost(job);
+  // What the import is called until it has a title, and where it is from once it has.
+  const host =
+    job.kind === "text"
+      ? "Pasted text"
+      : job.kind === "photo"
+        ? "Photographed card"
+        : importHost(job);
   const title = job.result?.draft.title.trim() || host;
-  const Icon = fromText ? ClipboardPaste : Link2;
+  const Icon = job.kind === "text" ? ClipboardPaste : job.kind === "photo" ? Camera : Link2;
 
   return (
     <li className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-rule px-4 py-2.5">

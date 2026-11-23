@@ -1,6 +1,7 @@
 import { LIMITS, TextImportRequest, UrlImportRequest } from "@recipeflare/schema";
 import {
   Bookmark,
+  Camera,
   ClipboardPaste,
   CloudOff,
   Link2,
@@ -25,12 +26,13 @@ export type SentRecipe =
   | { problem: string };
 
 /**
- * Where a recipe starts: typed in, brought in from a link, written up from
- * text pasted in, or sent from the cook's own browser with a bookmark.
- * Photographing a card joins these later in Phase 2.
+ * Where a recipe starts: typed in, photographed from a paper card, brought in
+ * from a link, written up from text pasted in, or sent from the cook's own
+ * browser with a bookmark.
  */
 export function AddScreen({
   onType,
+  onPhotograph,
   onImport,
   onPaste,
   importing = false,
@@ -43,6 +45,8 @@ export function AddScreen({
 }: {
   /** Opens the editor on a new recipe. */
   onType?: () => void;
+  /** Opens the screen for photographing paper cards. Without it, photographing is not offered. */
+  onPhotograph?: () => void;
   /** Starts an import from a link that has passed the shared schema's check. Without it, importing is not offered. */
   onImport?: (url: string) => void;
   /**
@@ -197,6 +201,27 @@ export function AddScreen({
           Type a recipe
         </Button>
       </section>
+
+      {onPhotograph ? (
+        <section className="border-b border-rule px-4 py-5">
+          <h2 className="flex items-center gap-2 text-lg font-bold">
+            <Camera aria-hidden="true" size="1.25rem" />
+            From photos
+          </h2>
+          <p className="mt-1 max-w-[38ch]">
+            Photograph a stack of paper cards in one sitting, front and back. Each becomes a recipe
+            to check against its card.
+          </p>
+          <Button
+            className="mt-4"
+            icon={<Camera aria-hidden="true" size="1.25rem" />}
+            disabled={offline}
+            onClick={onPhotograph}
+          >
+            Photograph cards
+          </Button>
+        </section>
+      ) : null}
 
       {onImport ? (
         <form noValidate onSubmit={submit} className="px-4 py-5">

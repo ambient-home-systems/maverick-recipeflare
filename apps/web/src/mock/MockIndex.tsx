@@ -25,7 +25,13 @@ const READY = [
   {
     to: "/mock/add",
     name: "Add a recipe",
-    detail: "The ways a recipe starts: typed in, from a link, or from pasted text.",
+    detail: "The ways a recipe starts: typed in, from photos, from a link, or from pasted text.",
+  },
+  {
+    to: "/mock/capture",
+    name: "Photographing cards",
+    detail:
+      "A sitting of paper cards: front, back, next card. On a phone it opens the camera. Nothing is sent.",
   },
   {
     to: "/mock/new",

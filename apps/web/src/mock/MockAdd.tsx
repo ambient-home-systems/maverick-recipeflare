@@ -14,6 +14,7 @@ export function MockAdd() {
       <AddScreen
         offline={offline}
         onType={() => navigate({ to: "/mock/new", search: {} })}
+        onPhotograph={() => navigate({ to: "/mock/capture", search: {} })}
         onImport={() => navigate({ to: "/mock/list", search: { scene: "imports" } })}
         onPaste={() => navigate({ to: "/mock/list", search: { scene: "imports" } })}
       />

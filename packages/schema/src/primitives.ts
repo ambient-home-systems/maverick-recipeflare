@@ -30,6 +30,10 @@ export const LIMITS = {
   pastedText: 50_000,
   /** One thing an importer was unsure of, in a sentence. */
   doubtLength: 300,
+  /** Photos of one paper card: its front and back, and a second card stapled to it. */
+  cardPhotos: 4,
+  /** Cards photographed in one sitting, before they are sent. */
+  sittingCards: 30,
   /** 99 hours 59 minutes. */
   durationSeconds: 99 * 3600 + 59 * 60,
 } as const;

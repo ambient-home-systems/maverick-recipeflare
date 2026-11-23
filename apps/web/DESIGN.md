@@ -547,11 +547,19 @@ A panel over the page for one short job, such as choosing filters. It is a nativ
 - What changes behind a sheet is not read out, so a sheet that changes the page announces the result itself: the filter sheet has a spoken count.
 
 ### Import row
-An import from a link, listed above the recipes until a person has dealt with it.
-- **Style:** rows on `surface-sunk`, so they read as a tray apart from the recipes. A 3rem tile in plain stock with a link icon: an import is not a recipe yet and takes no category colour.
-- **Text:** the title the page gave, or the site's name until there is one; then a status in 600. "Reading the page…" has a small turning mark that stops under reduced motion. "Ready to review" is followed by the site, on its own line on a phone. A failure leads with a warning icon and "Could not import." in 600, then what happened and what to try at 400.
+An import, listed above the recipes until a person has dealt with it.
+- **Style:** rows on `surface-sunk`, so they read as a tray apart from the recipes. A 3rem tile in plain stock with an icon for where it came from (a link, a clipboard for pasted text, a camera for a photographed card): an import is not a recipe yet and takes no category colour.
+- **Text:** the title the source gave, or the site's name, "Pasted text" or "Photographed card" until there is one; then a status in 600. "Reading the page…", "Reading the card…" and "Writing it up…" have a small turning mark that stops under reduced motion. "Ready to review" is followed by the site, on its own line on a phone. A failure leads with a warning icon and "Could not import." in 600, then what happened and what to try at 400.
 - **Actions:** "Review" is a primary button at the right of the row. A failed import has "Try again" and "Remove", both quiet, on a line below its text.
 - Imports are hidden while the list is searched or filtered, and when offline.
+
+### Card pile (photographing cards)
+A sitting of paper cards before it is sent: the pile on the table as a ruled list.
+- **Card row:** closed, one button across the width, at least 4.25rem tall: the card's sides as 3rem square pictures with 6 px corners and a hairline, 0.375rem apart, then "Card 7" in title weight over "Front only", "Front and back" or "3 sides" in body small. Rows are numbered in the order taken and are not reordered.
+- **Open row:** one at a time, in place. Each side at half the row's width (a quarter from 768 px), 4 by 3, with its name in 600 under it and two small buttons, Retake and Remove. Then, above a hairline, the card's own small buttons (Swap sides, Add the back or Add a side, "It is the back of card 6", Remove card) and a primary Done. A picture pressed opens in the viewer.
+- **Capture bar:** the action bar, holding the two buttons pressed for every card: "Add the back" (quiet) while the newest card has one side, and "Next card" (primary, a camera icon), which fills the rest. Neither label wraps; on a very narrow phone they take a line each.
+- **Sending:** "Import 12 cards" (primary, a send icon) sits at the end of the pile, under a line saying nothing has been sent yet, beside a quiet "Choose photos". While sending, a notice band with a turning mark says "Sending card 3 of 12", and rows and capture buttons cannot be pressed.
+- **Empty:** the empty state, with "Photograph a card" (primary) and "Choose photos" (quiet).
 
 ### Manage rows and the entry sheet
 - **Index row:** a link across the stack's width: the list's name in title weight, a line of body small saying what it is, its count in 600 at the right, and a chevron. At least 2.75rem tall.
