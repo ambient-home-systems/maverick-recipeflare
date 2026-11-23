@@ -1,7 +1,9 @@
 import { z } from "zod";
 import { newId } from "./id";
-import type { Food, Organizer, OrganizerKind, Unit } from "./lists";
+import type { OrganizerKind } from "./lists";
+import { type DraftLists, indexByName, unitMatcher } from "./matching";
 import { nameKey } from "./name-key";
+import { ingredientParser } from "./parse-ingredient";
 import { LIMITS } from "./primitives";
 import { Nutrition, type RecipeFormValue } from "./recipe";
 import { slugify } from "./slug";
@@ -148,65 +150,6 @@ export function checkDraft(draft: RecipeDraft): DraftIssue[] {
   return issues;
 }
 
-/** The household's lists that a draft's names are matched against. */
-export type DraftLists = {
-  units: readonly Pick<
-    Unit,
-    "id" | "name" | "pluralName" | "abbreviation" | "pluralAbbreviation" | "aliases"
-  >[];
-  foods: readonly Pick<Food, "id" | "name" | "pluralName" | "aliases">[];
-  organizers: readonly Pick<Organizer, "id" | "kind" | "slug">[];
-};
-
-function indexByName<T extends { id: string }>(
-  entries: readonly T[],
-  names: (entry: T) => (string | null)[],
-  key: (name: string) => string,
-): Map<string, string> {
-  const index = new Map<string, string>();
-  for (const entry of entries) {
-    for (const name of names(entry)) {
-      if (name && !index.has(key(name))) {
-        index.set(key(name), entry.id);
-      }
-    }
-  }
-  return index;
-}
-
-/** A unit as written, without the full stops of "c." or "lbs." */
-function unitText(name: string): string {
-  return name.normalize("NFKC").trim().replace(/\.+$/u, "");
-}
-
-/**
- * Finds the household's unit for a name as written on a card or a page.
- *
- * Case matters for one-letter names: handwritten recipes use "t" for teaspoon
- * and "T" for tablespoon, and confusing them triples or thirds a quantity. So a
- * one-letter name matches only in its exact case. Longer names ignore case.
- */
-export function unitMatcher(units: DraftLists["units"]): (name: string) => string | null {
-  const names = (u: DraftLists["units"][number]) => [
-    u.name,
-    u.pluralName,
-    u.abbreviation,
-    u.pluralAbbreviation,
-    ...u.aliases,
-  ];
-  const exact = indexByName(units, names, unitText);
-  const anyCase = indexByName(units, names, (name) => nameKey(unitText(name)));
-
-  return (name) => {
-    const text = unitText(name);
-    const exactMatch = exact.get(text);
-    if (exactMatch || text.length <= 1) {
-      return exactMatch ?? null;
-    }
-    return anyCase.get(nameKey(text)) ?? null;
-  };
-}
-
 export type DraftConversion = {
   /** The editor's starting value. It may still be invalid, for example with no title. */
   input: RecipeFormValue;
@@ -250,6 +193,7 @@ export function draftToInput(
   const issues = checkDraft(draft);
 
   const matchUnit = unitMatcher(lists.units);
+  const parseLine = ingredientParser(lists);
   const foodIndex = indexByName(lists.foods, (f) => [f.name, f.pluralName, ...f.aliases], nameKey);
 
   const ingredientIds: string[] = [];
@@ -261,6 +205,22 @@ export function draftToInput(
         const id = makeId();
         ingredientIds.push(id);
         const path = ["ingredientSections", sectionIndex, "items", itemIndex];
+
+        // A line that arrives as text only is read by the rule-based parser. Its
+        // reading is used when it names a food the household has; otherwise the
+        // line stays as written, and the editor offers the food as a new one.
+        if (item.quantity === null && item.unitName === null && item.foodName === null) {
+          const read = parseLine(item.originalText);
+          const known = read?.foodId ? read : null;
+          return {
+            id,
+            originalText: item.originalText.trim() || null,
+            quantity: known?.quantity ?? null,
+            unitId: known?.unitId ?? null,
+            foodId: known?.foodId ?? null,
+            note: item.note.trim() || (known?.note ?? ""),
+          };
+        }
 
         const unitId = item.unitName ? matchUnit(item.unitName) : null;
         if (item.unitName && !unitId) {

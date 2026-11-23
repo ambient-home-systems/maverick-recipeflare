@@ -641,6 +641,19 @@ Drizzle table definitions stay in the Worker and are not generated from Zod, nor
 
 The three sample cards in the feature spec supply lines the parser's test corpus must include: "4 tbsp butter melted" (a note with no comma), "2 lbs. ground chuck", "1 t. soda", "3/4 C B. Sugar - Firmly Packed", "1 - 12 oz Chocolate Chips" and "1 - (15 1/2 oz can) Chef Boy-ar-Dee spaghetti sauce with mushrooms". The last may stay free text; it must not be misread.
 
+**As built in T1.5** (`packages/schema/src/parse-ingredient.ts`). `ingredientParser(lists)` indexes the household's units and foods once and returns the function that reads a line; `parseIngredientLine` is the one-line form. A reading is `{ quantity, unitId, foodId, newFood, note }`, or `null` for a line left as written.
+
+- **Amounts** also include "1-1/2", ".5", the words one to twelve, and "a" or "an" in front of a unit ("a pinch of salt"). "About" and a leading bullet are skipped.
+- **Packages.** "1 (15-ounce) can black beans", "1 15-ounce can", "2 x 400 g cans" and "1 - (15 1/2 oz can)" read as a number of cans with the size as a note. "1 - 12 oz chocolate chips", with no container, reads as 12 ounces. A dash between two numbers is a range only when the second is larger and at most three times the first.
+- **Food.** The words up to a comma, a semicolon or a spaced dash. They are tried as they stand first, so "cooked rice" and "crushed tomatoes" are foods when the household says so; then without the words that say how the food is prepared or how big it is ("minced onions", "butter melted", "2 large eggs"); then without "fresh" and "ripe". Those words go to the note. A plural is tried in the singular.
+- **A food inside another food's name is never taken.** "Peanut butter" is not butter and "chicken broth" is not chicken: the whole name is offered as a new food. The one exception is a brand of at least two capitalised words in front of a food written small ("Chef Boy-ar-Dee spaghetti sauce"); one capitalised word is as likely "Greek yogurt", so it is not treated as a brand.
+- **After the food.** "To taste", "for serving", "plus more for dusting", "or margarine" and anything in brackets go to the note.
+- **A line with no amount and no unit** is read only when it is exactly one of the household's foods ("Salt"). Otherwise it stays as written, so a heading or a sentence never becomes a food.
+- **Units.** A symbol of one or two letters ("g", "oz", "T") counts as a unit only after an amount.
+- **`draftToInput`** runs a line that arrives as text only through the parser and uses the reading when it names a food the household has. A line with a food the household lacks stays as written in the input, so the input is always safe to save, and the editor offers that food as new by reading the line again.
+- **The corpus** is 200 lines written for the tests, in seventeen groups, with the six card lines among them. All six read as the feature spec's walk-through expects, including the last, which the plan allowed to stay free text.
+- The mock editor now uses this parser. `mockParser.ts` is deleted.
+
 Phase 2 adds the AI fallback for lines the rules cannot read, behind the same function signature. The Mealie-compatible `parser/ingredient` endpoint in Phase 4 calls the same code.
 
 ### 5.2 Other exports

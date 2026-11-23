@@ -2,12 +2,15 @@ import {
   type Asset,
   type Food,
   formatQuantity,
+  type LineParser,
   type Nutrition,
   newId,
   type Organizer,
+  type ParsedLine,
   type Recipe,
   type RecipeFormValue,
   RecipeInput,
+  readQuantity,
   type Unit,
 } from "@recipeflare/schema";
 
@@ -22,17 +25,9 @@ import {
  */
 
 /** What the parser made of one typed line. */
-export type ParsedLine = {
-  quantity: number | null;
-  unitId: string | null;
-  foodId: string | null;
-  /** A food name the household does not have yet. Created only when the cook confirms at save. */
-  newFood: string | null;
-  note: string;
-};
-
-/** Reads a typed line. Null means it could not be read, and the line stays as written. */
-export type LineParser = (text: string) => ParsedLine | null;
+// The reading of a line, and the function that makes one, are the shared parser's.
+export type { LineParser, ParsedLine } from "@recipeflare/schema";
+export { readQuantity } from "@recipeflare/schema";
 
 export type DividerRow = { kind: "divider"; id: string; title: string };
 export type LineRow = { kind: "line"; id: string; text: string } & ParsedLine;
@@ -105,51 +100,6 @@ export function isAsWritten(line: ParsedLine): boolean {
 }
 
 // --- Numbers as text ---
-
-const GLYPHS: Record<string, number> = {
-  "½": 1 / 2,
-  "⅓": 1 / 3,
-  "⅔": 2 / 3,
-  "¼": 1 / 4,
-  "¾": 3 / 4,
-  "⅛": 1 / 8,
-  "⅜": 3 / 8,
-  "⅝": 5 / 8,
-  "⅞": 7 / 8,
-};
-const GLYPH_CLASS = "[½⅓⅔¼¾⅛⅜⅝⅞]";
-
-/**
- * Reads an amount from the start of some text: "2", "0.5", "1/2", "1 1/2",
- * "1½" or "½". Returns the number and what follows it, or null when the text
- * does not start with an amount.
- */
-export function readQuantity(text: string): { quantity: number; rest: string } | null {
-  const source = text.trimStart();
-  const mixed = /^(\d+)\s+(\d+)\s*\/\s*(\d+)/.exec(source);
-  const fraction = /^(\d+)\s*\/\s*(\d+)/.exec(source);
-  const withGlyph = new RegExp(`^(\\d+)?\\s*(${GLYPH_CLASS})`).exec(source);
-  const plain = /^\d+(?:\.\d+)?/.exec(source);
-
-  let quantity: number;
-  let length: number;
-  if (mixed && Number(mixed[3]) !== 0) {
-    quantity = Number(mixed[1]) + Number(mixed[2]) / Number(mixed[3]);
-    length = mixed[0].length;
-  } else if (fraction && Number(fraction[2]) !== 0) {
-    quantity = Number(fraction[1]) / Number(fraction[2]);
-    length = fraction[0].length;
-  } else if (withGlyph) {
-    quantity = Number(withGlyph[1] ?? 0) + (GLYPHS[withGlyph[2] as string] ?? 0);
-    length = withGlyph[0].length;
-  } else if (plain) {
-    quantity = Number(plain[0]);
-    length = plain[0].length;
-  } else {
-    return null;
-  }
-  return quantity > 0 ? { quantity, rest: source.slice(length) } : null;
-}
 
 /** An amount field's text as a number. Null for an empty field; NaN for text that is not an amount. */
 function amount(text: string): number | null {
