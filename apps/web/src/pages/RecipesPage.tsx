@@ -105,6 +105,7 @@ export function RecipesPage() {
       signedOut={signedOut}
       offline={!online}
       imports={imports.data ?? []}
+      onReviewImport={(job) => void navigate({ to: "/imports/$id/review", params: { id: job.id } })}
       onRetryImport={(job) => changeImport.mutate({ id: job.id, action: "retry" })}
       onRemoveImport={(job) => changeImport.mutate({ id: job.id, action: "remove" })}
       links={{ newRecipe: "/recipes/new", importLink: "/add" }}

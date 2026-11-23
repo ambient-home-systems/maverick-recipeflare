@@ -670,7 +670,7 @@ Everything is under `/api/v1` and, except health, needs a member. Request bodies
 | `GET /me` | Who is signed in | `{ member }` |
 | `GET /auth/refresh?return=/path` | Where "Sign in again" leads. Behind sign-in like every route, which is what brings the Access sign-in page up; once through, it redirects to `return`. Only a path within the app is accepted; anything else becomes `/` | 302 |
 | `GET /recipes` | One page of the list. `q` is the search text. `category` (one slug), `tags` and `tools` (slugs, comma-separated) and `foods` (IDs, comma-separated) are filters, and every one given must match. `sort` is `match`, `changed`, `newest` or `title`; left out it is best match while searching and last changed otherwise. `page` (from 1), `perPage` (1 to 100, default 30) | `{ items, page, perPage, total, libraryTotal }`; each item is a `RecipeSummary` with its cover, categories and tags, `total` counts everything that matched, and `libraryTotal` counts every recipe the household has, so the list can tell "nothing matches" from "no recipes yet" |
-| `POST /recipes` | Create from a `RecipeCreate` body | 201 with the `Recipe` |
+| `POST /recipes` | Create from a `RecipeCreate` body. With an `importJobId` the same save confirms that import: its assets become the recipe's and the job is marked `completed` | 201 with the `Recipe`; 400 at `importJobId` unless that import is waiting for review |
 | `GET /recipes/{idOrSlug}` | One recipe, by ID first and then by slug | The `Recipe`, or 404 |
 | `PUT /recipes/{id}` | Save over the copy the editor loaded; the `RecipeUpdate` body carries that copy's `version` | The `Recipe`; 409 `version_conflict` with `current`, the recipe as it is now; 404 |
 | `DELETE /recipes/{id}` | Delete | 204, or 404 |
@@ -683,14 +683,14 @@ Everything is under `/api/v1` and, except health, needs a member. Request bodies
 | `POST /units`, `PUT /units/{id}` | Create or change, from a `UnitInput` | The entry; 409 `duplicate` |
 | `GET /imports` | The imports a person still has to wait for or deal with (queued, running, to review, failed), newest first | `{ items }` of `ImportJob` |
 | `POST /imports` | Take on an import from `{ kind: "url", url }`: a queued job and a queue message that names it | 202 with the `ImportJob`. If the message could not be sent the job comes back `failed` with `not_queued`, so it can be tried again |
-| `GET /imports/{id}` | One import, with what was found once it is ready | The `ImportJob`, or 404 |
+| `GET /imports/{id}` | One import, with what was found once it is ready, and the recipe the household already has from the same link | The `ImportJob` with `duplicate`, which is `{ slug, title }` or null; or 404 |
 | `POST /imports/{id}/retry` | Put a failed import back in line from the start | 202 with the job; 404 unless it is a failed import |
 | `DELETE /imports/{id}` | Remove an import | 204, or 404 |
 | `POST /labels`, `PUT /labels/{id}`, `DELETE /labels/{id}` | Create, change (name, colour, order) or delete. Deleting takes the label off its foods | The entry or 204; 409 `duplicate` |
 
 - A body larger than 2 MB is a 413 `too_large`; a recipe at every size cap is under 1 MB.
 - A body that is not the JSON it claims to be is a 400 `bad_request`.
-- `POST /recipes` refuses a non-null `importJobId` until T1.12, which is where confirming an import is built.
+- `POST /recipes` with an `importJobId` reads the job's status in the save's batch of reads and completes the job in its batch of writes, so confirming an import costs no extra round trip. An import that is not waiting for review is refused and nothing is saved.
 - A name is a duplicate when it matches another ignoring capitals and spacing: by slug within a kind for organizers, by name key for foods, units and labels. The 409 names the entry that has it, so a picker can select that one, as the feature spec asks.
 - Renaming or deleting an organizer, or renaming a food, rewrites the search text of the recipes that use it in the same batch as the change, through `buildSearchText()`. The names are read just before, so a recipe saved in that instant can keep stale search text until it is next saved; the plan accepts the same gap for the save.
 - "Asks first" for a delete is the screen's job (T1.9). The list tells it how many recipes or foods are affected.
@@ -784,7 +784,7 @@ One table (`import_jobs`, [§4.3](#43-tables)) and one mechanism (Queues) for ev
 - A handler signals with what it throws: `RetryableImportError`, `PermanentImportError` with a code, or anything else, which is treated as retryable. A retry waits one minute, then two, then four.
 - A job that fails for good keeps its code: `no_recipe`, `blocked`, `retries_exhausted`, `not_queued` (the message could not be sent), `unsupported` (no handler for the kind) or `bad_draft` (the handler returned something that is not a draft).
 - The list asks for the imports again every two seconds while one is queued or running, and stops when none is.
-- Until T1.12 there is no handler for `url`, so an import from a link fails with `unsupported`. The Add page does not offer importing until then.
+- A kind with no handler fails with `unsupported`. `url` has had its handler since T1.12; the other kinds arrive with later phases.
 
 ### 7.3 The URL handler
 
@@ -794,6 +794,18 @@ One table (`import_jobs`, [§4.3](#43-tables)) and one mechanism (Queues) for ev
 - Download the image into R2 as an asset owned by the job.
 - Warn on review when a recipe with the same source URL exists.
 - If there is no structured data, fail with a message that says so. The fallbacks (AI on the page text, paste the page, a browser-rendered fetch) are Phase 2 and later, as the build plan has them.
+
+**As built in T1.12** (`apps/worker/src/imports/url.ts`, `apps/web/src/pages/EditorPage.tsx`, `apps/web/src/pages/editor/reviewState.ts`).
+
+- The page is asked for with a 15-second limit and read up to 3 MB, counted as it arrives, so a page that does not state its length is capped too. Redirects are followed by hand, at most five, and every address on the way is checked like the first: `http` or `https` only, and no host named by number, `localhost`, or a name with no dot or ending in `.local` or `.internal`.
+- A site that answers 401 or 403 fails with `blocked`; 404 or 410 with `no_page`; something that is not HTML with `not_a_page`; too much with `too_large`; an address that is refused with `bad_link`. 429, a 5xx and a site that cannot be reached are worth another try.
+- The recipe is the first node typed `Recipe` in any JSON-LD block: at the top, in a list, in `@graph`, or as a page's `mainEntity`. A block that is not valid JSON is passed over, after one more try with its line breaks as spaces, which mends the commonest mistake.
+- Text is taken as a person would read it: tags removed and entities decoded. Nothing is inferred. The yield is servings when the page gives a bare number or names servings, and an amount of something otherwise ("Makes 24 cookies"). The source name is the author, then the publisher, then the page's `og:site_name`.
+- The draft keeps the link as it was given, so the same link pasted twice is recognised; addresses on the page are completed from where the page was finally found.
+- **The image is not downloaded yet.** The draft carries `imageUrl`; fetching it into R2 as the job's asset is done with T1.10, which builds the storage and the variants. Until then review shows the link to the page and no picture. Confirming an import already hands the job's assets to the recipe, so T1.10 adds the download and nothing here changes.
+- The duplicate warning is `duplicate` on `GET /imports/{id}`: the oldest recipe whose stored link equals the job's, both in canonical form. It warns and does not refuse.
+- Review is the editor in review mode at `/imports/<id>/review`. `prepareReview()` turns the draft into the editor's value and the list of things to check, and is what the mock review uses too. Save sends the recipe with the import's ID. Discard asks, removes the import and returns to the list. Going elsewhere with corrections unsaved asks a different question, and leaves the import in the list as it was read.
+- Worker tests never reach the network: the test configuration answers every outbound request with a 503, and a test that needs a page hands the importer its own `fetch`. The pages in `apps/worker/test/fixtures/recipe-pages.ts` are invented.
 
 ### 7.4 What later phases add
 

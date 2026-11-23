@@ -19,6 +19,7 @@ import { chunkRows } from "./chunk";
 import {
   assets,
   foods,
+  importJobs,
   organizers,
   recipeIngredients,
   recipeNotes,
@@ -239,7 +240,10 @@ function nutritionJson(nutrition: RecipeInput["nutrition"]): string | null {
   return filled.length === 0 ? null : JSON.stringify(Object.fromEntries(filled));
 }
 
-type Target = { create: true; id: string } | { create: false; id: string; loadedVersion: number };
+type Target =
+  /** A new recipe. `importJobId` is the import it confirms, if it came from one. */
+  | { create: true; id: string; importJobId: string | null }
+  | { create: false; id: string; loadedVersion: number };
 
 /**
  * The reads a save needs, in one batch: the recipe as it stands (for an
@@ -253,7 +257,10 @@ async function readBeforeSave(orm: Orm, target: Target, input: RecipeInput) {
   const unitIds = [...new Set(lines.flatMap((line) => (line.unitId ? [line.unitId] : [])))];
   const organizerIds = [...input.categoryIds, ...input.tagIds, ...input.toolIds];
 
-  const [current, taken, foodRows, unitRows, organizerRows] = await orm.batch([
+  // An ID no job has, when the save confirms no import, so the batch keeps one shape.
+  const importJobId = target.create ? (target.importJobId ?? "") : "";
+
+  const [current, taken, foodRows, unitRows, organizerRows, jobRows] = await orm.batch([
     orm
       .select({
         slug: recipes.slug,
@@ -275,9 +282,14 @@ async function readBeforeSave(orm: Orm, target: Target, input: RecipeInput) {
       .select({ id: organizers.id, kind: organizers.kind, name: organizers.name })
       .from(organizers)
       .where(inJson(organizers.id, organizerIds)),
+    orm
+      .select({ status: importJobs.status })
+      .from(importJobs)
+      .where(eq(importJobs.id, importJobId)),
   ]);
 
   return {
+    importStatus: jobRows[0]?.status ?? null,
     base,
     current: current[0] ?? null,
     takenSlugs: taken.map((row) => row.slug),
@@ -339,6 +351,19 @@ async function save(
       if (known.current.version !== target.loadedVersion) {
         return conflict(db, target.id);
       }
+    }
+    if (target.create && target.importJobId !== null && known.importStatus !== "needs_review") {
+      // Saved from another device already, or discarded there.
+      return {
+        ok: false,
+        reason: "invalid",
+        issues: [
+          {
+            path: ["importJobId"],
+            message: "This import has already been saved or removed",
+          },
+        ],
+      };
     }
     const issues = referenceIssues(input, known);
     if (issues.length > 0) {
@@ -505,16 +530,38 @@ function writeStatements(
       .values({ recipeId: id, ...text })
       .onConflictDoUpdate({ target: recipeSearch.recipeId, set: text }),
   );
+
+  if (target.create && target.importJobId !== null) {
+    // Confirming an import: what it brought with it becomes the recipe's, and
+    // the job is done. In the same batch, so neither happens without the recipe.
+    statements.push(
+      orm
+        .update(assets)
+        .set({ recipeId: id })
+        .where(sql`${assets.importJobId} = ${target.importJobId} AND ${assets.recipeId} IS NULL`),
+      orm
+        .update(importJobs)
+        .set({ status: "completed", recipeId: id, updatedAt: now })
+        .where(
+          sql`${importJobs.id} = ${target.importJobId} AND ${importJobs.status} = 'needs_review'`,
+        ),
+    );
+  }
   return statements;
 }
 
-/** Saves a new recipe. Its slug is made from its title. */
+/**
+ * Saves a new recipe. Its slug is made from its title. With `importJobId` the
+ * save also confirms that import: the job must be waiting for review, and the
+ * same batch that writes the recipe marks it completed.
+ */
 export function createRecipe(
   db: D1Database,
   input: RecipeInput,
   memberId: string,
+  importJobId: string | null = null,
 ): Promise<SaveResult> {
-  return save(db, { create: true, id: newId() }, input, memberId);
+  return save(db, { create: true, id: newId(), importJobId }, input, memberId);
 }
 
 /**

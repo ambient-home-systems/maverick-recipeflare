@@ -225,8 +225,9 @@ The cook types a line the way it is written on the card. The rule-based parser (
 - Review mode lists what needs attention at the top, for example "No steps were found" or "3 ingredient lines could not be read", and marks each of those with the word "check" where it is. Pressing one in the list goes to it. None of them stops a save.
 - Review shows the original beside the draft: they take turns on a phone, with a switch that stays at the top of the screen and returns each to where it was left, and sit side by side on a wide screen. For a link the original is the page's picture and a link to the page. From Phase 2 it is the photographed card.
 - Nothing becomes a recipe until Save is pressed in review mode. "Discard" removes the import, and always asks first.
+- Leaving review some other way (the navigation, the back button) keeps the import in the list to review later. If corrections have been made it asks first, because they are lost: the import stays as it was read from the page.
 - Tags and categories from the page are preselected only if the household already has them. Others are offered as unselected suggestions.
-- The page's main image becomes the cover and can be removed in review.
+- The page's main image becomes the cover and can be removed in review. (The image arrives with photos, T1.10. Until then review has the link to the page and no picture.)
 - If a recipe with the same link exists, review mode says so and links to it. The import can still be saved.
 - Failures say what happened in plain words and what to try: the site could not be reached, the site blocked the request, or the page has no recipe data. For the last, the message says that pasting the text arrives with Phase 2.
 - A failed import can be retried from its row.

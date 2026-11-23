@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { ImportJob } from "./import-job";
 import { Food, Label, Member, Organizer, Unit } from "./lists";
-import { Id } from "./primitives";
+import { Id, Slug } from "./primitives";
 import { Recipe, RecipeSummary } from "./recipe";
 
 /** Body of `GET /api/v1/health`. */
@@ -140,3 +140,13 @@ export type InUseBody = z.infer<typeof InUseBody>;
 /** Body of `GET /api/v1/imports`: the imports a person still has to wait for or deal with, newest first. */
 export const ImportListResponse = z.object({ items: z.array(ImportJob) });
 export type ImportListResponse = z.infer<typeof ImportListResponse>;
+
+/**
+ * Body of `GET /api/v1/imports/:id`: the import, and the recipe the household
+ * already has from the same link, if there is one. Review says so; it does not
+ * stop the save.
+ */
+export const ImportDetail = ImportJob.extend({
+  duplicate: z.object({ slug: Slug, title: z.string() }).nullable(),
+});
+export type ImportDetail = z.infer<typeof ImportDetail>;

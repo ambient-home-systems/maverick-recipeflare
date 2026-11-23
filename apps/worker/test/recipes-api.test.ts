@@ -112,7 +112,7 @@ describe("creating a recipe", () => {
     expect((await errorOf(response)).code).toBe("too_large");
   });
 
-  it("does not confirm an import yet", async () => {
+  it("refuses to confirm an import that does not exist", async () => {
     const response = await api.post("/recipes", { title: "From A Page", importJobId: newId() });
 
     expect(response.status).toBe(400);

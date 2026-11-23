@@ -13,16 +13,24 @@ import { Page } from "../../ui/Page";
 export function AddScreen({
   onType,
   onImport,
+  importing = false,
+  importProblem,
   offline = false,
 }: {
   /** Opens the editor on a new recipe. */
   onType?: () => void;
   /** Starts an import from a link that has passed the shared schema's check. Without it, importing is not offered. */
   onImport?: (url: string) => void;
+  /** True while the import is being handed over. */
+  importing?: boolean;
+  /** Why the import could not be started, in a sentence. The link is still in the box. */
+  importProblem?: string;
   offline?: boolean;
 }) {
   const [url, setUrl] = useState("");
-  const [problem, setProblem] = useState<string | null>(null);
+  const [typed, setTyped] = useState<string | null>(null);
+  // What is wrong with the link as typed comes first; then what the server said.
+  const problem = typed ?? importProblem ?? null;
   const urlId = useId();
   const problemId = useId();
 
@@ -30,14 +38,14 @@ export function AddScreen({
     event.preventDefault();
     const request = UrlImportRequest.safeParse({ kind: "url", url: url.trim() });
     if (!request.success) {
-      setProblem(
+      setTyped(
         url.trim() === ""
           ? "Paste the address of a recipe page first."
           : "That does not look like a web address. It should start with https://",
       );
       return;
     }
-    setProblem(null);
+    setTyped(null);
     onImport?.(request.data.url);
   };
 
@@ -101,7 +109,7 @@ export function AddScreen({
               <Notice problem>{problem}</Notice>
             </div>
           ) : null}
-          <Button type="submit" className="mt-4" disabled={offline}>
+          <Button type="submit" className="mt-4" disabled={offline} busy={importing}>
             Import
           </Button>
         </form>

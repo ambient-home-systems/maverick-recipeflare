@@ -1,5 +1,6 @@
 import {
   type Food,
+  type ImportDetail,
   ingredientParser,
   newId,
   type Organizer,
@@ -12,16 +13,26 @@ import { useQueryClient } from "@tanstack/react-query";
 import { getRouteApi, Link, useBlocker, useNavigate } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import { ApiError, SignedOutError, UnreachableError } from "../api/client";
-import { useFoods, useOrganizers, useRecipe, useUnits } from "../api/queries";
+import {
+  useChangeImport,
+  useFoods,
+  useImport,
+  useOrganizers,
+  useRecipe,
+  useUnits,
+} from "../api/queries";
 import { conflictOf, type SaveRequest, useSaveRecipe } from "../api/saveRecipe";
 import { Button } from "../ui/Button";
 import { EmptyState, Notice } from "../ui/Notice";
 import { Page } from "../ui/Page";
 import type { Stock } from "../ui/stock";
 import { emptyEditorValue, fromRecipe } from "./editor/editorState";
-import { RecipeEditorScreen } from "./editor/RecipeEditorScreen";
+import { RecipeEditorScreen, type Review } from "./editor/RecipeEditorScreen";
+import { prepareReview } from "./editor/reviewState";
+import { importHost } from "./recipes/ImportRow";
 
 const editRoute = getRouteApi("/recipes/$slug/edit");
+const reviewRoute = getRouteApi("/imports/$id/review");
 
 type Lists = { units: Unit[]; foods: Food[]; organizers: Organizer[] };
 
@@ -65,11 +76,29 @@ function unitNamed(id: string, name: string): Unit {
  * new one, and the household's lists. It keeps what the pickers make until the
  * save, saves, and answers the three things that can happen then: saved,
  * changed on another device, or not saved.
+ *
+ * Given an import, it opens in review mode on what the import found. Saving
+ * then makes the recipe and completes the import; Discard removes the import.
  */
-function Editor({ recipe, lists }: { recipe: Recipe | null; lists: Lists }) {
+function Editor({
+  recipe,
+  lists,
+  importing,
+}: {
+  recipe: Recipe | null;
+  lists: Lists;
+  importing?: ImportDetail;
+}) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const save = useSaveRecipe();
+  const changeImport = useChangeImport();
+  // Read once: the review is a copy of what the import found, as the lists stood when it opened.
+  const [prepared] = useState(() =>
+    importing?.result
+      ? prepareReview(importing.result.draft, lists, ingredientParser(lists))
+      : null,
+  );
 
   /** The recipe the editor's copy was made from. It changes when the cook reloads after a conflict. */
   const [base, setBase] = useState(recipe);
@@ -95,7 +124,10 @@ function Editor({ recipe, lists }: { recipe: Recipe | null; lists: Lists }) {
     [units, lists.foods],
   );
   // biome-ignore lint/correctness/useExhaustiveDependencies: `round` is what makes a reload start afresh
-  const initial = useMemo(() => (base ? fromRecipe(base) : emptyEditorValue()), [base, round]);
+  const initial = useMemo(
+    () => prepared?.value ?? (base ? fromRecipe(base) : emptyEditorValue()),
+    [base, round],
+  );
 
   // Leaving by the navigation or the back button asks first, as the editor's own Cancel does.
   const blocker = useBlocker({
@@ -110,7 +142,9 @@ function Editor({ recipe, lists }: { recipe: Recipe | null; lists: Lists }) {
     save.mutate(
       {
         ...request,
-        target: base ? { create: false, id: base.id, version: madeFrom } : { create: true },
+        target: base
+          ? { create: false, id: base.id, version: madeFrom }
+          : { create: true, importJobId: importing?.id },
       },
       {
         onSuccess: (saved) => {
@@ -132,7 +166,21 @@ function Editor({ recipe, lists }: { recipe: Recipe | null; lists: Lists }) {
   const leave = () => {
     leavingOnPurpose.current = true;
     if (blocker.status === "blocked") {
+      // Going elsewhere. An import under review stays in the list for later.
       blocker.proceed();
+    } else if (importing) {
+      // The editor's own Discard: the import is removed, and only then is the page left.
+      setProblem(undefined);
+      changeImport.mutate(
+        { id: importing.id, action: "remove" },
+        {
+          onSuccess: () => void navigate({ to: "/", search: {} }),
+          onError: () => {
+            leavingOnPurpose.current = false;
+            setProblem("The import was not discarded. It is still here; try again.");
+          },
+        },
+      );
     } else if (base) {
       void navigate({ to: "/recipes/$slug", params: { slug: base.slug }, search: {} });
     } else {
@@ -140,11 +188,36 @@ function Editor({ recipe, lists }: { recipe: Recipe | null; lists: Lists }) {
     }
   };
 
+  const review: Review | undefined =
+    importing && prepared
+      ? {
+          from: importHost(importing),
+          sourceUrl: importing.sourceUrl ?? undefined,
+          attention: prepared.attention,
+          flaggedRows: prepared.flaggedRows,
+          flaggedParts: prepared.flaggedParts,
+          suggestions: prepared.suggestions,
+          duplicate: importing.duplicate
+            ? {
+                title: importing.duplicate.title,
+                onOpen: () =>
+                  void navigate({
+                    to: "/recipes/$slug",
+                    params: { slug: importing.duplicate?.slug ?? "" },
+                    search: {},
+                  }),
+              }
+            : undefined,
+          // The page's picture arrives with photos, in T1.10. Until then the link is the original.
+        }
+      : undefined;
+
   return (
     <RecipeEditorScreen
       // A reload after a conflict starts the editor again from the recipe as it is now.
       key={round}
-      mode={base ? "edit" : "new"}
+      mode={importing ? "review" : base ? "edit" : "new"}
+      review={review}
       initial={initial}
       lists={{ units, foods: lists.foods, organizers }}
       parse={parse}
@@ -182,7 +255,7 @@ function Editor({ recipe, lists }: { recipe: Recipe | null; lists: Lists }) {
         dirty.current = now;
       }}
       backLabel={base ? base.title : "All recipes"}
-      saving={save.isPending}
+      saving={save.isPending || changeImport.isPending}
       saveProblem={problem}
       conflict={conflict !== null}
       onConflict={(choice) => {
@@ -350,4 +423,74 @@ export function EditRecipePage() {
   }
   // The editor keeps its own copy from here: a refetch must not change what is being typed over.
   return <Editor key={recipe.data.id} recipe={recipe.data} lists={lists.data} />;
+}
+
+/** What the review page shows when there is no import to review at its address. */
+function NoReview({ title, children }: { title: string; children: string }) {
+  return (
+    <Page title="Review import">
+      <EmptyState
+        title={title}
+        actions={
+          <Link
+            to="/"
+            className="transition-rf inline-flex min-h-touch items-center rounded-md border border-rule-strong bg-surface px-5 font-semibold text-ink no-underline hover:bg-surface-sunk"
+          >
+            All recipes
+          </Link>
+        }
+      >
+        {children}
+      </EmptyState>
+    </Page>
+  );
+}
+
+/** The editor in review mode, on what an import found. */
+export function ReviewImportPage() {
+  const { id } = reviewRoute.useParams();
+  const job = useImport(id);
+  const lists = useEditorLists();
+  // Held from the moment it is first seen ready: saving completes the import,
+  // and the page must not change under the editor while it leaves.
+  const [opened, setOpened] = useState<ImportDetail | null>(null);
+  const ready = job.data?.status === "needs_review" && job.data.result ? job.data : null;
+  if (!opened && ready) {
+    setOpened(ready);
+  }
+
+  if (opened && lists.data) {
+    return <Editor key={opened.id} recipe={null} lists={lists.data} importing={opened} />;
+  }
+  if (job.error instanceof ApiError && job.error.status === 404) {
+    return (
+      <NoReview title="This import is not here">
+        It may have been saved as a recipe already, or removed.
+      </NoReview>
+    );
+  }
+  if (job.data && !ready) {
+    return (
+      <NoReview title="This import is not ready to review">
+        {job.data.status === "completed"
+          ? "It has been saved as a recipe already."
+          : "The list of recipes shows where it has got to."}
+      </NoReview>
+    );
+  }
+  const failed = lists.failed || job.isError;
+  return (
+    <NotReady
+      title="Review import"
+      loading={!failed}
+      signedOut={lists.signedOut || job.error instanceof SignedOutError}
+      failed={failed}
+      onRetry={() => {
+        lists.retry();
+        if (job.isError) {
+          void job.refetch();
+        }
+      }}
+    />
+  );
 }

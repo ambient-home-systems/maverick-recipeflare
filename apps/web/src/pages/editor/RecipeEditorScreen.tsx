@@ -72,7 +72,11 @@ type RecipeEditorScreenProps = {
     assets: Asset[],
     newFoodByLine: Record<string, string>,
   ) => void;
-  /** Leaves the editor without saving. In review this discards the import. */
+  /**
+   * Leaves the editor without saving, once the cook has agreed to. In review
+   * the editor's own button means discarding the import; when the page asked
+   * (`asking`), it means leaving it for later.
+   */
   onLeave: () => void;
   /** Where the way back leads, in a few words: the recipe's title, or "All recipes". */
   backLabel: string;
@@ -98,6 +102,30 @@ type RecipeEditorScreenProps = {
 };
 
 const TITLES = { new: "New recipe", edit: "Edit recipe", review: "Review import" };
+
+/** The question asked before the editor is left with something unsaved, by what would be lost. */
+const LEAVE_WORDS = {
+  new: {
+    title: "Leave without saving?",
+    text: "This recipe has not been saved. What you have typed will be lost.",
+    confirm: "Discard changes",
+  },
+  edit: {
+    title: "Leave without saving?",
+    text: "Your changes have not been saved and will be lost. The recipe stays as it was.",
+    confirm: "Discard changes",
+  },
+  discard: {
+    title: "Discard this import?",
+    text: "What was read from the page will be thrown away. Nothing has been saved as a recipe.",
+    confirm: "Discard import",
+  },
+  later: {
+    title: "Leave this review?",
+    text: "Your corrections have not been saved and will be lost. The import stays in the list, as it was read from the page.",
+    confirm: "Leave",
+  },
+};
 
 /** A row in a summary that goes to what it names when pressed. */
 const JUMP =
@@ -247,7 +275,8 @@ export function RecipeEditorScreen({
 }: RecipeEditorScreenProps) {
   const [value, setValue] = useState(initial);
   const [tried, setTried] = useState(showProblems);
-  const [leaving, setLeaving] = useState(asking);
+  // "asked" is the page's question, about leaving some other way than the editor's own button.
+  const [leaving, setLeaving] = useState<false | "own" | "asked">(asking ? "asked" : false);
   const [confirmFoods, setConfirmFoods] = useState<string[] | null>(null);
   const [pane, setPane] = useState<"recipe" | "original">("recipe");
   const [viewing, setViewing] = useState<number | null>(null);
@@ -314,7 +343,7 @@ export function RecipeEditorScreen({
   // The page asks when the cook is leaving some other way: the navigation, the back button.
   useEffect(() => {
     if (asking) {
-      setLeaving(true);
+      setLeaving("asked");
     }
   }, [asking]);
 
@@ -333,11 +362,19 @@ export function RecipeEditorScreen({
   const leave = () => {
     // A review always asks: discarding an import cannot be undone.
     if (mode === "review" || dirty) {
-      setLeaving(true);
+      setLeaving("own");
     } else {
       onLeave();
     }
   };
+
+  // Going elsewhere from a review does not discard the import: it waits in the list.
+  // The words are those of the question last asked, so they do not change as the sheet closes.
+  const asked = useRef<keyof typeof LEAVE_WORDS>(mode === "review" ? "discard" : mode);
+  if (leaving !== false) {
+    asked.current = mode === "review" ? (leaving === "asked" ? "later" : "discard") : mode;
+  }
+  const leaveKind = asked.current;
 
   const flaggedPart = (part: string) => review?.flaggedParts.includes(part) ?? false;
   const original = review?.original;
@@ -776,33 +813,29 @@ export function RecipeEditorScreen({
       </Page>
 
       <Sheet
-        open={leaving}
+        open={leaving !== false}
         onClose={stay}
-        title={mode === "review" ? "Discard this import?" : "Leave without saving?"}
+        title={LEAVE_WORDS[leaveKind].title}
         footer={
           <>
             <Button variant="quiet" onClick={stay}>
               Keep editing
             </Button>
             <Button
-              icon={<Trash2 aria-hidden="true" size="1.25rem" />}
+              icon={
+                leaveKind === "later" ? undefined : <Trash2 aria-hidden="true" size="1.25rem" />
+              }
               onClick={() => {
                 setLeaving(false);
                 onLeave();
               }}
             >
-              {mode === "review" ? "Discard import" : "Discard changes"}
+              {LEAVE_WORDS[leaveKind].confirm}
             </Button>
           </>
         }
       >
-        <p className="px-4 py-4">
-          {mode === "review"
-            ? "What was read from the page will be thrown away. Nothing has been saved as a recipe."
-            : mode === "new"
-              ? "This recipe has not been saved. What you have typed will be lost."
-              : "Your changes have not been saved and will be lost. The recipe stays as it was."}
-        </p>
+        <p className="px-4 py-4">{LEAVE_WORDS[leaveKind].text}</p>
       </Sheet>
 
       <Sheet

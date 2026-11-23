@@ -1,4 +1,10 @@
-import { Id, type ImportJob, type ImportListResponse, UrlImportRequest } from "@recipeflare/schema";
+import {
+  Id,
+  type ImportDetail,
+  type ImportJob,
+  type ImportListResponse,
+  UrlImportRequest,
+} from "@recipeflare/schema";
 import { type Context, Hono } from "hono";
 import type { AppEnv } from "../auth/types";
 import {
@@ -7,6 +13,7 @@ import {
   failImportJob,
   listOpenImportJobs,
   loadImportJob,
+  recipeFromLink,
   requeueImportJob,
 } from "../db/importJobs";
 import { jsonBody, notFound } from "../http";
@@ -53,7 +60,15 @@ export const importRoutes = new Hono<AppEnv>()
   .get("/:id", async (c) => {
     const id = idParam(c);
     const job = id ? await loadImportJob(c.env.DB, id) : null;
-    return job ? c.json(job) : notFound(c);
+    if (!job) {
+      return notFound(c);
+    }
+    // Review warns when the household already has a recipe from this link.
+    const body: ImportDetail = {
+      ...job,
+      duplicate: job.sourceUrl ? await recipeFromLink(c.env.DB, job.sourceUrl) : null,
+    };
+    return c.json(body);
   })
   .post("/:id/retry", async (c) => {
     const id = idParam(c);

@@ -8,7 +8,7 @@ import {
 } from "@recipeflare/schema";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
-import { importJobs } from "./schema";
+import { importJobs, recipes } from "./schema";
 
 /**
  * Import jobs, as docs/implementation-plan.md §7 describes. The row is the
@@ -72,6 +72,21 @@ export async function createImportJob(
 export async function loadImportJob(db: D1Database, id: string): Promise<ImportJob | null> {
   const row = await drizzle(db).select().from(importJobs).where(eq(importJobs.id, id)).get();
   return row ? toJob(row) : null;
+}
+
+/** The oldest recipe saved from a link, if the household has one. `url` is in its canonical form. */
+export async function recipeFromLink(
+  db: D1Database,
+  url: string,
+): Promise<{ slug: string; title: string } | null> {
+  const row = await drizzle(db)
+    .select({ slug: recipes.slug, title: recipes.title })
+    .from(recipes)
+    .where(eq(recipes.sourceUrl, url))
+    .orderBy(recipes.createdAt)
+    .limit(1)
+    .get();
+  return row ?? null;
 }
 
 /** A job together with what it was asked to do, for the runner. */

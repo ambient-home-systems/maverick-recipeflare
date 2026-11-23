@@ -25,11 +25,8 @@ export const recipeRoutes = new Hono<AppEnv>()
   })
   .post("/", recipeBody, jsonBody(RecipeCreate), async (c) => {
     const { importJobId, ...input } = c.req.valid("json");
-    if (importJobId !== null) {
-      // Confirming an import arrives with the import tasks.
-      return invalid(c, [{ path: ["importJobId"], message: "Imports cannot be confirmed yet" }]);
-    }
-    const result = await createRecipe(c.env.DB, input, c.get("member").id);
+    // With an import's ID, the same save confirms the import.
+    const result = await createRecipe(c.env.DB, input, c.get("member").id, importJobId);
     if (result.ok) {
       return c.json(result.recipe, 201);
     }
