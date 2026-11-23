@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-23T07:45:00.000Z",
+  "generatedAt": "2026-11-23T08:10:00.000Z",
   "title": "Design System: Recipeflare",
   "extensions": {
     "colorMeta": {
@@ -932,6 +932,14 @@
       "description": "The shell's own notice, across the top of every page and above the header, once the sign-in session has run out. The notice ground, one sentence, and one outlined link back in, 44 pixels tall.",
       "html": "<div class=\"ds-signedout\"><p>You have been signed out. What is on screen may be out of date.</p><a href=\"#\">Sign in again</a></div>",
       "css": ".ds-signedout { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 1rem; padding: 0.375rem 1rem; background: var(--rf-notice); color: var(--rf-on-notice); font-family: var(--rf-font); font-size: 0.875rem; font-weight: 600; } .ds-signedout p { flex: 1 1 14rem; margin: 0; padding: 0.25rem 0; } .ds-signedout a { display: inline-flex; align-items: center; min-height: 2.75rem; padding: 0 1rem; border: 1px solid var(--rf-rule-strong); border-radius: var(--rf-radius-md); background: var(--rf-surface); color: var(--rf-ink); font-weight: 600; text-decoration: none; }"
+    },
+    {
+      "name": "Manage Entry Row",
+      "kind": "row",
+      "refersTo": "manage-entry-row",
+      "description": "One entry of a household list: its name, and under it how much it is used. A category's row starts with a tile of its own stock.",
+      "html": "<button class=\"ds-manage-row\"><span class=\"ds-manage-tile\"></span><span><strong>Dinner</strong><small>Used in 12 recipes</small></span></button>",
+      "css": ".ds-manage-row { display: flex; align-items: center; gap: 0.75rem; width: 100%; min-height: 2.75rem; padding: 0.625rem 1rem; border: 0; border-bottom: 1px solid var(--rf-rule); background: var(--rf-surface); color: var(--rf-ink); font-family: var(--rf-font); text-align: left; } .ds-manage-row strong { display: block; font-weight: 600; } .ds-manage-row small { display: block; font-size: 0.875rem; } .ds-manage-tile { flex: none; width: 2rem; height: 2rem; border: 1px solid var(--rf-rule); border-radius: var(--rf-radius-sm); background: var(--rf-stock-buff); }"
     }
   ],
   "narrative": {

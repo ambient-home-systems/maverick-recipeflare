@@ -190,11 +190,13 @@ The cook types a line the way it is written on the card. The rule-based parser (
 **Decisions**
 
 - Categories, tags and tools are picked in the editor from a searchable list, and a name that does not exist can be created in place.
-- Each kind has a manage screen that lists entries with the number of recipes using each, and allows renaming.
+- Each kind has a manage screen that lists entries with the number of recipes using each, and allows renaming. Manage opens on an index of the six lists with a count each. A list has a box to add an entry at its top, and pressing an entry opens it in a sheet with its boxes, Save and Delete.
+- A food also takes a plural, a label, and other ways it is written: this is where a card's shorthand such as "B. Sugar" is given to brown sugar. A unit takes a plural, an abbreviation, other ways it is written, and whether amounts show as fractions.
+- The foods list offers a box to find one once it holds more than twelve.
 - Names are unique within a kind, ignoring case and extra spaces. Creating a duplicate selects the existing one.
 - Deleting a category, tag, tool or label asks for confirmation, states how many recipes or foods use it, and removes it from them.
 - A food or unit that any recipe uses cannot be deleted. The manage screen says how many recipes use it. Renaming is always allowed.
-- Labels are assigned to foods on the food's manage screen and can be put in order. They have no other effect in Phase 1.
+- Labels are assigned to foods on the food's manage screen and can be put in order, with Move up and Move down on the label. They have no other effect in Phase 1.
 
 ## 5. Finding recipes
 
