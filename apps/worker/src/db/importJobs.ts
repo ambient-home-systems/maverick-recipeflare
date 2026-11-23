@@ -22,7 +22,7 @@ type Row = typeof importJobs.$inferSelect;
 export type JobInput = {
   url?: string;
   /** The page as the cook's browser read it, when it was sent from there. */
-  page?: { siteName: string | null; blocks: string[] };
+  page?: { siteName: string | null; blocks: string[]; text?: string | null };
   /** Text the cook pasted in. */
   text?: string;
 };

@@ -64,3 +64,65 @@ test("a recipe is sent from the browser with the bookmark, checked and saved", a
   await expect(app.getByText("Imogen Vale")).toBeVisible();
   await expect(app.getByText("Press in the plums and bake.")).toBeVisible();
 });
+
+/** A page that shows a recipe and describes none: no structured data at all. Invented. */
+const PROSE_PAGE = `<!doctype html><html lang="en"><head><meta charset="utf-8">
+<title>Pear Tart</title>
+<meta property="og:site_name" content="The Refusing Kitchen"></head><body>
+<nav>Recipes About</nav>
+<article><h1>Pear Tart</h1>
+<h2>Ingredients:</h2>
+<ul><li>4 pears, sliced</li><li>1 sheet puff pastry</li><li>2 tbsp sugar</li></ul>
+<h2>Method:</h2>
+<ol><li>Lay the pears on the pastry.</li><li>Scatter with the sugar and bake at 400 until golden.</li></ol>
+</article>
+<footer>Copyright The Refusing Kitchen</footer></body></html>`;
+
+test("a page that describes no recipe is sent as its words and written up for review", async ({
+  page,
+  context,
+  request,
+}) => {
+  await emptyLibrary(request);
+
+  await page.goto("/add");
+  const bookmark = page.locator("a", { hasText: "Send to Recipeflare" });
+  await expect(bookmark).toHaveAttribute("href", /^javascript:/);
+  const script = decodeURIComponent(
+    ((await bookmark.getAttribute("href")) ?? "").replace(/^javascript:/, ""),
+  );
+
+  const site = await context.newPage();
+  await site.route("https://refusing.example.com/**", (route) =>
+    route.fulfill({ contentType: "text/html; charset=utf-8", body: PROSE_PAGE }),
+  );
+  await site.goto("https://refusing.example.com/recipes/pear-tart");
+  const [app] = await Promise.all([context.waitForEvent("page"), site.evaluate(script)]);
+
+  // The app says what will happen: there is no recipe data, so a model writes it up.
+  const sent = app.getByRole("region", { name: "Sent from your browser" });
+  await expect(sent).toContainText("refusing.example.com");
+  await expect(sent).toContainText("an AI model will write it up from the page's words");
+  await sent.getByRole("button", { name: "Import this recipe" }).click();
+
+  // The model here is the scripted stand-in.
+  await expect(app).toHaveURL(/\/$/);
+  await app.getByRole("button", { name: "Review" }).click({ timeout: 30_000 });
+  await expect(app.getByLabel("Title")).toHaveValue("Pear Tart");
+  await expect(app.getByText(/Written up by AI from/)).toContainText("refusing.example.com");
+  await expect(app.getByRole("button", { name: /^Edit 4 pears, sliced/ })).toBeVisible();
+  // The page's words are beside the draft, without the site's furniture.
+  await app.getByRole("radio", { name: "Original" }).check({ force: true });
+  const original = app.getByRole("complementary", { name: "Original" });
+  await expect(original).toContainText("Scatter with the sugar and bake at 400 until golden.");
+  await expect(original).not.toContainText("Copyright");
+  await app.getByRole("radio", { name: "Recipe" }).check({ force: true });
+
+  await app.getByRole("button", { name: "Save recipe" }).click();
+  const foods = app.getByRole("dialog", { name: /Add \d+ foods?\?/ });
+  if (await foods.isVisible().catch(() => false)) {
+    await foods.getByRole("button", { name: /^Add/ }).click();
+  }
+  await expect(app).toHaveURL(/\/recipes\/pear-tart$/);
+  await expect(app.getByText("Lay the pears on the pastry.")).toBeVisible();
+});

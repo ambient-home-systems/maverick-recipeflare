@@ -307,7 +307,7 @@ describe("imports from a link, above the recipes", () => {
       await vi.advanceTimersByTimeAsync(2100);
 
       await waitFor(() => expect(importRows()[0]).toContain("Could not import"));
-      expect(importRows()[0]).toContain("No recipe was found on that page");
+      expect(importRows()[0]).toContain("Nothing could be read from that page");
       expect(importRequests()).toBeGreaterThan(before);
 
       // Nothing is being read now, so the asking stops.

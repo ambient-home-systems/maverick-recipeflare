@@ -211,7 +211,11 @@ export function useImport(id: string) {
 /** What an import starts from: a link, a page a browser sent, or text pasted in. */
 export type StartImport =
   // With `page`, the cook's browser has already read the page and the server does not fetch it.
-  | { kind: "url"; url: string; page?: { siteName: string | null; blocks: string[] } }
+  | {
+      kind: "url";
+      url: string;
+      page?: { siteName: string | null; blocks: string[]; text?: string | null };
+    }
   | { kind: "text"; text: string };
 
 /** Starts an import. The list shows it from then on. */

@@ -15,7 +15,14 @@ import { Notice } from "../../ui/Notice";
 import { Page } from "../../ui/Page";
 
 /** A recipe page the cook's own browser sent, or why what it sent cannot be used. */
-export type SentRecipe = { host: string; recipeName: string | null } | { problem: string };
+export type SentRecipe =
+  | {
+      host: string;
+      recipeName: string | null;
+      /** True when the page describes no recipe: an AI model will write one up from its words. */
+      fromText?: boolean;
+    }
+  | { problem: string };
 
 /**
  * Where a recipe starts: typed in, brought in from a link, written up from
@@ -147,10 +154,13 @@ export function AddScreen({
                 <span className="font-semibold">{sentRecipe.recipeName}</span>, from{" "}
               </>
             ) : (
-              "A recipe from "
+              `${sentRecipe.fromText ? "A page" : "A recipe"} from `
             )}
-            <span className="font-semibold">{sentRecipe.host}</span>. Nothing is saved until you
-            have checked it.
+            <span className="font-semibold">{sentRecipe.host}</span>.
+            {sentRecipe.fromText
+              ? " The page does not set its recipe out in a way the app can read, so an AI model will write it up from the page's words."
+              : ""}{" "}
+            Nothing is saved until you have checked it.
           </p>
           {importProblem ? (
             <div className="mt-2 max-w-[34rem]">

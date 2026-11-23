@@ -8,7 +8,7 @@ const FAILURES: Record<string, string> = {
   blocked:
     "The site does not let apps read its pages. On a computer, the bookmark on the Add page sends it from your browser. Otherwise it is best typed in.",
   no_recipe:
-    "No recipe was found on that page. If the page shows one, copy its text and use Paste text on the Add page.",
+    "Nothing could be read from that page. If it shows a recipe, copy its text and use Paste text on the Add page.",
   too_thin: "There was not enough there to make a recipe from.",
   not_queued: "The import could not be started. Try again.",
   ai_limit: "Today's allowance for importing with AI is used up. Try again tomorrow.",
