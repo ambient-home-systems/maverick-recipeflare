@@ -127,7 +127,7 @@ Signed in as the owner, open `/mock` on the hostname and press **Check the AI co
 
 ### Try an import
 
-Once the check passes, on the Add page paste a recipe's text under **Paste text** and press **Import text**. The list shows it being written up, then offers **Review**, where the draft sits beside the text you pasted. For T2.3 of the Phase 2 plan, do this on staging with three recipes from different kinds of source, such as a message, a document and a web page's text, and say how each came out.
+Once the check passes, on the Add page paste a recipe's text under **Paste text** and press **Import text**. The list shows it being written up, then offers **Review**, where the draft sits beside the text you pasted. For T2.3 of the Phase 2 plan, do this on staging with three recipes from different kinds of source, such as a message, a document and a web page's text, and say how each came out. For T2.4, also import a link to a page that shows a recipe without recipe data, such as a blog post or a forum thread: it should land in review as written up by AI, with the page's words beside it.
 
 ### Settings
 

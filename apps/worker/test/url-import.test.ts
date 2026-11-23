@@ -15,10 +15,17 @@ import {
   fixtureUnits,
 } from "@recipeflare/schema/fixtures";
 import { beforeAll, describe, expect, it, vi } from "vitest";
+import { createAiRunner } from "../src/ai/runner";
 import { createImportJob, loadImportJob } from "../src/db/importJobs";
 import { createRecipe } from "../src/db/recipes";
 import { IMPORT_HANDLERS } from "../src/imports/handlers";
-import { PermanentImportError, RetryableImportError, runImportJob } from "../src/imports/runner";
+import {
+  type ImportTools,
+  NextStage,
+  PermanentImportError,
+  RetryableImportError,
+  runImportJob,
+} from "../src/imports/runner";
 import {
   checkedUrl,
   findRecipe,
@@ -31,12 +38,14 @@ import {
   articlePage,
   barePage,
   brokenBlockPage,
+  emptyPage,
   graphPage,
   listPage,
   mainEntityPage,
   plainPage,
+  proseRecipePage,
 } from "./fixtures/recipe-pages";
-import { countingDatabase, noAi, seedLists, signedIn } from "./helpers";
+import { chatAnswer, countingDatabase, noAi, seedLists, signedIn, standInBinding } from "./helpers";
 
 const db = env.DB;
 
@@ -178,17 +187,60 @@ describe("reading a recipe from a page", () => {
   });
 
   it.each([
-    ["an article", articlePage],
-    ["a page with no structured data", barePage],
+    ["an article", articlePage, "Ten Things To Do With Plums\n1 cup flour. Mix. Bake."],
+    ["a page with no structured data", barePage, "Grandmother's Biscuits\n2 cups flour"],
   ])(
-    "fails for good on %s, saying no recipe was found, and guesses nothing",
-    async (_name, body) => {
-      const error = await failureOf(draftOf(body));
+    "guesses nothing from %s: its words go on to the build stage, and no model is asked here",
+    async (_name, body, words) => {
+      const url = "https://kitchen.example.com/recipes/a-dish";
+      const next = await importFromUrl(
+        JOB,
+        { url },
+        { fetch: site({ [url]: () => html(body) }), env, ai: noAi },
+        {},
+      );
 
-      expect(error).toBeInstanceOf(PermanentImportError);
-      expect(error).toMatchObject({ code: "no_recipe" });
+      expect(next).toBeInstanceOf(NextStage);
+      expect(next).toMatchObject({ stage: "build", work: { text: words } });
     },
   );
+
+  it("gathers a page's words as a person reads them, without the site's furniture", async () => {
+    const url = "https://kitchen.example.com/biscuits";
+    const next = (await importFromUrl(
+      JOB,
+      { url },
+      { fetch: site({ [url]: () => html(proseRecipePage) }), env, ai: noAi },
+      {},
+    )) as NextStage;
+
+    expect(next.work).toEqual({
+      text: [
+        "Grandmother's Biscuits",
+        "Makes 12. These are quick & plain.",
+        "Ingredients",
+        "2 cups flour",
+        "1 tbsp baking powder",
+        "½ cup butter, cold",
+        "3/4 cup milk",
+        "Method",
+        "Rub the butter into the flour and baking powder.",
+        "Stir in the milk",
+        "and pat out.",
+        "Bake at 425 until risen.",
+      ].join("\n"),
+      siteName: "The Invented Kitchen",
+      // The page's own picture, with its address made whole.
+      imageUrl: "https://kitchen.example.com/images/biscuits.jpg",
+    });
+  });
+
+  it("fails for good on a page with no words at all, saying nothing could be read", async () => {
+    const error = await failureOf(draftOf(emptyPage));
+
+    expect(error).toBeInstanceOf(PermanentImportError);
+    expect(error).toMatchObject({ code: "no_recipe" });
+  });
 });
 
 describe("fetching the page", () => {
@@ -420,23 +472,138 @@ describe("an import from a link, from the queue to a saved recipe", () => {
     expect(flour?.unitId).not.toBeNull();
   });
 
-  it("fails with a code the list explains when the page has no recipe", async () => {
+  /** Runs a link's import through both stages, as the queue would, with a stand-in for the model. */
+  async function throughBuild(url: string, body: string, answer: unknown) {
+    const created = await createImportJob(
+      db,
+      { kind: "url", sourceUrl: url, input: { url } },
+      fixtureMember.id,
+    );
+    const binding = standInBinding([chatAnswer(answer)]);
+    const sent: unknown[] = [];
+    const tools: ImportTools = {
+      fetch: site({
+        [url]: () => html(body),
+        "https://kitchen.example.com/images/biscuits.jpg": () =>
+          new Response(null, { status: 404 }),
+      }),
+      env,
+      ai: createAiRunner(binding, {}),
+      send: async (message) => void sent.push(message),
+    };
+    await runImportJob(created.id, IMPORT_HANDLERS, tools, null);
+    const between = await loadImportJob(db, created.id);
+    await runImportJob(created.id, IMPORT_HANDLERS, tools, "build");
+    return { id: created.id, binding, sent, between };
+  }
+
+  const biscuits = {
+    recipe: true,
+    title: "Grandmother's Biscuits",
+    description: "These are quick & plain.",
+    yield: "Makes 12",
+    prepTime: null,
+    cookTime: null,
+    totalTime: null,
+    source: null,
+    ingredients: [
+      { section: null, line: "2 cups flour", doubt: null },
+      { section: null, line: "1 tbsp baking powder", doubt: null },
+      { section: null, line: "½ cup butter, cold", doubt: null },
+      { section: null, line: "3/4 cup milk", doubt: null },
+    ],
+    steps: [
+      { section: null, text: "Rub the butter into the flour and baking powder.", doubt: null },
+      { section: null, text: "Stir in the milk and pat out.", doubt: null },
+      { section: null, text: "Bake at 425 for 12 minutes until risen.", doubt: null },
+    ],
+    notes: [],
+  };
+
+  it("lands in review, marked as read by AI, when the page shows a recipe and describes none", async () => {
+    const url = "https://kitchen.example.com/biscuits";
+
+    const { id, binding, sent, between } = await throughBuild(url, proseRecipePage, biscuits);
+
+    // The first stage read the page and asked no model; the second asked one, once.
+    expect(between).toMatchObject({ status: "running", stage: "build" });
+    expect(sent).toEqual([{ jobId: id, stage: "build" }]);
+    expect(binding.calls).toHaveLength(1);
+    const after = await loadImportJob(db, id);
+    expect(after).toMatchObject({ status: "needs_review", sourceUrl: url });
+    expect(after?.result).toMatchObject({ readBy: "ai" });
+    expect(after?.result?.sourceText).toContain("Stir in the milk\nand pat out.");
+    expect(after?.result?.draft).toMatchObject({
+      title: "Grandmother's Biscuits",
+      servings: 12,
+      // The link, and what the site calls itself: the page states both.
+      sourceUrl: url,
+      sourceName: "The Invented Kitchen",
+      imageUrl: "https://kitchen.example.com/images/biscuits.jpg",
+    });
+    // A step the model added to is kept, and flagged. One it only laid out differently is not.
+    expect(after?.result?.issues).toEqual([
+      {
+        code: "doubt",
+        path: ["stepSections", 0, "steps", 2],
+        message: 'Has words that are not in the text: "for", "minutes".',
+      },
+    ]);
+  });
+
+  it("fails with too_thin, not no_recipe, when the page has words and no recipe in them", async () => {
     const url = "https://kitchen.example.com/plums";
+
+    const { id, binding } = await throughBuild(url, articlePage, {
+      ...biscuits,
+      recipe: false,
+      title: "",
+      ingredients: [],
+      steps: [],
+    });
+
+    expect(binding.calls).toHaveLength(1);
+    expect(await loadImportJob(db, id)).toMatchObject({
+      status: "failed",
+      stage: "build",
+      error: { code: "too_thin" },
+    });
+  });
+
+  it("still reads a page that describes its recipe without asking any model", async () => {
+    const url = "https://kitchen.example.com/described";
     const created = await createImportJob(
       db,
       { kind: "url", sourceUrl: url, input: { url } },
       fixtureMember.id,
     );
 
+    // `noAi` fails the run if a model is asked.
     await runImportJob(created.id, IMPORT_HANDLERS, {
-      fetch: site({ [url]: () => html(articlePage) }),
+      fetch: site({ [url]: () => html(plainPage) }),
       env,
       ai: noAi,
     });
 
-    expect(await loadImportJob(db, created.id)).toMatchObject({
-      status: "failed",
-      error: { code: "no_recipe" },
+    const after = await loadImportJob(db, created.id);
+    expect(after).toMatchObject({ status: "needs_review", stage: null });
+    expect(after?.result).toMatchObject({ readBy: "structured-data", sourceText: null });
+  });
+
+  it("takes the words a browser sent for a page that describes no recipe", async () => {
+    const url = "https://refusing.example.com/biscuits";
+    const text = "Grandmother's Biscuits\n2 cups flour\nBake at 425 until risen.";
+    const next = await importFromUrl(
+      JOB,
+      { url, page: { siteName: "The Refusing Kitchen", blocks: [], text } },
+      // The page is not asked for: the browser already read it.
+      { fetch: site({}), env, ai: noAi },
+      {},
+    );
+
+    expect(next).toMatchObject({
+      stage: "build",
+      work: { text, siteName: "The Refusing Kitchen", imageUrl: null },
     });
   });
 

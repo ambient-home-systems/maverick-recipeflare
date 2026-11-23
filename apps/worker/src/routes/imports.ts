@@ -68,7 +68,7 @@ export const importRoutes = new Hono<AppEnv>()
       return c.json(await enqueue(c, job), 202);
     }
     const page = request.page
-      ? { siteName: request.page.siteName, blocks: request.page.blocks }
+      ? { siteName: request.page.siteName, blocks: request.page.blocks, text: request.page.text }
       : undefined;
     if (page && page.blocks.join("").length > SENT_PAGE_LIMITS.totalLength) {
       return invalid(c, [

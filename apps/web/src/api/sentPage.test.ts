@@ -24,9 +24,10 @@ describe("reading a page the browser sent", () => {
 
     expect(reading).toEqual({
       ok: true,
-      page: PAGE,
+      page: { ...PAGE, text: null },
       host: "kitchen.example.com",
       recipeName: "Plum Cake with Crème Fraîche",
+      fromText: false,
     });
   });
 
@@ -106,8 +107,37 @@ describe("the bookmark", () => {
     });
   });
 
-  it("still opens the app on a page with no recipe, so the app can say so", () => {
-    document.body.innerHTML = "<h1>Ten things to do with plums</h1>";
+  it("sends the page's words when the page describes no recipe, for a model to read", () => {
+    document.body.innerHTML =
+      "<nav>Recipes About</nav><article><h1>Biscuits</h1><p>2 cups flour</p></article><footer>Copyright</footer>";
+
+    const [address] = press("https://recipes.example.com");
+
+    const reading = readSentPage(new URL(address ?? "").hash);
+    expect(reading).toMatchObject({ ok: true, fromText: true, recipeName: null });
+    const text = reading?.ok ? (reading.page.text ?? "") : "";
+    // The article's words, and not the site's furniture around it.
+    expect(text).toContain("Biscuits");
+    expect(text).toContain("2 cups flour");
+    expect(text).not.toContain("Copyright");
+    expect(reading?.ok ? reading.page.blocks : null).toEqual([]);
+  });
+
+  it("does not send the page's words when the page describes its recipe", () => {
+    document.head.innerHTML = `<script type="application/ld+json">${RECIPE}</script>`;
+    document.body.innerHTML = "<article><h1>Plum Cake</h1><p>A long story.</p></article>";
+
+    const [address] = press("https://recipes.example.com");
+
+    expect(readSentPage(new URL(address ?? "").hash)).toMatchObject({
+      ok: true,
+      fromText: false,
+      page: { text: null },
+    });
+  });
+
+  it("still opens the app on a page with nothing to read, so the app can say so", () => {
+    document.body.innerHTML = "";
 
     const [address] = press("https://recipes.example.com");
 

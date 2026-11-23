@@ -497,9 +497,10 @@ describe("a recipe sent from the browser's bookmark", () => {
     siteName: "Refusing Kitchen",
     blocks: [RECIPE_BLOCK],
   };
-  const sentAt = (page: typeof PAGE) => `/add${encodeSentPage(page)}`;
+  type Sent = typeof PAGE & { text?: string };
+  const sentAt = (page: Sent) => `/add${encodeSentPage(page)}`;
   /** The app is opened by the bookmark at an address that carries the page after the #. */
-  async function arrive(page: typeof PAGE = PAGE) {
+  async function arrive(page: Sent = PAGE) {
     window.history.replaceState(null, "", sentAt(page));
     return renderAt(sentAt(page));
   }
@@ -518,6 +519,26 @@ describe("a recipe sent from the browser's bookmark", () => {
     expect(api.sent("POST")).toEqual([]);
   });
 
+  it("says a model will write up a page that describes no recipe, and sends the page's words", async () => {
+    const api = fakeApi({ jobs: [] });
+    const words = "Biscuits\n2 cups flour\nBake at 425 until risen.";
+    const { router } = await arrive({ ...PAGE, blocks: [], text: words });
+
+    const panel = within(await screen.findByRole("region", { name: "Sent from your browser" }));
+    expect(panel.getByText(/A page from/).textContent).toContain(
+      "an AI model will write it up from the page's words",
+    );
+    expect(api.sent("POST")).toEqual([]);
+    fireEvent.click(panel.getByRole("button", { name: "Import this recipe" }));
+
+    await waitFor(() => expect(router.state.location.pathname).toBe("/"));
+    expect(api.sent("POST", "/imports")[0]?.body).toEqual({
+      kind: "url",
+      url: PAGE.url,
+      page: { siteName: "Refusing Kitchen", blocks: [], text: words },
+    });
+  });
+
   it("is imported with what the browser read, so the server does not ask the site", async () => {
     const api = fakeApi({ jobs: [] });
     const { router } = await arrive();
@@ -528,7 +549,7 @@ describe("a recipe sent from the browser's bookmark", () => {
     expect(api.sent("POST", "/imports")[0]?.body).toEqual({
       kind: "url",
       url: PAGE.url,
-      page: { siteName: "Refusing Kitchen", blocks: [RECIPE_BLOCK] },
+      page: { siteName: "Refusing Kitchen", blocks: [RECIPE_BLOCK], text: null },
     });
     expect((await screen.findByRole("list", { name: "Imports" })).textContent).toContain(
       "refusing.example.com",

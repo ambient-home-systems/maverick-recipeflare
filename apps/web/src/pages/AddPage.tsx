@@ -44,13 +44,16 @@ export function AddPage() {
         sent === null
           ? undefined
           : sent.ok
-            ? { host: sent.host, recipeName: sent.recipeName }
+            ? { host: sent.host, recipeName: sent.recipeName, fromText: sent.fromText }
             : { problem: sent.problem }
       }
       onImportSent={() => {
         if (sent?.ok) {
-          const { url, siteName, blocks } = sent.page;
-          start.mutate({ kind: "url", url, page: { siteName, blocks } }, { onSuccess: toList });
+          const { url, siteName, blocks, text } = sent.page;
+          start.mutate(
+            { kind: "url", url, page: { siteName, blocks, text } },
+            { onSuccess: toList },
+          );
         }
       }}
       onDismissSent={() => {

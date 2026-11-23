@@ -43,7 +43,7 @@ describe("a page sent by the browser", () => {
   const page = { url: "https://kitchen.example.com/plum-cake", blocks: ["{}"] };
 
   it("needs a web address and takes the site's name when there is one", () => {
-    expect(SentPage.parse(page)).toEqual({ ...page, siteName: null });
+    expect(SentPage.parse(page)).toEqual({ ...page, siteName: null, text: null });
     expect(SentPage.parse({ ...page, siteName: "Kitchen" }).siteName).toBe("Kitchen");
     expect(SentPage.safeParse({ ...page, url: "about:blank" }).success).toBe(false);
     expect(SentPage.safeParse({ ...page, url: "javascript:alert(1)" }).success).toBe(false);
@@ -63,6 +63,13 @@ describe("a page sent by the browser", () => {
     expect(UrlImportRequest.parse(link).page).toBeUndefined();
     expect(
       UrlImportRequest.parse({ ...link, page: { siteName: null, blocks: page.blocks } }).page,
-    ).toEqual({ siteName: null, blocks: page.blocks });
+    ).toEqual({ siteName: null, blocks: page.blocks, text: null });
+  });
+
+  it("can carry the page's words in place of blocks, up to the limit for pasted text", () => {
+    const words = { ...page, blocks: [], text: "Biscuits\n2 cups flour" };
+
+    expect(SentPage.parse(words).text).toBe("Biscuits\n2 cups flour");
+    expect(SentPage.safeParse({ ...words, text: "x".repeat(50_001) }).success).toBe(false);
   });
 });

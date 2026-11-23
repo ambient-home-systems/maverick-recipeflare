@@ -121,3 +121,27 @@ export const articlePage = page(
 
 /** A page with no structured data at all. */
 export const barePage = page("", "<h1>Grandmother's Biscuits</h1><p>2 cups flour</p>");
+
+/**
+ * A page that shows a recipe and describes none: a blog post, with the site's
+ * furniture around it. The recipe is in the words alone.
+ */
+export const proseRecipePage = page(
+  '<meta property="og:site_name" content="The Invented Kitchen"><meta property="og:image" content="/images/biscuits.jpg"><style>p { margin: 0 }</style>',
+  `<header><a href="/">The Invented Kitchen</a></header>
+<nav><ul><li><a href="/recipes">Recipes</a></li><li><a href="/about">About us</a></li></ul></nav>
+<article><h1>Grandmother&#39;s Biscuits</h1>
+<p>Makes 12. These are quick &amp; plain.</p>
+<h2>Ingredients</h2>
+<ul><li>2 cups flour</li><li>1 tbsp baking powder</li><li>&frac12; cup butter, cold</li><li>3/4 cup milk</li></ul>
+<h2>Method</h2>
+<ol><li>Rub the butter into the flour and baking powder.</li><li>Stir in the milk<br>and pat out.</li><li>Bake at 425 until risen.</li></ol>
+<script>window.track("view");</script>
+</article>
+<aside>You may also like: Plum Cake</aside>
+<form><button>Subscribe to the newsletter</button></form>
+<footer>Copyright The Invented Kitchen</footer>`,
+);
+
+/** A page with nothing a person could read: an app that draws itself with script. */
+export const emptyPage = page("", '<div id="root"></div><script>render()</script>');

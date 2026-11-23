@@ -1,4 +1,5 @@
-import { findRecipe, SENT_PAGE_LIMITS, SentPage } from "@recipeflare/schema";
+import { findRecipe, LIMITS, SENT_PAGE_LIMITS, SentPage } from "@recipeflare/schema";
+import type { z } from "zod";
 
 /**
  * A recipe page sent to the app by the cook's own browser.
@@ -27,12 +28,19 @@ const fromBase64Url = (text: string) =>
   );
 
 /** A page as the fragment of an address, as the bookmark writes it. */
-export function encodeSentPage(page: SentPage): string {
+export function encodeSentPage(page: z.input<typeof SentPage>): string {
   return SENT_PAGE_PREFIX + toBase64Url(new TextEncoder().encode(JSON.stringify(page)));
 }
 
 export type SentPageReading =
-  | { ok: true; page: SentPage; host: string; recipeName: string | null }
+  | {
+      ok: true;
+      page: SentPage;
+      host: string;
+      recipeName: string | null;
+      /** True when the page describes no recipe, and its words were sent for a model to read. */
+      fromText: boolean;
+    }
   | { ok: false; problem: string };
 
 /** The site a page is on, without the "www". */
@@ -66,6 +74,9 @@ export function readSentPage(hash: string): SentPageReading | null {
     return { ok: false, problem: "That page is too large to import." };
   }
   const recipe = findRecipe(page.blocks);
+  if (!recipe && page.text?.trim()) {
+    return { ok: true, page, host: hostOf(page.url), recipeName: null, fromText: true };
+  }
   if (!recipe) {
     return {
       ok: false,
@@ -73,7 +84,7 @@ export function readSentPage(hash: string): SentPageReading | null {
     };
   }
   const name = typeof recipe.name === "string" ? recipe.name.replace(/<[^>]*>/g, "").trim() : "";
-  return { ok: true, page, host: hostOf(page.url), recipeName: name || null };
+  return { ok: true, page, host: hostOf(page.url), recipeName: name || null, fromText: false };
 }
 
 /**
@@ -84,6 +95,8 @@ export function readSentPage(hash: string): SentPageReading | null {
  *
  * It is written out in full because it runs on other sites' pages, where
  * nothing of the app exists. It sends only the blocks that mention a recipe.
+ * A page with none is sent as its words, the article's if it has one, for a
+ * model to copy the recipe out of.
  */
 export function bookmarkletFor(origin: string): string {
   const target = JSON.stringify(`${origin}/add${SENT_PAGE_PREFIX}`);
@@ -91,7 +104,8 @@ export function bookmarkletFor(origin: string): string {
 var d=document,b=[],s=d.querySelectorAll('script[type="application/ld+json"]'),i,t;
 for(i=0;i<s.length&&b.length<${SENT_PAGE_LIMITS.blocks};i++){t=s[i].textContent||"";if(t.indexOf("Recipe")>-1&&t.length<=${SENT_PAGE_LIMITS.blockLength})b.push(t)}
 var m=d.querySelector('meta[property="og:site_name"]');
-var p=JSON.stringify({url:location.href,siteName:m&&m.content?m.content.slice(0,200):null,blocks:b});
+var w=b.length?null:((d.querySelector("article,main")||d.body).innerText||"").slice(0,${LIMITS.pastedText});
+var p=JSON.stringify({url:location.href,siteName:m&&m.content?m.content.slice(0,200):null,blocks:b,text:w});
 var u=new TextEncoder().encode(p),c="";
 for(i=0;i<u.length;i++)c+=String.fromCharCode(u[i]);
 var a=${target}+btoa(c).replace(/\\+/g,"-").replace(/\\//g,"_").replace(/=+$/,"");

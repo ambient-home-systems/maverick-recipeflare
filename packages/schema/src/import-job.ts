@@ -54,11 +54,14 @@ export type ImportJob = z.infer<typeof ImportJob>;
  * A recipe page as the cook's own browser read it: the page's address, what
  * the site calls itself, and its JSON-LD blocks, as text. The "Send to
  * Recipeflare" bookmark gathers this from the page the browser is showing.
+ * When the page has no such block that mentions a recipe, the bookmark sends
+ * the page's words instead, for a model to copy the recipe out of.
  */
 export const SentPage = z.object({
   url: z.url({ protocol: /^https?$/ }).max(2000),
   siteName: z.string().max(200).nullable().default(null),
   blocks: z.array(z.string().max(SENT_PAGE_LIMITS.blockLength)).max(SENT_PAGE_LIMITS.blocks),
+  text: z.string().max(LIMITS.pastedText).nullable().default(null),
 });
 export type SentPage = z.infer<typeof SentPage>;
 
@@ -69,7 +72,7 @@ export type SentPage = z.infer<typeof SentPage>;
 export const UrlImportRequest = z.object({
   kind: z.literal("url"),
   url: z.url({ protocol: /^https?$/ }).max(2000),
-  page: SentPage.pick({ siteName: true, blocks: true }).optional(),
+  page: SentPage.pick({ siteName: true, blocks: true, text: true }).optional(),
 });
 export type UrlImportRequest = z.infer<typeof UrlImportRequest>;
 

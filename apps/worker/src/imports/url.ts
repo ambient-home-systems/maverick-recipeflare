@@ -1,17 +1,27 @@
 import { findRecipe, LIMITS, Nutrition, parseIsoDuration } from "@recipeflare/schema";
-import { type ImportHandler, PermanentImportError, RetryableImportError } from "./runner";
+import { buildDraft } from "./build";
+import {
+  AiDraft,
+  type ImportHandler,
+  NextStage,
+  PermanentImportError,
+  RetryableImportError,
+} from "./runner";
 
 /**
  * Importing a recipe from a link, as docs/implementation-plan.md §7.3
  * describes: fetch the page, find the recipe its publisher described in
- * schema.org JSON-LD, and map that to a draft. Nothing is guessed: a page with
- * no such description fails with a message that says so.
+ * schema.org JSON-LD, and map that to a draft. Nothing is guessed from that
+ * description. A page with none goes on to a second stage, where a model
+ * copies the recipe out of the page's words (docs/phase-2-plan.md §4).
  */
 
 /** A recipe page is text. Anything this large is not one. */
 const MAX_PAGE_BYTES = 3 * 1024 * 1024;
 const TIMEOUT_MS = 15_000;
 const MAX_REDIRECTS = 5;
+/** How much of a page's text is gathered before entities and spacing are tidied and it is cut to size. */
+const PAGE_TEXT_KEPT = LIMITS.pastedText * 2;
 
 type Json = unknown;
 type Node = Record<string, Json>;
@@ -80,7 +90,22 @@ export function checkedUrl(text: string | undefined): URL {
 }
 
 /** What was read from a page: its JSON-LD blocks, what it calls itself, and where it turned out to be. */
-type Page = { blocks: string[]; siteName: string | null; url: URL };
+type Page = {
+  blocks: string[];
+  siteName: string | null;
+  url: URL;
+  /** The words of the page as a person would read them, for a page that describes no recipe. */
+  text: string;
+  /** The picture the page puts forward for itself. */
+  imageUrl: string | null;
+};
+
+/** Parts of a page that are not its words: scripts and styles, and the furniture around the article. */
+const NOT_WORDS =
+  "script, style, noscript, template, svg, iframe, nav, header, footer, aside, form, button, select";
+/** Elements that start a new line when a person reads the page. */
+const NEW_LINE =
+  "p, br, div, li, ul, ol, h1, h2, h3, h4, h5, h6, tr, table, section, article, blockquote, pre, dt, dd, hr";
 
 const tooLarge = () => new PermanentImportError("too_large", "That page is too large to read.");
 
@@ -193,7 +218,43 @@ async function readPage(url: URL, fetcher: typeof fetch): Promise<Page> {
   const blocks: string[] = [];
   let block = "";
   let siteName: string | null = null;
+  let imageUrl: string | null = null;
+  const words: string[] = [];
+  let wordsLength = 0;
+  let notWords = 0;
   const rewriter = new HTMLRewriter()
+    .on(NOT_WORDS, {
+      element(element) {
+        notWords++;
+        // An element with no end tag, such as a stray <button/>, ends at once.
+        try {
+          element.onEndTag(() => {
+            notWords--;
+          });
+        } catch {
+          notWords--;
+        }
+      },
+    })
+    .on(NEW_LINE, {
+      element() {
+        words.push("\n");
+      },
+    })
+    .on("body", {
+      text(chunk) {
+        // Enough for any recipe and what surrounds it; the rest of a long page is let go.
+        if (notWords === 0 && wordsLength < PAGE_TEXT_KEPT) {
+          words.push(chunk.text);
+          wordsLength += chunk.text.length;
+        }
+      },
+    })
+    .on('meta[property="og:image"]', {
+      element(element) {
+        imageUrl = imageUrl ?? element.getAttribute("content");
+      },
+    })
     .on('script[type="application/ld+json"]', {
       text(chunk) {
         block += chunk.text;
@@ -219,7 +280,13 @@ async function readPage(url: URL, fetcher: typeof fetch): Promise<Page> {
   if (overCap) {
     throw tooLarge();
   }
-  return { blocks, siteName, url: finalUrl };
+  return {
+    blocks,
+    siteName,
+    url: finalUrl,
+    text: plainText(words.join(""), LIMITS.pastedText),
+    imageUrl,
+  };
 }
 
 /** The name of a person or an organisation, however it was written. */
@@ -398,24 +465,72 @@ export function draftFromJsonLd(
   };
 }
 
+/** A picture's address as the page gave it, made whole; null when it is not a web address. */
+function pictureAddress(value: string | null, page: URL): string | null {
+  if (!value) {
+    return null;
+  }
+  try {
+    const address = new URL(value, page);
+    return address.protocol === "http:" || address.protocol === "https:"
+      ? address.toString()
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * The handler for imports of kind `url`. A page that the cook's own browser
  * has already read arrives with the job and is not fetched: some sites answer
  * a person's browser and refuse everything else.
+ *
+ * Two stages. The first reads the page: when it describes a recipe in
+ * structured data, that is the draft and no model is asked. When it does not,
+ * the page's words go on to `build`, where a model copies the recipe out of them.
  */
-export const importFromUrl: ImportHandler = async (_job, input, tools) => {
+export const importFromUrl: ImportHandler = async (job, input, tools, work) => {
   const url = checkedUrl(input.url);
-  const page = input.page
-    ? { blocks: input.page.blocks, siteName: input.page.siteName, url }
+
+  if (job.stage === "build") {
+    const text = typeof work.text === "string" ? work.text : "";
+    const draft = await buildDraft(text, tools.ai);
+    return new AiDraft(
+      {
+        ...draft,
+        sourceUrl: url.toString(),
+        // What the site calls itself is stated by the page, though not in its words.
+        sourceName: draft.sourceName ?? (typeof work.siteName === "string" ? work.siteName : null),
+        imageUrl: typeof work.imageUrl === "string" ? work.imageUrl : null,
+      },
+      text,
+    );
+  }
+
+  const page: Page = input.page
+    ? {
+        blocks: input.page.blocks,
+        siteName: input.page.siteName,
+        url,
+        text: plainText(input.page.text ?? "", LIMITS.pastedText),
+        imageUrl: null,
+      }
     : await readPage(url, tools.fetch);
   const recipe = findRecipe(page.blocks);
-  if (!recipe) {
+  if (recipe) {
+    return draftFromJsonLd(recipe, { sourceUrl: url, pageUrl: page.url, siteName: page.siteName });
+  }
+  if (page.text === "") {
     throw new PermanentImportError(
       "no_recipe",
       "The page does not describe a recipe in a way the app can read.",
     );
   }
-  return draftFromJsonLd(recipe, { sourceUrl: url, pageUrl: page.url, siteName: page.siteName });
+  return new NextStage("build", {
+    text: page.text,
+    siteName: plainText(page.siteName, LIMITS.sourceNameLength) || null,
+    imageUrl: pictureAddress(page.imageUrl, page.url),
+  });
 };
 
 // The finder lives in the shared package; it is passed on here for those who think of it as the importer's.
