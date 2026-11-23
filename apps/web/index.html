@@ -6,6 +6,11 @@
     <meta name="theme-color" content="#17304f" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#10233d" media="(prefers-color-scheme: dark)" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- With credentials: behind the sign-in page a manifest fetched without the cookie is a redirect, and the app cannot be installed. -->
+    <link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Recipeflare" />
     <title>Recipeflare</title>
     <script>
       // Set the theme before the first paint, so a dark kitchen never gets a white flash.

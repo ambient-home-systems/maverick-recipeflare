@@ -108,7 +108,7 @@ export function CookPage() {
             This device has no copy of it to show until you sign in again.
           </EmptyState>
         </Page>
-      ) : recipe.isError ? (
+      ) : recipe.isError || recipe.fetchStatus === "paused" ? (
         <Page title="Cook">
           <Notice problem>The recipe could not be loaded.</Notice>
           <EmptyState
