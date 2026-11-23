@@ -30,7 +30,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
     mockTo: "/mock/list",
     label: "Recipes",
     icon: ScrollText,
-    also: ["/recipes", "/mock/recipe", "/mock/edit", "/mock/review"],
+    also: ["/recipes", "/imports", "/mock/recipe", "/mock/edit", "/mock/review"],
   },
   {
     to: "/add",

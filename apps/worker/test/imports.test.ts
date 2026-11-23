@@ -271,19 +271,18 @@ describe("the dead-letter queue", () => {
 });
 
 describe("the Worker's own queue handler", () => {
-  it("runs a delivered batch, and fails an import from a link until that importer is built", async () => {
+  it("runs a delivered batch with the importer for links, and brings the message back when the site is down", async () => {
     const created = await queued();
     const batch = batchOf(QUEUE, { jobId: created.id });
     const ctx = createExecutionContext();
 
+    // Tests have no network: every site answers 503, which is worth another try.
     await worker.queue(batch as MessageBatch<never>, env);
 
     const result = await getQueueResult(batch, ctx);
-    expect(result.explicitAcks).toEqual(acked(batch));
-    expect(await job(created.id)).toMatchObject({
-      status: "failed",
-      error: { code: "unsupported" },
-    });
+    expect(result.explicitAcks).toEqual([]);
+    expect(result.retryMessages.map((message) => message.msgId)).toEqual(acked(batch));
+    expect(await job(created.id)).toMatchObject({ status: "running", attempts: 1, error: null });
   });
 });
 

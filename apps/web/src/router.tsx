@@ -15,7 +15,7 @@ import {
 } from "./mock/scenes";
 import { AddPage } from "./pages/AddPage";
 import { CookPage } from "./pages/CookPage";
-import { EditRecipePage, NewRecipePage } from "./pages/EditorPage";
+import { EditRecipePage, NewRecipePage, ReviewImportPage } from "./pages/EditorPage";
 import { ManageListPage, ManagePage } from "./pages/ManagePage";
 import { RecipePage } from "./pages/RecipePage";
 import { RecipesPage } from "./pages/RecipesPage";
@@ -132,6 +132,7 @@ const routeTree = rootRoute.addChildren([
   at("/recipes/$slug/edit", EditRecipePage),
   cookRoute,
   at("/add", AddPage),
+  at("/imports/$id/review", ReviewImportPage),
   at("/manage", ManagePage),
   at("/manage/$list", ManageListPage),
   at("/mock", MockIndex),

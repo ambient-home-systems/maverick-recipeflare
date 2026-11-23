@@ -17,8 +17,12 @@ export type PendingUnit = { id: string; name: string };
 export type PendingOrganizer = { id: string; kind: OrganizerKind; name: string };
 
 export type SaveRequest = {
-  /** A new recipe, or the recipe being changed and the version the editor's copy was made from. */
-  target: { create: true } | { create: false; id: string; version: number };
+  /**
+   * A new recipe, or the recipe being changed and the version the editor's
+   * copy was made from. A new recipe saved from review names the import it
+   * confirms; the server completes the import in the same save.
+   */
+  target: { create: true; importJobId?: string } | { create: false; id: string; version: number };
   input: RecipeInput;
   /** Ingredient lines waiting for a food that does not exist yet: line ID to food name. */
   newFoodByLine: Record<string, string>;
@@ -100,7 +104,11 @@ export async function saveRecipe(request: SaveRequest): Promise<Recipe> {
   };
 
   return request.target.create
-    ? api("/recipes", { method: "POST", body, schema: Recipe })
+    ? api("/recipes", {
+        method: "POST",
+        body: { ...body, importJobId: request.target.importJobId ?? null },
+        schema: Recipe,
+      })
     : api(`/recipes/${request.target.id}`, {
         method: "PUT",
         body: { ...body, version: request.target.version },

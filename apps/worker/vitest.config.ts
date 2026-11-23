@@ -20,7 +20,13 @@ export default defineConfig(async () => {
     plugins: [
       cloudflareTest({
         wrangler: { configPath: "../../wrangler.jsonc" },
-        miniflare: { bindings: { TEST_MIGRATIONS: migrations } },
+        miniflare: {
+          bindings: { TEST_MIGRATIONS: migrations },
+          // Tests never reach the network. An import that a test starts through
+          // the queue finds every site down; a test that needs a page hands
+          // the importer its own fetch.
+          outboundService: () => new Response("No network in tests", { status: 503 }),
+        },
       }),
     ],
     test: {

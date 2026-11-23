@@ -1,5 +1,6 @@
 import {
   FoodListResponse,
+  ImportDetail,
   ImportJob,
   ImportListResponse,
   LabelListResponse,
@@ -190,6 +191,30 @@ export function useImports() {
     queryFn: ({ signal }) => api("/imports", { schema: ImportListResponse, signal }),
     select: (data) => data.items,
     refetchInterval: (query) => (query.state.data?.items.some(isWorking) ? IMPORT_POLL_MS : false),
+  });
+}
+
+/** One import, with the recipe the household already has from the same link, for review. */
+export function useImport(id: string) {
+  return useQuery({
+    queryKey: ["imports", "one", id],
+    queryFn: ({ signal }) => api(`/imports/${id}`, { schema: ImportDetail, signal }),
+  });
+}
+
+/** Starts an import from a link. The list shows it from then on. */
+export function useStartImport() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (url: string) =>
+      api("/imports", { method: "POST", body: { kind: "url", url }, schema: ImportJob }),
+    onSuccess: (job) => {
+      // The row is there the moment the list opens, without waiting for a fetch.
+      queryClient.setQueryData<ImportListResponse>(["imports"], (now) => ({
+        items: [job, ...(now?.items ?? []).filter((item) => item.id !== job.id)],
+      }));
+      return queryClient.invalidateQueries({ queryKey: ["imports"] });
+    },
   });
 }
 

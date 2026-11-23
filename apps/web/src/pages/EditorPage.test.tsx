@@ -623,11 +623,11 @@ describe("a recipe changed on another device while it was being edited", () => {
 });
 
 describe("getting to the editor", () => {
-  it("starts from Add, which offers typing and not importing yet", async () => {
+  it("starts from Add, which offers typing beside importing from a link", async () => {
     fakeApi();
     const { router } = await renderAt("/add");
 
-    expect(screen.queryByRole("heading", { name: "From a link" })).toBeNull();
+    expect(screen.getByRole("heading", { name: "From a link" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Type a recipe" }));
 
     await waitFor(() => expect(router.state.location.pathname).toBe("/recipes/new"));

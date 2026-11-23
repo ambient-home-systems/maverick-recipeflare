@@ -1,6 +1,5 @@
 import {
   type Asset,
-  draftToInput,
   type Food,
   ingredientParser,
   newId,
@@ -18,14 +17,9 @@ import {
 } from "@recipeflare/schema/fixtures";
 import { getRouteApi, Link, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useMemo, useRef, useState } from "react";
-import {
-  type EditorValue,
-  emptyEditorValue,
-  fromInput,
-  fromRecipe,
-  isAsWritten,
-} from "../pages/editor/editorState";
+import { type EditorValue, emptyEditorValue, fromRecipe } from "../pages/editor/editorState";
 import { RecipeEditorScreen, type Review } from "../pages/editor/RecipeEditorScreen";
+import { prepareReview } from "../pages/editor/reviewState";
 import { EmptyState } from "../ui/Notice";
 import { Page } from "../ui/Page";
 import { assignStocks } from "../ui/stock";
@@ -288,11 +282,6 @@ export function MockReview() {
     if (!draft) {
       return null;
     }
-    const conversion = draftToInput(draft, {
-      units: fixtureUnits,
-      foods: fixtureFoods,
-      organizers: fixtureOrganizers,
-    });
     // The page's main picture arrives as the cover, and can be removed like any other.
     const cover: Asset = {
       id: PAGE_PICTURE_ID,
@@ -306,59 +295,8 @@ export function MockReview() {
       originalFilename: null,
       createdAt: FIXTURE_TIME,
     };
-    const parse = ingredientParser({ units: fixtureUnits, foods: fixtureFoods });
-    const value = fromInput(conversion.input, [cover]);
-    // A food the import named but the household lacks is carried on its line as a new food.
-    value.ingredients = value.ingredients.map((row) =>
-      row.kind === "line" && !row.foodId ? { ...row, ...(parse(row.text) ?? {}) } : row,
-    );
-    const lines = value.ingredients.flatMap((row) => (row.kind === "line" ? [row] : []));
-    const unread = lines.filter(isAsWritten);
-    const fresh = lines.filter((row) => row.newFood);
-    const attention = [
-      ...conversion.issues
-        .filter((issue) => issue.code.startsWith("missing_"))
-        .map((issue) => ({
-          text: `${issue.message}.`,
-          field:
-            issue.code === "missing_steps"
-              ? "steps"
-              : issue.code === "missing_ingredients"
-                ? "ingredients"
-                : "title",
-        })),
-      ...(unread.length > 0
-        ? [
-            {
-              text: `${unread.length} ingredient ${unread.length === 1 ? "line" : "lines"} could not be read and ${unread.length === 1 ? "is" : "are"} kept as written.`,
-              field: `row:${unread[0]?.id}`,
-            },
-          ]
-        : []),
-      ...(fresh.length > 0
-        ? [
-            {
-              text: `${fresh.length} ${fresh.length === 1 ? "food is" : "foods are"} not among yours yet: ${fresh.map((row) => row.newFood).join(", ")}.`,
-              field: `row:${fresh[0]?.id}`,
-            },
-          ]
-        : []),
-    ];
-    return {
-      value,
-      attention,
-      flaggedRows: [...unread, ...fresh].map((row) => row.id),
-      flaggedParts: conversion.issues.flatMap((issue) =>
-        issue.code === "missing_steps"
-          ? ["steps"]
-          : issue.code === "missing_ingredients"
-            ? ["ingredients"]
-            : issue.code === "missing_title"
-              ? ["title"]
-              : [],
-      ),
-      suggestions: conversion.suggestions,
-    };
+    const lists = { units: fixtureUnits, foods: fixtureFoods, organizers: fixtureOrganizers };
+    return prepareReview(draft, lists, ingredientParser(lists), [cover]);
   }, [draft]);
 
   if (!prepared) {
