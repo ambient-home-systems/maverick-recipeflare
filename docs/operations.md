@@ -17,7 +17,7 @@ How this install is deployed and what has to be set up by hand. Written for T0.5
 | Deployed | Automatically, on every merge to `main`, after CI passes | By hand from the Actions tab, after approval |
 | GitHub environment | `staging` | `production` |
 
-Wrangler creates the database, bucket and queue on the first deploy and finds them by name afterwards. No resource ID is ever committed.
+Wrangler creates the database, bucket and import queue on the first deploy and finds them by name afterwards. It does not create a queue the Worker only consumes, so the deploy script creates the dead-letter queue itself when it is missing (`scripts/deploy.mjs` reads the names from `wrangler.jsonc`). No resource ID is ever committed.
 
 ## One-time setup
 
