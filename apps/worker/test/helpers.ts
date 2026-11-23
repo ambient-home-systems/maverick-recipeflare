@@ -85,7 +85,7 @@ export async function seedLists(db: D1Database): Promise<void> {
         kind: organizer.kind,
         name: organizer.name,
         slug: organizer.slug,
-        color: null,
+        color: organizer.color,
         createdAt: organizer.createdAt,
         updatedAt: organizer.updatedAt,
       })),
@@ -184,4 +184,17 @@ export function signedIn(bindings: Cloudflare.Env, email: string) {
     fetch: (input: RequestInfo | URL, init?: RequestInit) =>
       app.fetch(new Request(input, init), settings),
   };
+}
+
+/** The IDs of the recipes the search index matches, for an FTS query written out in full. */
+export async function matchingRecipes(db: D1Database, ftsQuery: string): Promise<string[]> {
+  const found = await db
+    .prepare(
+      `SELECT s.recipe_id FROM recipes_fts
+       JOIN recipe_search AS s ON s.doc_id = recipes_fts.rowid
+       WHERE recipes_fts MATCH ?1`,
+    )
+    .bind(ftsQuery)
+    .all<{ recipe_id: string }>();
+  return found.results.map((row) => row.recipe_id);
 }

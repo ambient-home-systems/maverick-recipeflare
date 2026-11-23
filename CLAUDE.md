@@ -6,7 +6,7 @@ Guidance for Claude Code working in this repository.
 
 Maverick Recipeflare (Recipeflare for short) is a household recipe app on Cloudflare: one TypeScript Worker serving a React PWA and a JSON API, with D1, R2, Queues and, in later phases, Workers AI and Durable Objects. One household per install. Licensed AGPL-3.0-only.
 
-**Status: Phase 0 is complete (T0.1 to T0.13); its gate passed on 23 Nov 2026. Phase 1 is built through T1.2 (the recipe repository and the recipes API).** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, the database schema with its migrations, and sign-in (the auth middleware, the Access and dev providers, `/api/v1/me`) exist. No product screen is connected to data yet. When a pull request changes a command or path below, it updates this file in the same pull request.
+**Status: Phase 0 is complete (T0.1 to T0.13); its gate passed on 23 Nov 2026. Phase 1 is built through T1.3 (the recipe repository, the recipes API, and the API for organizers, foods, units and labels).** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, the database schema with its migrations, and sign-in (the auth middleware, the Access and dev providers, `/api/v1/me`) exist. No product screen is connected to data yet. When a pull request changes a command or path below, it updates this file in the same pull request.
 
 ## Read first
 
@@ -35,6 +35,7 @@ apps/worker/          Hono API, queue consumer, auth, Drizzle schema, migrations
   src/routes/         One file per resource, mounted in createApp()
   src/http.ts         jsonBody(), queryParams(), the shared error body
   src/db/recipes.ts   The recipe repository: createRecipe, updateRecipe, loadRecipe, deleteRecipe
+  src/db/lists.ts     Organizers, foods, units and labels
   migrations/         One folder per migration; applied by Wrangler, in order
 apps/web/             Vite React PWA; builds to apps/web/dist, served as static assets
   src/styles/         tokens.css (the design tokens) and app.css (Tailwind theme, base styles)
@@ -93,7 +94,7 @@ To be signed in locally, copy `.dev.vars.example` to `.dev.vars` and run `pnpm d
 - A new colour token needs its pairings added to `tokens.test.ts`, which checks WCAG contrast in both themes.
 - One ink for all text. Hierarchy comes from size and weight; there is no grey or "soft" text token, and a test fails if one is added.
 - Rule red has two jobs: the line a title sits on, and adding a recipe. Save, cook and confirm use the primary button. Delete is a quiet button with an icon. Problems go in the `Notice` band with an icon, never in red text.
-- A category keeps one divider colour wherever it appears. Get it from `stock.ts`; do not pick colours per screen.
+- A category keeps one divider colour wherever it appears. Get it from `stock.ts`; do not pick colours per screen. The colour is stored on the category (`Organizer.color`), chosen by the API when the category is created.
 - Rows are ruled, not carded: hairlines in ruling blue, no shadows. No paper textures, handwriting fonts or serif display type.
 - Every link, button and tab is at least 44 by 44 CSS pixels. Use `min-h-touch` and `min-w-touch`.
 - Fonts and icons are self-hosted. Nothing is fetched from a font or icon service, because the app must work offline.

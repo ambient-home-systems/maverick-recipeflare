@@ -118,7 +118,16 @@ function useMockLists() {
       const id = newId();
       setOrganizers((now) => [
         ...now,
-        { id, kind, name, slug: slugify(name), createdAt: FIXTURE_TIME, updatedAt: FIXTURE_TIME },
+        {
+          id,
+          kind,
+          name,
+          slug: slugify(name),
+          // The mock colours categories by their place in the list, as before.
+          color: null,
+          createdAt: FIXTURE_TIME,
+          updatedAt: FIXTURE_TIME,
+        },
       ]);
       return id;
     },

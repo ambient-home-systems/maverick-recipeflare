@@ -4,6 +4,7 @@ import { HTTPException } from "hono/http-exception";
 import { requireMember, sameOriginWrites } from "./auth/middleware";
 import type { AppEnv } from "./auth/types";
 import { errorBody } from "./http";
+import { foodRoutes, labelRoutes, organizerRoutes, unitRoutes } from "./routes/lists";
 import { recipeRoutes } from "./routes/recipes";
 
 export type AppOptions = {
@@ -30,7 +31,11 @@ export function createApp(options: AppOptions = {}) {
       const body: MeResponse = { member: c.get("member") };
       return c.json(body);
     })
-    .route("/recipes", recipeRoutes);
+    .route("/recipes", recipeRoutes)
+    .route("/organizers", organizerRoutes)
+    .route("/foods", foodRoutes)
+    .route("/units", unitRoutes)
+    .route("/labels", labelRoutes);
 
   const app = new Hono<AppEnv>().route("/api/v1", v1);
 

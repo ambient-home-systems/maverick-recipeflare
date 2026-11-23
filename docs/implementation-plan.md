@@ -327,7 +327,7 @@ Index: `UNIQUE(recipe_id, position)`.
 | `kind` | TEXT | no | `category`, `tag` or `tool`; a closed set, so `CHECK` is used |
 | `name` | TEXT | no | |
 | `slug` | TEXT | no | |
-| `color` | TEXT | yes | For a category: its divider stock, one of `buff`, `salmon`, `sky`, `mint`, `lilac`. Set when the category is created, taking the least-used stock, so a category keeps its colour when another is deleted. Null for tags and tools |
+| `color` | TEXT | yes | For a category: its divider stock, one of `buff`, `salmon`, `sky`, `mint`, `lilac`. Set when the category is created, taking the least-used stock, so a category keeps its colour when another is deleted. Null for tags and tools. `color` on the shared `Organizer` shape since T1.3 |
 | `created_at`, `updated_at` | TEXT | no | |
 
 Index: `UNIQUE(kind, slug)`.
@@ -659,10 +659,21 @@ Everything is under `/api/v1` and, except health, needs a member. Request bodies
 | `GET /recipes/{idOrSlug}` | One recipe, by ID first and then by slug | The `Recipe`, or 404 |
 | `PUT /recipes/{id}` | Save over the copy the editor loaded; the `RecipeUpdate` body carries that copy's `version` | The `Recipe`; 409 `version_conflict` with `current`, the recipe as it is now; 404 |
 | `DELETE /recipes/{id}` | Delete | 204, or 404 |
+| `GET /organizers`, `/foods`, `/units`, `/labels` | The whole list, each entry with how much it is used: `recipeCount`, or `foodCount` for a label | `{ items }` |
+| `POST /organizers` | Create a category, tag or tool from `{ kind, name }`. A category is given the divider stock the fewest categories have | 201 with the entry; 409 `duplicate` with `existingId` |
+| `PUT /organizers/{id}` | Rename, from `{ name }`. The slug follows the name | The entry; 409 `duplicate`; 404 |
+| `DELETE /organizers/{id}` | Delete, and take it off every recipe that had it | 204, or 404 |
+| `POST /foods`, `PUT /foods/{id}` | Create or change, from a `FoodInput` | The entry; 409 `duplicate`; 400 for a label that does not exist |
+| `DELETE /foods/{id}`, `DELETE /units/{id}` | Delete, unless a recipe uses it | 204; 409 `in_use` with `recipeCount`; 404 |
+| `POST /units`, `PUT /units/{id}` | Create or change, from a `UnitInput` | The entry; 409 `duplicate` |
+| `POST /labels`, `PUT /labels/{id}`, `DELETE /labels/{id}` | Create, change (name, colour, order) or delete. Deleting takes the label off its foods | The entry or 204; 409 `duplicate` |
 
 - A body larger than 2 MB is a 413 `too_large`; a recipe at every size cap is under 1 MB.
 - A body that is not the JSON it claims to be is a 400 `bad_request`.
 - `POST /recipes` refuses a non-null `importJobId` until T1.12, which is where confirming an import is built.
+- A name is a duplicate when it matches another ignoring capitals and spacing: by slug within a kind for organizers, by name key for foods, units and labels. The 409 names the entry that has it, so a picker can select that one, as the feature spec asks.
+- Renaming or deleting an organizer, or renaming a food, rewrites the search text of the recipes that use it in the same batch as the change, through `buildSearchText()`. The names are read just before, so a recipe saved in that instant can keep stale search text until it is next saved; the plan accepts the same gap for the save.
+- "Asks first" for a delete is the screen's job (T1.9). The list tells it how many recipes or foods are affected.
 - The web app's client is typed from the Worker's routes: `AppType` is exported from `@recipeflare/worker`, and a test drives the API through `hono/client` so a route that drifts from its client stops compiling.
 
 ## 6. Auth
