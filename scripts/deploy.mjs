@@ -17,6 +17,12 @@
 //   ACCESS_AUD           Access application audience tag, stored as a Worker secret.
 //   AUTH_AUTO_ENROLL     Optional. "false" stops people the sign-in provider lets
 //                        through from becoming members by themselves.
+//   AI_PROFILE           Optional. Which models do the AI jobs; see
+//                        apps/worker/src/ai/profiles.ts. Unset means "standard".
+//   AI_GATEWAY           Optional. The AI Gateway model calls go through.
+//                        Unset means "default".
+//   AI_LOG_CONTENT       Optional. "true" lets the gateway keep what was asked
+//                        of a model and what it answered.
 //
 // Wrangler reads CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID itself.
 //
@@ -33,7 +39,14 @@ const root = fileURLToPath(new URL("..", import.meta.url));
 const migrationsDir = join(root, "apps", "worker", "migrations");
 
 /** Worker secrets taken from the environment, when present. */
-const SECRET_NAMES = ["ACCESS_TEAM_DOMAIN", "ACCESS_AUD", "AUTH_AUTO_ENROLL"];
+const SECRET_NAMES = [
+  "ACCESS_TEAM_DOMAIN",
+  "ACCESS_AUD",
+  "AUTH_AUTO_ENROLL",
+  "AI_PROFILE",
+  "AI_GATEWAY",
+  "AI_LOG_CONTENT",
+];
 
 function fail(message) {
   console.error(`deploy: ${message}`);

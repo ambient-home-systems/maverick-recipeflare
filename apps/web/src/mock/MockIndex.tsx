@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Page } from "../ui/Page";
+import { AiCheck } from "./AiCheck";
 import { ApiStatus } from "./ApiStatus";
 import { ThemeSwitch } from "./ThemeSwitch";
 
@@ -112,6 +113,7 @@ export function MockIndex() {
           ))}
         </ul>
       </Page>
+      <AiCheck />
     </>
   );
 }

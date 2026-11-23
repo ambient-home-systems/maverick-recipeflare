@@ -12,7 +12,7 @@ import {
   RetryableImportError,
   runImportJob,
 } from "../src/imports/runner";
-import { seedLists, signedIn } from "./helpers";
+import { noAi, seedLists, signedIn } from "./helpers";
 
 const db = env.DB;
 const QUEUE = "recipeflare-imports";
@@ -22,7 +22,7 @@ beforeAll(async () => {
   await seedLists(db);
 });
 
-const tools = { fetch, env };
+const tools = { fetch, env, ai: noAi };
 const DRAFT = {
   title: "Garlic Bread",
   ingredientSections: [{ title: null, items: [{ originalText: "1 loaf crusty bread" }] }],

@@ -78,4 +78,8 @@ jobs:
           ACCESS_AUD: ${{ secrets.ACCESS_AUD }}
           # Optional environment variable; unset means yes.
           AUTH_AUTO_ENROLL: ${{ vars.AUTH_AUTO_ENROLL }}
+          # Optional environment variables; unset means the defaults.
+          AI_PROFILE: ${{ vars.AI_PROFILE }}
+          AI_GATEWAY: ${{ vars.AI_GATEWAY }}
+          AI_LOG_CONTENT: ${{ vars.AI_LOG_CONTENT }}
           REQUIRE_HOSTNAME: "true"

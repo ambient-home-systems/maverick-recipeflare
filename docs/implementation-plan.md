@@ -707,6 +707,7 @@ Everything is under `/api/v1` and, except health, needs a member. Request bodies
 | `GET /imports/{id}` | One import, with what was found once it is ready, the picture it brought, and the recipe the household already has from the same link | The `ImportJob` with `assets` and with `duplicate`, which is `{ slug, title }` or null; or 404 |
 | `POST /imports/{id}/retry` | Put a failed import back in line from the start | 202 with the job; 404 unless it is a failed import |
 | `DELETE /imports/{id}` | Remove an import, and the picture it brought | 204, or 404 |
+| `POST /ai/check` | For the owner. Puts one small question, with nothing of the household's in it, to a model through the model runner. `task` (`read`, `build`, `details` or `translate`; `build` when left out) picks the model the profile names for it; `model` asks one model by its ID in its place | 200 either way: `{ ok: true, profile, task, requested, model, milliseconds, usage, logId, tries }`, or `{ ok: false, profile, task, requested, reason, retryable, message }`; 403 `forbidden` for a member who is not the owner |
 | `POST /labels`, `PUT /labels/{id}`, `DELETE /labels/{id}` | Create, change (name, colour, order) or delete. Deleting takes the label off its foods | The entry or 204; 409 `duplicate` |
 
 - A body larger than 2 MB is a 413 `too_large`; a recipe at every size cap is under 1 MB.

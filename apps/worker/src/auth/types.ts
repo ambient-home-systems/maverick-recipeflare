@@ -1,4 +1,5 @@
 import type { ErrorBody, Member } from "@recipeflare/schema";
+import type { AiSettings } from "../ai/runner";
 
 /**
  * Settings the auth code reads. Every one is optional: a secret or a local
@@ -20,7 +21,7 @@ export type AuthSettings = {
 };
 
 export type AppEnv = {
-  Bindings: Env & AuthSettings;
+  Bindings: Env & AuthSettings & AiSettings;
   Variables: {
     /** The signed-in member. Set by the auth middleware; route handlers read identity from here only. */
     member: Member;

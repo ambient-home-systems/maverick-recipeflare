@@ -20,6 +20,10 @@ export default defineConfig(async () => {
     plugins: [
       cloudflareTest({
         wrangler: { configPath: "../../wrangler.jsonc" },
+        // The AI binding only exists remotely. Tests never reach it, so that
+        // they need no Cloudflare account and cost nothing; they hand the
+        // model runner a stand-in.
+        remoteBindings: false,
         miniflare: {
           bindings: { TEST_MIGRATIONS: migrations },
           // Tests never reach the network. An import that a test starts through

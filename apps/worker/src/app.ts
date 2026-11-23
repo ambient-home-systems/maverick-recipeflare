@@ -1,9 +1,11 @@
 import type { ErrorBody, HealthResponse, MeResponse } from "@recipeflare/schema";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
+import type { AiRunner } from "./ai/runner";
 import { requireMember, sameOriginWrites } from "./auth/middleware";
 import type { AppEnv } from "./auth/types";
 import { errorBody } from "./http";
+import { aiRoutes } from "./routes/ai";
 import { assetRoutes } from "./routes/assets";
 import { importRoutes } from "./routes/imports";
 import { foodRoutes, labelRoutes, organizerRoutes, unitRoutes } from "./routes/lists";
@@ -29,6 +31,8 @@ export function safeReturnPath(value: string | undefined): string {
 export type AppOptions = {
   /** How the Access provider fetches its public keys. Tests pass a stub. */
   fetchKeys?: typeof fetch;
+  /** The model runner. Tests pass a stand-in; left out, it is the real one. */
+  ai?: AiRunner;
 };
 
 /**
@@ -60,7 +64,8 @@ export function createApp(options: AppOptions = {}) {
     .route("/units", unitRoutes)
     .route("/labels", labelRoutes)
     .route("/imports", importRoutes)
-    .route("/assets", assetRoutes);
+    .route("/assets", assetRoutes)
+    .route("/ai", aiRoutes(options.ai));
 
   const app = new Hono<AppEnv>().route("/api/v1", v1);
 
