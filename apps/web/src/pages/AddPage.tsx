@@ -18,8 +18,8 @@ function startProblem(error: unknown): string {
 }
 
 /**
- * Where a recipe starts. Typing one in opens the editor. A link, or text
- * pasted in, is handed to the server, and the list then shows the import as a
+ * Where a recipe starts. Typing one in opens the editor, and photographing
+ * cards opens the capture page. A link, or text pasted in, is handed to the server, and the list then shows the import as a
  * row with its progress.
  * A page sent by the browser's bookmark arrives in the address and is offered
  * for import; it is not imported unasked, because any site could open such an address.
@@ -36,6 +36,7 @@ export function AddPage() {
     <AddScreen
       offline={!online}
       onType={() => navigate({ to: "/recipes/new" })}
+      onPhotograph={() => navigate({ to: "/add/photos" })}
       onImport={(url) => start.mutate({ kind: "url", url }, { onSuccess: toList })}
       onPaste={(text) => start.mutate({ kind: "text", text }, { onSuccess: toList })}
       importing={start.isPending}

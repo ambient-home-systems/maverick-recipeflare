@@ -44,6 +44,11 @@ export const ImportJob = z.object({
   attempts: z.int().min(0),
   /** The recipe this import became, once the cook saved it. */
   recipeId: Id.nullable(),
+  /**
+   * For a photographed card: its place in the sitting it was photographed in,
+   * counted from one, so that the list can say which paper card it is.
+   */
+  card: z.int().min(1).optional(),
   createdAt: Timestamp,
   updatedAt: Timestamp,
   finishedAt: Timestamp.nullable(),
@@ -83,6 +88,22 @@ export const TextImportRequest = z.object({
 });
 export type TextImportRequest = z.infer<typeof TextImportRequest>;
 
+/**
+ * Body of `POST /imports` for one photographed card: its sides, front first,
+ * each a picture already uploaded with `POST /assets`.
+ */
+export const PhotoImportRequest = z.object({
+  kind: z.literal("photo"),
+  photos: z.array(Id).min(1).max(LIMITS.cardPhotos),
+  /** The card's place in its sitting, counted from one. */
+  card: z.int().min(1).max(999).optional(),
+});
+export type PhotoImportRequest = z.infer<typeof PhotoImportRequest>;
+
 /** Body of `POST /imports`. */
-export const ImportRequest = z.discriminatedUnion("kind", [UrlImportRequest, TextImportRequest]);
+export const ImportRequest = z.discriminatedUnion("kind", [
+  UrlImportRequest,
+  TextImportRequest,
+  PhotoImportRequest,
+]);
 export type ImportRequest = z.infer<typeof ImportRequest>;

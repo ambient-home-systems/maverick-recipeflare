@@ -1,5 +1,6 @@
 import { type Asset, type ImportJob, newId, type Recipe, slugify } from "@recipeflare/schema";
 import {
+  fixtureCardImports,
   fixtureFoods,
   fixtureOrganizers,
   fixtureRecipes,
@@ -348,6 +349,114 @@ describe("reviewing an import an AI model wrote up from pasted text", () => {
     await waitFor(() => expect(router.state.location.pathname).toBe("/recipes/lemon-bars"));
     const saved = api.sent("POST", "/recipes")[0]?.body;
     expect(saved).toMatchObject({ title: "Lemon Bars", importJobId: importPastedText.id });
+  });
+});
+
+describe("reviewing a photographed card", () => {
+  const ready = fixtureCardImports.find((job) => job.status === "needs_review") as ImportJob;
+  /** A second card of the same sitting, photographed after the first and ready too. */
+  const later: ImportJob = {
+    ...ready,
+    id: "00000000-0000-7000-8000-0600000000c2",
+    createdAt: "2026-11-23T10:30:25.000Z",
+  };
+  const side = (id: string, position: number): Asset => ({
+    id,
+    role: "original",
+    position,
+    contentType: "image/jpeg",
+    sizeBytes: 400_000,
+    width: 2000,
+    height: 1500,
+    hasVariants: true,
+    originalFilename: null,
+    createdAt: "2026-11-23T10:30:20.000Z",
+  });
+  const SIDES = [
+    side("00000000-0000-7000-8000-0600000000f5", 0),
+    side("00000000-0000-7000-8000-0600000000f6", 1),
+  ];
+  const at = (job: ImportJob) => `/imports/${job.id}/review`;
+
+  it("shows the card's photos beside the draft, front first, and not what a model read", async () => {
+    fakeApi({ jobs: [ready], assets: SIDES });
+    await renderAt(at(ready));
+    await reviewOpen();
+
+    expect(screen.getByText(/Written up by AI from/).textContent).toContain("a photo of card 2");
+    const original = screen.getByRole("complementary", { name: "Original" });
+    expect(within(original).getByText(/The card as photographed, front first/)).toBeTruthy();
+    expect(
+      within(original)
+        .getAllByRole("button")
+        .map((picture) => picture.getAttribute("aria-label")),
+    ).toEqual([
+      "The front of the card. Open it full screen",
+      "The back of the card. Open it full screen",
+    ]);
+    expect(original.querySelector("[data-original-text]")).toBeNull();
+    expect(original.querySelectorAll("img")[0]?.getAttribute("src")).toBe(
+      `/api/v1/assets/${SIDES[0]?.id}/full`,
+    );
+  });
+
+  it("keeps the photos as the recipe's original card when it is saved", async () => {
+    const api = fakeApi({ jobs: [ready], assets: SIDES });
+    const { router } = await renderAt(at(ready));
+    await reviewOpen();
+
+    fireEvent.click(screen.getByRole("button", { name: "Save recipe" }));
+    const foods = await screen.findByRole("dialog", { name: /Add \d+ foods?\?/ });
+    fireEvent.click(within(foods).getByRole("button", { name: /^Add/ }));
+
+    await waitFor(() => expect(router.state.location.pathname).toBe("/recipes/lemon-bars"));
+    expect(api.sent("POST", "/recipes")[0]?.body).toMatchObject({
+      importJobId: ready.id,
+      assets: SIDES.map(({ id }) => ({ id, role: "original" })),
+    });
+  });
+
+  it("goes on to the next card of the sitting after a save, without a trip to the list", async () => {
+    const api = fakeApi({ jobs: [later, ready], assets: SIDES });
+    const { router } = await renderAt(at(ready));
+    await reviewOpen();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Save and next card" }));
+    const foods = await screen.findByRole("dialog", { name: /Add \d+ foods?\?/ });
+    fireEvent.click(within(foods).getByRole("button", { name: /^Add/ }));
+
+    await waitFor(() => expect(router.state.location.pathname).toBe(at(later)));
+    expect(api.jobs.get(ready.id)?.status).toBe("completed");
+    // The next card opens afresh, and with no card after it Save says only that.
+    expect((await reviewOpen()).value).toBe("Lemon Bars");
+    expect(await screen.findByRole("button", { name: "Save recipe" })).toBeTruthy();
+  });
+
+  it("takes the cards in the order they were photographed", async () => {
+    const third: ImportJob = {
+      ...ready,
+      id: "00000000-0000-7000-8000-0600000000c3",
+      createdAt: "2026-11-23T10:30:40.000Z",
+    };
+    // The list is newest first; the card photographed earliest of those waiting comes next.
+    fakeApi({ jobs: [third, later, ready], assets: SIDES });
+    const { router } = await renderAt(at(third));
+    await reviewOpen();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Save and next card" }));
+    const foods = await screen.findByRole("dialog", { name: /Add \d+ foods?\?/ });
+    fireEvent.click(within(foods).getByRole("button", { name: /^Add/ }));
+
+    await waitFor(() => expect(router.state.location.pathname).toBe(at(ready)));
+  });
+
+  it("does not offer the next card for an import that is not a card", async () => {
+    fakeApi({ jobs: [importPastedText, ready] });
+    await renderAt(`/imports/${importPastedText.id}/review`);
+    await reviewOpen();
+
+    expect(screen.getByRole("button", { name: "Save recipe" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Save and next card" })).toBeNull();
   });
 });
 

@@ -73,6 +73,31 @@ export function readByRule(text: string) {
   };
 }
 
+/** What the stand-in "reads" from any card: it cannot see, so every card says this. Invented. */
+export const STAND_IN_CARD = `Stand-in Shortbread
+
+Ingredients:
+1 cup butter
+1/2 cup sugar
+2 cups flour
+
+Method:
+Cream the butter and sugar.
+Work in the flour and press into a pan.
+Bake at 325 until pale gold.`;
+
+/** A picture too small to be a photograph is how a test says "a blank photo". */
+const BLANK_UNDER = 600;
+
+/** The pictures a question came with, as their data addresses. */
+function pictures(inputs: Inputs): string[] {
+  const content = inputs.messages?.findLast((message) => message.role === "user")?.content;
+  const parts = Array.isArray(content)
+    ? (content as { type?: string; image_url?: { url?: string } }[])
+    : [];
+  return parts.flatMap((part) => (part.type === "image_url" ? [part.image_url?.url ?? ""] : []));
+}
+
 type Inputs = {
   messages?: { role: string; content: unknown }[];
   response_format?: { json_schema?: { name?: string } };
@@ -95,6 +120,20 @@ export const standInBinding: AiBinding = {
     switch (inputs.response_format?.json_schema?.name) {
       case "connection_check":
         return answer({ word: "ready", sum: 5 });
+      case "card_reading": {
+        const shown = pictures(inputs);
+        const blank = shown.length === 0 || shown.every((url) => url.length < BLANK_UNDER);
+        return answer(
+          blank
+            ? { readable: false, sides: [], unsure: [] }
+            : {
+                readable: true,
+                // The front says it all; any further side is blank.
+                sides: shown.map((_url, index) => (index === 0 ? STAND_IN_CARD : "")),
+                unsure: [{ words: "1/2 cup sugar", why: "The amount is written over." }],
+              },
+        );
+      }
       case "recipe_reading":
         return answer(readByRule(asked(inputs).replace(/^The text:\s*/, "")));
       default:

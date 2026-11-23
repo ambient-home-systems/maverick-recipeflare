@@ -15,6 +15,7 @@ import {
   validateMockReviewSearch,
 } from "./mock/scenes";
 import { AddPage } from "./pages/AddPage";
+import { CapturePage } from "./pages/CapturePage";
 import { CookPage } from "./pages/CookPage";
 import { EditRecipePage, NewRecipePage, ReviewImportPage } from "./pages/EditorPage";
 import { ManageListPage, ManagePage } from "./pages/ManagePage";
@@ -139,6 +140,7 @@ const routeTree = rootRoute.addChildren([
   at("/recipes/$slug/edit", EditRecipePage),
   cookRoute,
   at("/add", AddPage),
+  at("/add/photos", CapturePage),
   at("/imports/$id/review", ReviewImportPage),
   at("/manage", ManagePage),
   at("/manage/$list", ManageListPage),

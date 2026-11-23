@@ -12,6 +12,7 @@ import type { AppEnv } from "../auth/types";
 import { assetsOfImport } from "../db/assets";
 import {
   createImportJob,
+  createPhotoImportJob,
   deleteImportJob,
   failImportJob,
   listOpenImportJobs,
@@ -59,6 +60,18 @@ export const importRoutes = new Hono<AppEnv>()
   })
   .post("/", importBody, jsonBody(ImportRequest), async (c) => {
     const request = c.req.valid("json");
+    if (request.kind === "photo") {
+      const job = await createPhotoImportJob(
+        c.env.DB,
+        request.photos,
+        c.get("member").id,
+        request.card,
+      );
+      if ("refused" in job) {
+        return invalid(c, [{ path: ["photos"], message: job.refused }]);
+      }
+      return c.json(await enqueue(c, job), 202);
+    }
     if (request.kind === "text") {
       const job = await createImportJob(
         c.env.DB,

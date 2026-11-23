@@ -9,7 +9,7 @@ import {
 } from "@recipeflare/schema";
 import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
-import { importJobs, recipes } from "./schema";
+import { assets, importJobs, recipes } from "./schema";
 
 /**
  * Import jobs, as docs/implementation-plan.md §7 describes. The row is the
@@ -25,6 +25,10 @@ export type JobInput = {
   page?: { siteName: string | null; blocks: string[]; text?: string | null };
   /** Text the cook pasted in. */
   text?: string;
+  /** The sides of a photographed card, front first: the IDs of its pictures. */
+  photos?: string[];
+  /** The card's place in the sitting it was photographed in, counted from one. */
+  card?: number;
 };
 
 /** One call a job made to a model: what it was for, who answered and what it cost. */
@@ -65,7 +69,10 @@ function toWork(text: string | null): JobWork {
 }
 
 function toJob(row: Row): ImportJob {
+  // Only a photographed card says where it was in its sitting; other kinds keep their input to themselves.
+  const card = row.kind === "photo" ? (JSON.parse(row.input) as JobInput).card : undefined;
   return ImportJob.parse({
+    ...(typeof card === "number" ? { card } : {}),
     id: row.id,
     kind: row.kind,
     status: row.status,
@@ -112,6 +119,79 @@ export async function createImportJob(
     finishedAt: null,
   };
   await drizzle(db).insert(importJobs).values(row);
+  return toJob(row);
+}
+
+/** Why a card's photos cannot be made into an import, in words for the app. */
+export type PhotosRefused = { refused: string };
+
+/**
+ * Takes on one photographed card: a queued job, with the card's pictures made
+ * the job's own, in the order given. The pictures must be ones that were
+ * uploaded and belong to nothing yet. The job and its pictures are written
+ * together, so a card is never half taken on.
+ */
+export async function createPhotoImportJob(
+  db: D1Database,
+  photoIds: readonly string[],
+  memberId: string,
+  card?: number,
+): Promise<ImportJob | PhotosRefused> {
+  const orm = drizzle(db);
+  const wanted = [...new Set(photoIds)];
+  if (wanted.length !== photoIds.length) {
+    return { refused: "A photo is listed twice" };
+  }
+  const found = await orm
+    .select({
+      id: assets.id,
+      recipeId: assets.recipeId,
+      importJobId: assets.importJobId,
+      contentType: assets.contentType,
+    })
+    .from(assets)
+    .where(sql`${assets.id} IN (SELECT value FROM json_each(${JSON.stringify(wanted)}))`);
+  if (found.length !== wanted.length) {
+    return { refused: "A photo is not here. It may have been cleared away; send it again" };
+  }
+  if (found.some((asset) => asset.recipeId !== null || asset.importJobId !== null)) {
+    return { refused: "A photo already belongs to a recipe or to another import" };
+  }
+  if (found.some((asset) => !asset.contentType.startsWith("image/"))) {
+    return { refused: "A card's sides must be pictures" };
+  }
+
+  const at = now();
+  const row = {
+    id: newId(),
+    kind: "photo",
+    status: "queued",
+    stage: null,
+    sourceUrl: null,
+    input: JSON.stringify({ photos: wanted, card } satisfies JobInput),
+    result: null,
+    work: null,
+    review: null,
+    errorCode: null,
+    errorMessage: null,
+    attempts: 0,
+    recipeId: null,
+    createdBy: memberId,
+    createdAt: at,
+    updatedAt: at,
+    finishedAt: null,
+  };
+  const [first, ...rest] = wanted.map((id, position) =>
+    orm
+      .update(assets)
+      // A card's sides are the recipe's original card once it is saved.
+      .set({ importJobId: row.id, position, role: "original" })
+      .where(and(eq(assets.id, id), isNull(assets.recipeId), isNull(assets.importJobId))),
+  );
+  if (!first) {
+    return { refused: "A card needs at least one photo" };
+  }
+  await orm.batch([orm.insert(importJobs).values(row), first, ...rest]);
   return toJob(row);
 }
 

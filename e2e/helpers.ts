@@ -108,6 +108,13 @@ export async function makeRecipe(
 
 /** Deletes every recipe, so a spec starts from an empty library whatever ran before it. */
 export async function emptyLibrary(request: APIRequestContext): Promise<void> {
+  // Imports an earlier spec left waiting go too: a row offering "Review" is one of theirs, not ours.
+  const imports = await (await request.get("/api/v1/imports")).json();
+  for (const job of imports.items) {
+    await request.delete(`/api/v1/imports/${job.id}`, {
+      headers: { "Sec-Fetch-Site": "same-origin" },
+    });
+  }
   for (;;) {
     const list = await (await request.get("/api/v1/recipes?perPage=100")).json();
     if (list.items.length === 0) {

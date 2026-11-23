@@ -208,7 +208,7 @@ export function useImport(id: string) {
   });
 }
 
-/** What an import starts from: a link, a page a browser sent, or text pasted in. */
+/** What an import starts from: a link, a page a browser sent, text pasted in, or a photographed card. */
 export type StartImport =
   // With `page`, the cook's browser has already read the page and the server does not fetch it.
   | {
@@ -216,7 +216,9 @@ export type StartImport =
       url: string;
       page?: { siteName: string | null; blocks: string[]; text?: string | null };
     }
-  | { kind: "text"; text: string };
+  | { kind: "text"; text: string }
+  // One photographed card: its sides, front first, already uploaded.
+  | { kind: "photo"; photos: string[]; card?: number };
 
 /** Starts an import. The list shows it from then on. */
 export function useStartImport() {
