@@ -45,7 +45,8 @@ apps/web/             Vite React PWA; builds to apps/web/dist, served as static 
   src/styles/         tokens.css (the design tokens) and app.css (Tailwind theme, base styles)
   src/api/            client.ts (api(), the three errors), queries.ts (TanStack Query hooks), session.ts,
                       saveRecipe.ts (the editor's save), assets.ts (assetUrl(), uploads, making a photo smaller)
-                      persist.ts (the cache kept on the device), sync.ts (copying every recipe to the device)
+                      persist.ts (the cache kept on the device), sync.ts (copying every recipe to the device),
+                      sentPage.ts (the bookmark, and reading a page it sent)
   src/sw.ts           The service worker; src/sw/rules.ts holds what it keeps, as plain functions
   public/             The manifest and the icons
   src/shell/          The frame every screen sits in: header, navigation, the signed-out band
@@ -89,7 +90,7 @@ To be signed in locally, copy `.dev.vars.example` to `.dev.vars` and run `pnpm d
 
 ### Shared schema
 
-- `packages/schema/src` holds one module per concern: `recipe.ts` (the three recipe shapes), `draft.ts` (importer output, `checkDraft`, `draftToInput`), `parse-ingredient.ts` (the line parser), `matching.ts` (`unitMatcher`, the lists a name is matched against), `lists.ts` (organizers, foods, units, labels, members, assets), `sections.ts`, `format.ts`, `slug.ts`, `url.ts`, `name-key.ts`, `duration.ts`, `id.ts`, `import-job.ts`, `api.ts`. Import from `@recipeflare/schema`.
+- `packages/schema/src` holds one module per concern: `recipe.ts` (the three recipe shapes), `draft.ts` (importer output, `checkDraft`, `draftToInput`), `parse-ingredient.ts` (the line parser), `matching.ts` (`unitMatcher`, the lists a name is matched against), `lists.ts` (organizers, foods, units, labels, members, assets), `sections.ts`, `format.ts`, `slug.ts`, `url.ts`, `name-key.ts`, `duration.ts`, `id.ts`, `import-job.ts`, `json-ld.ts` (`findRecipe`), `api.ts`. Import from `@recipeflare/schema`.
 - Fixture recipes, lists and import jobs are imported from `@recipeflare/schema/fixtures`, never from the main entry, so they stay out of production bundles. Six are invented and three come from sample cards the owner supplied (ingredient lines as written, steps reworded, no photos). Do not add text copied from a site or a book.
 - Size caps live in `LIMITS` in `primitives.ts`. The one-batch save depends on them; change one only together with the plan's save section.
 - The JSON Schema export of `RecipeDraft` has a snapshot test. When you change the draft on purpose, review the diff and update it with `pnpm test -u`.
@@ -217,6 +218,8 @@ To be signed in locally, copy `.dev.vars.example` to `.dev.vars` and run `pnpm d
 - A run starts by claiming the job. Do not run a handler for a job that could not be claimed: that is what makes a message delivered twice harmless.
 - The link importer reads only what the page states in schema.org JSON-LD and guesses nothing. Every address it asks for, redirects included, goes through `checkedUrl()`; do not let `fetch` follow redirects by itself.
 - The importer asks for a page with a browser's request headers (`BROWSER_HEADERS` in `url.ts`), by the owner's decision. That is the limit. A site's refusal is final for that try: do not add retries of a refusal, a choice of identities, proxies, or anything else meant to get past a block.
+- A page can arrive from the cook's own browser, by the "Send to Recipeflare" bookmark (`apps/web/src/api/sentPage.ts`). It comes in the address after the `#`, and the Add page asks before importing it. Never import a sent page unasked: any site can open that address. The bookmark's script is made from `window.location.origin` at run time; do not write an address into it.
+- The JSON-LD finder, `findRecipe()`, is in the shared package, because the web app reads a sent page with it too. The mapping to a draft stays in the Worker.
 - An import becomes a recipe only through `POST /recipes` with its `importJobId`, which completes the job in the save's own batch. Do not mark a job `completed` anywhere else.
 - Review is the editor in review mode, opened by `ReviewImportPage` on a copy made by `prepareReview()`. Discard removes the import; leaving any other way keeps it.
 - Worker tests have no network: `vitest.config.ts` answers every outbound request with a 503. A test that needs a page passes the importer its own `fetch`.
