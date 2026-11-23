@@ -6,7 +6,7 @@ Guidance for Claude Code working in this repository.
 
 Maverick Recipeflare (Recipeflare for short) is a household recipe app on Cloudflare: one TypeScript Worker serving a React PWA and a JSON API, with D1, R2, Queues and, in later phases, Workers AI and Durable Objects. One household per install. Licensed AGPL-3.0-only.
 
-**Status: Phase 0 is complete (T0.1 to T0.13); its gate passed on 23 Nov 2026. Phase 1 is built through T1.1 (the recipe repository: save, load, delete).** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, the database schema with its migrations, and sign-in (the auth middleware, the Access and dev providers, `/api/v1/me`) exist. No product screen is connected to data, and no API route reads or writes a recipe yet. When a pull request changes a command or path below, it updates this file in the same pull request.
+**Status: Phase 0 is complete (T0.1 to T0.13); its gate passed on 23 Nov 2026. Phase 1 is built through T1.2 (the recipe repository and the recipes API).** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, the database schema with its migrations, and sign-in (the auth middleware, the Access and dev providers, `/api/v1/me`) exist. No product screen is connected to data yet. When a pull request changes a command or path below, it updates this file in the same pull request.
 
 ## Read first
 
@@ -32,6 +32,8 @@ apps/worker/          Hono API, queue consumer, auth, Drizzle schema, migrations
   src/app.ts          createApp(): the routes, and which of them need a member
   src/auth/           The auth middleware, one file per identity provider, members
   src/db/schema.ts    The tables. Change it, then run pnpm db:generate
+  src/routes/         One file per resource, mounted in createApp()
+  src/http.ts         jsonBody(), queryParams(), the shared error body
   src/db/recipes.ts   The recipe repository: createRecipe, updateRecipe, loadRecipe, deleteRecipe
   migrations/         One folder per migration; applied by Wrangler, in order
 apps/web/             Vite React PWA; builds to apps/web/dist, served as static assets
@@ -150,6 +152,13 @@ To be signed in locally, copy `.dev.vars.example` to `.dev.vars` and run `pnpm d
 - A bad Access token is refused; the request never falls through to another provider.
 - Auth settings (`ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`, `AUTH_MODE`, `DEV_MEMBER_EMAIL`, `AUTH_PROVIDERS`, `AUTH_AUTO_ENROLL`) are secrets or local variables and are typed by `AuthSettings`, not by `wrangler.jsonc`.
 - Our API lives under `/api/v1`. Bare `/api/...` paths are reserved for the Mealie-compatible subset in Phase 4.
+
+### API routes
+
+- A route's body goes through `jsonBody(Schema)` and its query through `queryParams(Schema)`, with a schema from `@recipeflare/schema`. Do not parse a body by hand in a handler.
+- Chain routes (`new Hono().get(...).post(...)`) and mount them with `.route()` in `createApp()`, so they stay in `AppType` for the typed client.
+- A new route gets its row in the plan's "The API as built" table.
+- Tests reach the API through `signedIn()` in `test/helpers.ts`.
 
 ### Import jobs
 

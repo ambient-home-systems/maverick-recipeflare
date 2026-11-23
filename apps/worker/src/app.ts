@@ -1,7 +1,10 @@
 import type { ErrorBody, HealthResponse, MeResponse } from "@recipeflare/schema";
 import { Hono } from "hono";
+import { HTTPException } from "hono/http-exception";
 import { requireMember, sameOriginWrites } from "./auth/middleware";
 import type { AppEnv } from "./auth/types";
+import { errorBody } from "./http";
+import { recipeRoutes } from "./routes/recipes";
 
 export type AppOptions = {
   /** How the Access provider fetches its public keys. Tests pass a stub. */
@@ -26,7 +29,8 @@ export function createApp(options: AppOptions = {}) {
     .get("/me", (c) => {
       const body: MeResponse = { member: c.get("member") };
       return c.json(body);
-    });
+    })
+    .route("/recipes", recipeRoutes);
 
   const app = new Hono<AppEnv>().route("/api/v1", v1);
 
@@ -36,6 +40,10 @@ export function createApp(options: AppOptions = {}) {
   });
 
   app.onError((err, c) => {
+    if (err instanceof HTTPException) {
+      // Raised by Hono itself, for a body that is not the JSON it claims to be.
+      return c.json(errorBody("bad_request", err.message || "Bad request"), err.status);
+    }
     console.error(err);
     const body: ErrorBody = { error: { code: "internal_error", message: "Something went wrong" } };
     return c.json(body, 500);

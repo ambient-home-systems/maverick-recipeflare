@@ -14,7 +14,8 @@
     "@recipeflare/schema": "workspace:*",
     "drizzle-orm": "1.0.0-rc.6",
     "hono": "^4.13.20",
-    "jose": "^6.2.18"
+    "jose": "^6.2.18",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "drizzle-kit": "1.0.0-rc.6",
