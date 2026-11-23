@@ -70,7 +70,7 @@ export const importFailed: ImportJob = {
   status: "failed",
   stage: null,
   sourceUrl: "https://dinner.example.com/weeknight/sheet-pan-sausages",
-  error: { code: "blocked", message: "The site blocked the request." },
+  error: { code: "blocked", message: "The site does not let apps read its pages." },
   attempts: 3,
   createdAt: "2026-11-22T08:55:00.000Z",
   updatedAt: "2026-11-22T08:56:30.000Z",

@@ -216,6 +216,7 @@ To be signed in locally, copy `.dev.vars.example` to `.dev.vars` and run `pnpm d
 - A handler is a function of the job, its input and its tools, registered in `imports/handlers.ts`. It returns a draft and saves nothing. It says how it failed by what it throws: `RetryableImportError`, or `PermanentImportError` with a code the list can explain (`ImportRow.tsx` holds the words for each code).
 - A run starts by claiming the job. Do not run a handler for a job that could not be claimed: that is what makes a message delivered twice harmless.
 - The link importer reads only what the page states in schema.org JSON-LD and guesses nothing. Every address it asks for, redirects included, goes through `checkedUrl()`; do not let `fetch` follow redirects by itself.
+- The importer asks for a page with a browser's request headers (`BROWSER_HEADERS` in `url.ts`), by the owner's decision. That is the limit. A site's refusal is final for that try: do not add retries of a refusal, a choice of identities, proxies, or anything else meant to get past a block.
 - An import becomes a recipe only through `POST /recipes` with its `importJobId`, which completes the job in the save's own batch. Do not mark a job `completed` anywhere else.
 - Review is the editor in review mode, opened by `ReviewImportPage` on a copy made by `prepareReview()`. Discard removes the import; leaving any other way keeps it.
 - Worker tests have no network: `vitest.config.ts` answers every outbound request with a 503. A test that needs a page passes the importer its own `fetch`.

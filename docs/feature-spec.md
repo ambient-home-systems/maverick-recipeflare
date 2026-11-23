@@ -234,6 +234,7 @@ The cook types a line the way it is written on the card. The rule-based parser (
 - The page's main image becomes the cover and can be removed in review.
 - If a recipe with the same link exists, review mode says so and links to it. The import can still be saved.
 - Failures say what happened in plain words and what to try: the site could not be reached, the site blocked the request, or the page has no recipe data. For the last, the message says that pasting the text arrives with Phase 2.
+- A site that refuses the request is said to not let apps read its pages, and the row says that trying again rarely helps and the recipe is best typed in. "Try again" stays, because it costs nothing. (Reworded on 23 Nov 2026: the first wording, "Trying again sometimes works", was not true of a refusal.)
 - A failed import can be retried from its row.
 
 ## 7. Cook mode

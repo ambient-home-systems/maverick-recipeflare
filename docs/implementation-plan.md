@@ -75,6 +75,7 @@ Made by the owner on 22 Nov 2026 in answer to this plan's open questions, with l
 | Mock screens (23 Nov 2026) | The app has no link to them. They stay, at `/mock`, for design review | The link under Manage is removed |
 | App updates (23 Nov 2026) | A refresh must be enough to move to a new version | [§6.2](#62-cloudflare-access), as built in T1.13 |
 | Attachments (23 Nov 2026) | Files that are not images are supported | The editor and the recipe list them ([§4.3](#43-tables), as built in T1.10) |
+| Importing from sites that refuse apps (23 Nov 2026) | The importer asks for a page as a desktop browser does | [§7.3](#73-the-url-handler), as built in T1.12. The owner was told it gets past a site's refusal, may be against a site's terms, and will not always work |
 
 ## 1. Frontend framework
 
@@ -831,6 +832,7 @@ One table (`import_jobs`, [§4.3](#43-tables)) and one mechanism (Queues) for ev
 
 - The page is asked for with a 15-second limit and read up to 3 MB, counted as it arrives, so a page that does not state its length is capped too. Redirects are followed by hand, at most five, and every address on the way is checked like the first: `http` or `https` only, and no host named by number, `localhost`, or a name with no dot or ending in `.local` or `.internal`.
 - A site that answers 401 or 403 fails with `blocked`; 404 or 410 with `no_page`; something that is not HTML with `not_a_page`; too much with `too_large`; an address that is refused with `bad_link`. 429, a 5xx and a site that cannot be reached are worth another try.
+- **The importer asks for a page as a desktop browser does** (a browser's `User-Agent`, `Accept` and `Accept-Language`). As first built it named the app, and a large recipe site refused it on production; the owner decided on 23 Nov 2026 to send a browser's headers instead. An import is one page, asked for once, because a person pasted its address. That is the whole of it: a refusal is still final for that try, and nothing retries it, changes identity between tries or routes around a block. Some sites refuse by where a request comes from, and will go on refusing. The browser version in the header is a constant, to be raised now and then.
 - The recipe is the first node typed `Recipe` in any JSON-LD block: at the top, in a list, in `@graph`, or as a page's `mainEntity`. A block that is not valid JSON is passed over, after one more try with its line breaks as spaces, which mends the commonest mistake.
 - Text is taken as a person would read it: tags removed and entities decoded. Nothing is inferred. The yield is servings when the page gives a bare number or names servings, and an amount of something otherwise ("Makes 24 cookies"). The source name is the author, then the publisher, then the page's `og:site_name`.
 - The draft keeps the link as it was given, so the same link pasted twice is recognised; addresses on the page are completed from where the page was finally found.

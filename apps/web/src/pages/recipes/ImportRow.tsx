@@ -5,7 +5,8 @@ import { Button } from "../../ui/Button";
 /** What went wrong, in plain words, and what to try. Anything else shows the job's own message. */
 const FAILURES: Record<string, string> = {
   retries_exhausted: "The site could not be reached. Check the link, or try again later.",
-  blocked: "The site blocked the request. Trying again sometimes works.",
+  blocked:
+    "The site does not let apps read its pages. Trying again rarely helps; this one is best typed in.",
   no_recipe:
     "No recipe was found on that page. Pasting a recipe's text will be possible in a later version.",
   not_queued: "The import could not be started. Try again.",

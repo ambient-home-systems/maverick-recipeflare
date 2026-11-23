@@ -296,14 +296,27 @@ describe("fetching the page", () => {
     expect(await failureOf(run(said))).toMatchObject({ code: "too_large" });
   });
 
-  it("says what is asking, and asks for a page", async () => {
+  it("asks for a page as a browser does, and follows no redirect by itself", async () => {
     const fetcher = site({ [url]: () => html(plainPage) });
 
     await run(fetcher);
 
     const init = fetcher.mock.calls[0]?.[1];
-    expect(new Headers(init?.headers).get("User-Agent")).toContain("Recipeflare");
+    const headers = new Headers(init?.headers);
+    expect(headers.get("User-Agent")).toMatch(/^Mozilla\/5\.0 \(Windows NT .*Chrome\/\d+/);
+    expect(headers.get("Accept")).toContain("text/html");
+    expect(headers.get("Accept-Language")).toContain("en");
     expect(init?.redirect).toBe("manual");
+  });
+
+  it("asks once for a page it is refused: a refusal is not tried again", async () => {
+    const fetcher = site({ [url]: () => html("no", { status: 403 }) });
+
+    const error = await failureOf(run(fetcher));
+
+    expect(error).toBeInstanceOf(PermanentImportError);
+    expect(error).toMatchObject({ message: "The site does not let apps read its pages." });
+    expect(fetcher).toHaveBeenCalledTimes(1);
   });
 });
 
