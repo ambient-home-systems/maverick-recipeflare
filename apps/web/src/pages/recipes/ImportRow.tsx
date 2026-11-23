@@ -10,6 +10,10 @@ const FAILURES: Record<string, string> = {
   no_recipe:
     "No recipe was found on that page. Pasting a recipe's text will be possible in a later version.",
   not_queued: "The import could not be started. Try again.",
+  ai_limit: "Today's allowance for importing with AI is used up. Try again tomorrow.",
+  ai_unavailable: "The AI that reads recipes could not be reached. Try again later.",
+  ai_answer: "The AI could not make a recipe of this. Trying again sometimes works.",
+  ai_setup: "Importing with AI is not working. Whoever looks after the app can check it.",
   unsupported: "This kind of import is not available yet.",
 };
 

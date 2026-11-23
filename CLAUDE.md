@@ -6,7 +6,7 @@ Guidance for Claude Code working in this repository.
 
 Maverick Recipeflare (Recipeflare for short) is a household recipe app on Cloudflare: one TypeScript Worker serving a React PWA and a JSON API, with D1, R2, Queues and, in later phases, Workers AI and Durable Objects. One household per install. Licensed AGPL-3.0-only.
 
-**Status: Phase 0 is complete (T0.1 to T0.13); its gate passed on 23 Nov 2026. Phase 1 is built through T1.15 (the recipe repository, the recipes API with search and filters, the API for organizers, foods, units and labels, the ingredient line parser, the recipe list, the recipe view, the editor, the manage screens and cook mode on real data, photos, importing a recipe from a link through the import jobs, installing the app and using it offline, and the end-to-end run). T1.16, the gate run by the household, is not. Phase 2 has begun beside it, by the owner's decision: T2.1 (the AI binding and the model runner) is built.** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, the database schema with its migrations, and sign-in (the auth middleware, the Access and dev providers, `/api/v1/me`) exist. The recipe list at `/`, the recipe view at `/recipes/<slug>`, the editor at `/recipes/new` and `/recipes/<slug>/edit`, cook mode at `/recipes/<slug>/cook`, the manage screens at `/manage`, importing from a link at `/add` and its review at `/imports/<id>/review` are connected to data, photos and attachments included. Recipes and the photos that have been shown are kept on the device, so the list, a recipe and cook mode open with no connection. When a pull request changes a command or path below, it updates this file in the same pull request.
+**Status: Phase 0 is complete (T0.1 to T0.13); its gate passed on 23 Nov 2026. Phase 1 is built through T1.15 (the recipe repository, the recipes API with search and filters, the API for organizers, foods, units and labels, the ingredient line parser, the recipe list, the recipe view, the editor, the manage screens and cook mode on real data, photos, importing a recipe from a link through the import jobs, installing the app and using it offline, and the end-to-end run). T1.16, the gate run by the household, is not. Phase 2 has begun beside it, by the owner's decision: T2.1 (the AI binding and the model runner) and T2.2 (imports in stages, with a daily limit) are built.** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, the database schema with its migrations, and sign-in (the auth middleware, the Access and dev providers, `/api/v1/me`) exist. The recipe list at `/`, the recipe view at `/recipes/<slug>`, the editor at `/recipes/new` and `/recipes/<slug>/edit`, cook mode at `/recipes/<slug>/cook`, the manage screens at `/manage`, importing from a link at `/add` and its review at `/imports/<id>/review` are connected to data, photos and attachments included. Recipes and the photos that have been shown are kept on the device, so the list, a recipe and cook mode open with no connection. When a pull request changes a command or path below, it updates this file in the same pull request.
 
 ## Read first
 
@@ -37,12 +37,12 @@ apps/worker/          Hono API, queue consumer, auth, Drizzle schema, migrations
   src/http.ts         jsonBody(), queryParams(), the shared error body
   src/db/recipes.ts   The recipe repository: createRecipe, updateRecipe, loadRecipe, deleteRecipe
   src/db/lists.ts     Organizers, foods, units and labels
-  src/db/importJobs.ts  Import jobs: create, claim, finish, fail, requeue
+  src/db/importJobs.ts  Import jobs: create, claim, advance to the next stage, finish, fail, requeue
   src/db/assets.ts    The rows behind photos and attachments
   src/ai/             The model runner: runner.ts (one call, checked), profiles.ts (which model does what),
                       failure.ts (what a failed call means). The only code that uses env.AI
   src/media.ts        Files in R2: store (with the two smaller sizes), remove, sweep; sniffType()
-  src/imports/        runner.ts (the queue handler and one run), handlers.ts (one handler per kind), url.ts (a link)
+  src/imports/        runner.ts (the queue handler and one stage of one run), handlers.ts (one handler per kind), url.ts (a link)
   migrations/         One folder per migration; applied by Wrangler, in order
 apps/web/             Vite React PWA; builds to apps/web/dist, served as static assets
   src/styles/         tokens.css (the design tokens) and app.css (Tailwind theme, base styles)
@@ -226,6 +226,10 @@ To be signed in locally, copy `.dev.vars.example` to `.dev.vars` and run `pnpm d
 - An import becomes a recipe only through `POST /recipes` with its `importJobId`, which completes the job in the save's own batch. Do not mark a job `completed` anywhere else.
 - Review is the editor in review mode, opened by `ReviewImportPage` on a copy made by `prepareReview()`. Discard removes the import; leaving any other way keeps it.
 - Worker tests have no network: `vitest.config.ts` answers every outbound request with a 503. A test that needs a page passes the importer its own `fetch`.
+- An import with more than one step runs in stages, one queue message each. A handler is called for one stage (`job.stage`, and `work` for what earlier stages kept) and returns the draft or `new NextStage(stage, work)`. It does not loop over stages or send messages itself.
+- A stage must be safe to run twice: it reads `work`, does one thing, and returns. A message says which stage it is for, and one for a stage the job has left is dropped; do not remove `stage` from the message.
+- "Try again" keeps a failed job's stage and work, so it takes up where it failed. Do not reset them.
+- The runner wraps `tools.ai` for each job: it records every call in `work.calls`, checks the daily limit before a job's first call, and turns a failed call into the job's outcome. A handler lets an `AiFailure` pass; it does not catch one to retry or to pick its own code.
 - The Worker's default export is an object with `fetch` and `queue`. The dead-letter queue is told from the import queue by its name ending in `-dlq`; keep that ending when naming one.
 
 ### AI
@@ -236,7 +240,7 @@ To be signed in locally, copy `.dev.vars.example` to `.dev.vars` and run `pnpm d
 - A model's answer is checked against a Zod schema before anything uses it. An answer that does not fit is asked for once more and then fails; do not loosen the schema to let one through.
 - What a failed call means is decided in `ai/failure.ts`, from the service's own error code. A handler does not catch and retry a model call itself.
 - Every call goes through the gateway and asks it not to keep what was asked and answered. `AI_LOG_CONTENT` is the only thing that changes that.
-- AI settings (`AI_PROFILE`, `AI_GATEWAY`, `AI_LOG_CONTENT`) are deploy variables typed by `AiSettings`, not part of `wrangler.jsonc`.
+- AI settings (`AI_PROFILE`, `AI_GATEWAY`, `AI_LOG_CONTENT`, `AI_DAILY_IMPORTS`) are deploy variables typed by `AiSettings`, not part of `wrangler.jsonc`.
 - Prompts are this project's own words. Nothing is copied from Mealie.
 
 ### Photos and attachments

@@ -3,16 +3,26 @@ import { env } from "cloudflare:workers";
 import { ErrorBody, ImportJob, ImportListResponse, newId } from "@recipeflare/schema";
 import { fixtureMember } from "@recipeflare/schema/fixtures";
 import { beforeAll, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 import worker from "../src";
-import { createImportJob, finishImportJob, loadImportJob } from "../src/db/importJobs";
+import { createAiRunner } from "../src/ai/runner";
+import {
+  createImportJob,
+  finishImportJob,
+  loadImportJob,
+  loadImportJobForRun,
+} from "../src/db/importJobs";
 import {
   handleImportBatch,
   type ImportHandler,
+  type ImportMessage,
+  type ImportTools,
+  NextStage,
   PermanentImportError,
   RetryableImportError,
   runImportJob,
 } from "../src/imports/runner";
-import { noAi, seedLists, signedIn } from "./helpers";
+import { chatAnswer, noAi, seedLists, signedIn, standInBinding } from "./helpers";
 
 const db = env.DB;
 const QUEUE = "recipeflare-imports";
@@ -239,6 +249,430 @@ describe("running an import from the queue", () => {
   });
 });
 
+describe("an import in stages", () => {
+  /** Tools whose queue only remembers what it was sent, so that a test delivers each message itself. */
+  function staged(ai = noAi, settings: Record<string, string> = {}) {
+    const sent: ImportMessage[] = [];
+    const stagedTools: ImportTools = {
+      fetch,
+      env: { ...env, ...settings },
+      ai,
+      send: async (message) => {
+        sent.push(message);
+      },
+    };
+    return { sent, tools: stagedTools };
+  }
+  const work = async (id: string) => (await loadImportJobForRun(db, id))?.work;
+
+  /** Reads, then builds, then finishes: each stage adds to what the last one kept. */
+  const threeStages = (ran: string[] = []): ImportHandler => {
+    return async (running, _input, _tools, kept) => {
+      ran.push(running.stage ?? "first");
+      if (running.stage === null) {
+        return new NextStage("build", { text: "1 loaf crusty bread. Bake." });
+      }
+      if (running.stage === "build") {
+        return new NextStage("details", { ...kept, title: "Garlic Bread" });
+      }
+      return { ...DRAFT, title: String(kept.title), description: String(kept.text) };
+    };
+  };
+
+  it("moves through three stages, one message each, and lands in review", async () => {
+    const created = await queued();
+    const { sent, tools: stagedTools } = staged();
+    const ran: string[] = [];
+    const handlers = { url: threeStages(ran) };
+
+    expect(await runImportJob(created.id, handlers, stagedTools, null)).toEqual({ ack: true });
+    expect(await job(created.id)).toMatchObject({ status: "running", stage: "build", attempts: 0 });
+    expect(sent).toEqual([{ jobId: created.id, stage: "build" }]);
+
+    await runImportJob(created.id, handlers, stagedTools, "build");
+    expect(await job(created.id)).toMatchObject({ status: "running", stage: "details" });
+    expect(sent[1]).toEqual({ jobId: created.id, stage: "details" });
+    // What each stage kept is there for the next.
+    expect(await work(created.id)).toMatchObject({
+      text: "1 loaf crusty bread. Bake.",
+      title: "Garlic Bread",
+      steps: 2,
+    });
+
+    await runImportJob(created.id, handlers, stagedTools, "details");
+    const after = await job(created.id);
+    expect(after.status).toBe("needs_review");
+    expect(after.result?.draft).toMatchObject({
+      title: "Garlic Bread",
+      description: "1 loaf crusty bread. Bake.",
+    });
+    expect(ran).toEqual(["first", "build", "details"]);
+    expect(sent).toHaveLength(2);
+  });
+
+  it("changes nothing when a message is delivered twice, at any stage", async () => {
+    const created = await queued();
+    const { sent, tools: stagedTools } = staged();
+    const ran: string[] = [];
+    const handlers = { url: threeStages(ran) };
+
+    await runImportJob(created.id, handlers, stagedTools, null);
+    // The first message again, after its stage is done.
+    expect(await runImportJob(created.id, handlers, stagedTools, null)).toEqual({ ack: true });
+    expect(await job(created.id)).toMatchObject({ stage: "build", attempts: 0 });
+
+    await runImportJob(created.id, handlers, stagedTools, "build");
+    await runImportJob(created.id, handlers, stagedTools, "build");
+    expect(await job(created.id)).toMatchObject({ stage: "details", attempts: 0 });
+
+    await runImportJob(created.id, handlers, stagedTools, "details");
+    const first = await job(created.id);
+    await runImportJob(created.id, handlers, stagedTools, "details");
+
+    // Each stage ran once, each next message was sent once, and the job is as it was.
+    expect(ran).toEqual(["first", "build", "details"]);
+    expect(sent).toHaveLength(2);
+    expect(await job(created.id)).toEqual(first);
+  });
+
+  it("sends no second message when two deliveries run the same stage at once", async () => {
+    const created = await queued();
+    const { sent, tools: stagedTools } = staged();
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const handlers = {
+      url: (async () => {
+        await gate;
+        return new NextStage("build", { text: "read" });
+      }) satisfies ImportHandler,
+    };
+
+    const both = Promise.all([
+      runImportJob(created.id, handlers, stagedTools, null),
+      runImportJob(created.id, handlers, stagedTools, null),
+    ]);
+    release();
+
+    expect(await both).toEqual([{ ack: true }, { ack: true }]);
+    expect(sent).toEqual([{ jobId: created.id, stage: "build" }]);
+  });
+
+  it("retries a stage that failed by itself, without going back to the start", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const created = await queued();
+    const { tools: stagedTools } = staged();
+    const ran: string[] = [];
+    let buildFails = 2;
+    const inner = threeStages(ran);
+    const handlers = {
+      url: (async (running, input, handed, kept) => {
+        if (running.stage === "build" && buildFails-- > 0) {
+          ran.push("build failed");
+          throw new RetryableImportError("The model is busy");
+        }
+        return inner(running, input, handed, kept);
+      }) satisfies ImportHandler,
+    };
+
+    await runImportJob(created.id, handlers, stagedTools, null);
+    // The queue brings the same message back, with a longer wait each time.
+    expect(await runImportJob(created.id, handlers, stagedTools, "build")).toEqual({
+      ack: false,
+      delaySeconds: 60,
+    });
+    expect(await runImportJob(created.id, handlers, stagedTools, "build")).toEqual({
+      ack: false,
+      delaySeconds: 120,
+    });
+    expect(await job(created.id)).toMatchObject({ status: "running", stage: "build", attempts: 2 });
+    await runImportJob(created.id, handlers, stagedTools, "build");
+    await runImportJob(created.id, handlers, stagedTools, "details");
+
+    // The first stage ran once. The count of attempts started again at the next stage.
+    expect(ran).toEqual(["first", "build failed", "build failed", "build", "details"]);
+    expect(await job(created.id)).toMatchObject({ status: "needs_review", attempts: 1 });
+  });
+
+  it("takes up at the stage that failed when the cook tries a failed import again", async () => {
+    const { queue } = { queue: { send: vi.fn(async () => {}) } as unknown as Queue };
+    const api = signedIn({ ...env, IMPORT_QUEUE: queue }, fixtureMember.email ?? "");
+    const created = await queued();
+    const { tools: stagedTools } = staged();
+    const ran: string[] = [];
+    let broken = true;
+    const inner = threeStages(ran);
+    const handlers = {
+      url: (async (running, input, handed, kept) => {
+        if (running.stage === "build" && broken) {
+          throw new PermanentImportError("ai_answer", "The model's answer could not be used.");
+        }
+        return inner(running, input, handed, kept);
+      }) satisfies ImportHandler,
+    };
+    await runImportJob(created.id, handlers, stagedTools, null);
+    await runImportJob(created.id, handlers, stagedTools, "build");
+    expect(await job(created.id)).toMatchObject({ status: "failed", stage: "build" });
+
+    const response = await api.post(`/imports/${created.id}/retry`, {});
+
+    expect(response.status).toBe(202);
+    expect(queue.send).toHaveBeenCalledWith({ jobId: created.id, stage: "build" });
+    broken = false;
+    await runImportJob(created.id, handlers, stagedTools, "build");
+    await runImportJob(created.id, handlers, stagedTools, "details");
+    // What the first stage read was kept, and it was not read again.
+    expect(ran).toEqual(["first", "build", "details"]);
+    expect((await job(created.id)).result?.draft.description).toBe("1 loaf crusty bread. Bake.");
+  });
+
+  it("fails the job, ready to be tried again, when the next message cannot be sent", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const created = await queued();
+    const stagedTools: ImportTools = {
+      fetch,
+      env,
+      ai: noAi,
+      send: async () => {
+        throw new Error("Queue send failed");
+      },
+    };
+
+    expect(await runImportJob(created.id, { url: threeStages() }, stagedTools, null)).toEqual({
+      ack: true,
+    });
+
+    expect(await job(created.id)).toMatchObject({
+      status: "failed",
+      stage: "build",
+      error: { code: "not_queued" },
+    });
+    expect(await work(created.id)).toMatchObject({ text: "1 loaf crusty bread. Bake." });
+  });
+
+  it("stops an import that goes round in circles", async () => {
+    const created = await queued();
+    const { tools: stagedTools } = staged();
+    const handlers = {
+      url: (async (running) =>
+        new NextStage(running.stage === "a" ? "b" : "a", {})) satisfies ImportHandler,
+    };
+
+    let stage: string | null = null;
+    for (let turn = 0; turn < 12; turn++) {
+      await runImportJob(created.id, handlers, stagedTools, stage);
+      const now = await job(created.id);
+      if (now.status !== "running") {
+        break;
+      }
+      stage = now.stage;
+    }
+
+    expect(await job(created.id)).toMatchObject({ status: "failed", error: { code: "bad_draft" } });
+  });
+
+  it("still runs a message that names no stage, as one sent before stages did", async () => {
+    const created = await queued();
+    const { tools: stagedTools } = staged();
+    await runImportJob(created.id, { url: threeStages() }, stagedTools, null);
+
+    await runImportJob(created.id, { url: threeStages() }, stagedTools);
+
+    expect((await job(created.id)).stage).toBe("details");
+  });
+});
+
+describe("an import that asks a model", () => {
+  const Title = z.object({ title: z.string() });
+  const ASK = {
+    task: "build" as const,
+    system: "Answer in JSON.",
+    prompt: "Name this recipe.",
+    schema: Title,
+    schemaName: "title",
+  };
+  /** One stage that asks a model for the title. */
+  const asking: ImportHandler = async (_job, _input, handed) => ({
+    ...DRAFT,
+    title: (await handed.ai.run(ASK)).value.title,
+  });
+  const toolsWith = (answers: unknown[], settings: Record<string, string> = {}) => {
+    const binding = standInBinding(answers);
+    const stagedTools: ImportTools = {
+      fetch,
+      env: { ...env, ...settings },
+      ai: createAiRunner(binding, {}),
+      send: async () => {},
+    };
+    return { binding, tools: stagedTools };
+  };
+  const upstream = (message: string) => new Error(message);
+  /** Forgets every model call made so far, so that a test counts from nothing. */
+  const forgetCalls = () => db.prepare("UPDATE import_jobs SET work = NULL").run();
+
+  it("keeps a record of each call with the job: the model, the time and the tokens", async () => {
+    await forgetCalls();
+    const created = await queued();
+    const { tools: aiTools } = toolsWith([chatAnswer({ title: "Garlic Bread" })]);
+
+    await runImportJob(created.id, { url: asking }, aiTools);
+
+    expect(await job(created.id)).toMatchObject({ status: "needs_review" });
+    const kept = (await loadImportJobForRun(db, created.id))?.work;
+    expect(kept?.calls).toHaveLength(1);
+    expect(kept?.calls?.[0]).toMatchObject({
+      task: "build",
+      profile: "standard",
+      model: "@cf/test/stand-in",
+      inputTokens: 12,
+      outputTokens: 7,
+      tries: 1,
+    });
+  });
+
+  it("carries the record from stage to stage", async () => {
+    await forgetCalls();
+    const created = await queued();
+    const { tools: aiTools } = toolsWith([chatAnswer({ title: "Garlic Bread" })]);
+    const twoCalls: ImportHandler = async (running, _input, handed, kept) => {
+      const title = (await handed.ai.run(ASK)).value.title;
+      return running.stage === null
+        ? new NextStage("details", { title })
+        : { ...DRAFT, title: String(kept.title) };
+    };
+
+    await runImportJob(created.id, { url: twoCalls }, aiTools, null);
+    await runImportJob(created.id, { url: twoCalls }, aiTools, "details");
+
+    const kept = (await loadImportJobForRun(db, created.id))?.work;
+    expect(kept?.calls).toHaveLength(2);
+    expect(kept).toMatchObject({ title: "Garlic Bread", steps: 1 });
+  });
+
+  it("fails with ai_limit once the day's imports are used up, before asking the model", async () => {
+    await forgetCalls();
+    const limit = { AI_DAILY_IMPORTS: "1" };
+    const first = await queued("https://example.com/first");
+    const { tools: firstTools } = toolsWith([chatAnswer({ title: "First" })], limit);
+    await runImportJob(first.id, { url: asking }, firstTools);
+    expect((await job(first.id)).status).toBe("needs_review");
+
+    const second = await queued("https://example.com/second");
+    const { binding, tools: secondTools } = toolsWith([chatAnswer({ title: "Second" })], limit);
+    const outcome = await runImportJob(second.id, { url: asking }, secondTools);
+
+    expect(outcome).toEqual({ ack: true });
+    expect(await job(second.id)).toMatchObject({ status: "failed", error: { code: "ai_limit" } });
+    expect(binding.calls).toHaveLength(0);
+  });
+
+  it("lets an import that has already asked a model finish, limit or no limit", async () => {
+    await forgetCalls();
+    const limit = { AI_DAILY_IMPORTS: "1" };
+    const started = await queued("https://example.com/started");
+    const other = await queued("https://example.com/other");
+    const answers = [chatAnswer({ title: "Garlic Bread" })];
+    const twoStages: ImportHandler = async (running, _input, handed, kept) => {
+      const title = (await handed.ai.run(ASK)).value.title;
+      return running.stage === null
+        ? new NextStage("details", { title })
+        : { ...DRAFT, title: String(kept.title) };
+    };
+    await runImportJob(started.id, { url: twoStages }, toolsWith(answers, limit).tools, null);
+    // Another import uses the day's last place in the meantime.
+    await runImportJob(
+      other.id,
+      { url: asking },
+      toolsWith(answers, { AI_DAILY_IMPORTS: "2" }).tools,
+    );
+
+    await runImportJob(started.id, { url: twoStages }, toolsWith(answers, limit).tools, "details");
+
+    expect((await job(started.id)).status).toBe("needs_review");
+  });
+
+  it("does not count an import that asked no model", async () => {
+    await forgetCalls();
+    const plain = await queued("https://example.com/plain");
+    await runImportJob(plain.id, { url: async () => DRAFT }, toolsWith([]).tools);
+    const created = await queued("https://example.com/counted");
+    const { tools: aiTools } = toolsWith([chatAnswer({ title: "Counted" })], {
+      AI_DAILY_IMPORTS: "1",
+    });
+
+    await runImportJob(created.id, { url: asking }, aiTools);
+
+    expect((await job(created.id)).status).toBe("needs_review");
+  });
+
+  it("asks again later when the model is busy, and says it was the model when that runs out", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    await forgetCalls();
+    const created = await queued();
+    const { tools: aiTools } = toolsWith([
+      upstream("3040: Capacity temporarily exceeded, please try again."),
+    ]);
+
+    const outcomes = [];
+    for (let attempt = 0; attempt < 4; attempt++) {
+      outcomes.push(await runImportJob(created.id, { url: asking }, aiTools));
+    }
+
+    expect(outcomes).toEqual([
+      { ack: false, delaySeconds: 60 },
+      { ack: false, delaySeconds: 120 },
+      { ack: false, delaySeconds: 240 },
+      // The last delivery the queue will make: the job fails, saying why.
+      { ack: true },
+    ]);
+    expect(await job(created.id)).toMatchObject({
+      status: "failed",
+      error: { code: "ai_unavailable" },
+    });
+  });
+
+  it.each([
+    ["5028: @cf/old/model was deprecated on 2026-11-20.", "ai_setup"],
+    ["3036: You have used up your daily free allocation of 10,000 neurons.", "ai_limit"],
+  ])("fails at once on %j, with a code the list explains", async (message, code) => {
+    await forgetCalls();
+    const created = await queued();
+    const { binding, tools: aiTools } = toolsWith([upstream(message)]);
+
+    expect(await runImportJob(created.id, { url: asking }, aiTools)).toEqual({ ack: true });
+
+    expect(await job(created.id)).toMatchObject({ status: "failed", error: { code } });
+    expect(binding.calls).toHaveLength(1);
+  });
+
+  it("fails with ai_answer when the model's answer does not fit twice running", async () => {
+    await forgetCalls();
+    const created = await queued();
+    const { binding, tools: aiTools } = toolsWith([chatAnswer({ name: "Garlic Bread" })]);
+
+    await runImportJob(created.id, { url: asking }, aiTools);
+
+    expect(await job(created.id)).toMatchObject({ status: "failed", error: { code: "ai_answer" } });
+    expect(binding.calls).toHaveLength(2);
+  });
+
+  it("keeps the record of a call whose stage then failed", async () => {
+    await forgetCalls();
+    const created = await queued();
+    const { tools: aiTools } = toolsWith([chatAnswer({ title: "Garlic Bread" })]);
+    const failsAfterAsking: ImportHandler = async (_job, _input, handed) => {
+      await handed.ai.run(ASK);
+      throw new PermanentImportError("too_thin", "There was not enough to make a recipe from.");
+    };
+
+    await runImportJob(created.id, { url: failsAfterAsking }, aiTools);
+
+    expect((await loadImportJobForRun(db, created.id))?.work.calls).toHaveLength(1);
+    expect(await job(created.id)).toMatchObject({ status: "failed", error: { code: "too_thin" } });
+  });
+});
+
 describe("the dead-letter queue", () => {
   it("marks a job failed when its message ran out of retries, so it is not lost silently", async () => {
     const created = await queued();
@@ -324,7 +758,7 @@ describe("the imports API", () => {
       error: null,
     });
     // The message is a pointer and nothing more.
-    expect(sent).toEqual([{ jobId: created.id }]);
+    expect(sent).toEqual([{ jobId: created.id, stage: null }]);
     expect(await job(created.id)).toEqual(created);
   });
 
@@ -424,7 +858,7 @@ describe("the imports API", () => {
       attempts: 0,
       error: null,
     });
-    expect(sent).toEqual([{ jobId: created.id }]);
+    expect(sent).toEqual([{ jobId: created.id, stage: null }]);
 
     // It is waiting now, so there is nothing to try again.
     const again = await api.send("POST", `/imports/${created.id}/retry`, undefined, {

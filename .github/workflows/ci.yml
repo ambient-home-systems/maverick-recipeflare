@@ -120,4 +120,5 @@ jobs:
           AI_PROFILE: ${{ vars.AI_PROFILE }}
           AI_GATEWAY: ${{ vars.AI_GATEWAY }}
           AI_LOG_CONTENT: ${{ vars.AI_LOG_CONTENT }}
+          AI_DAILY_IMPORTS: ${{ vars.AI_DAILY_IMPORTS }}
           REQUIRE_HOSTNAME: "true"

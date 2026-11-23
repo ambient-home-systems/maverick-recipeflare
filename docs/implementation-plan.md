@@ -821,6 +821,17 @@ One table (`import_jobs`, [§4.3](#43-tables)) and one mechanism (Queues) for ev
 - The list asks for the imports again every two seconds while one is queued or running, and stops when none is.
 - A kind with no handler fails with `unsupported`. `url` has had its handler since T1.12; the other kinds arrive with later phases.
 
+**As built in T2.2: stages** (the same two files; planned in [the Phase 2 plan](phase-2-plan.md), §4).
+
+- An import can take more than one step. A handler is called once for each stage, with `job.stage` saying which and `work` holding what earlier stages kept, and answers with the finished draft or with `new NextStage(stage, work)`. The runner then stores the stage and the work on the job (`import_jobs.work`, JSON), starts the attempt count again, and sends the queue a message for the same job.
+- A message names the stage it is for: `{ jobId, stage }`. One that arrives after the job has left that stage is a second delivery and is dropped before the job is claimed. When two deliveries run the same stage at once, only the first to finish moves the job on and sends the next message. A message with no `stage`, as sent before stages existed, is for whatever stage the job is at.
+- Retries are per stage: the queue brings back the message for the stage that failed, and earlier stages are not run again. "Try again" on a failed import keeps its stage and its work, so it takes up where it failed.
+- If the next message cannot be sent, the job fails with `not_queued` at its new stage, ready to be tried again. A job that asks for more than eight stages, or for the stage it is at, fails with `bad_draft`.
+- A handler reaches a model only through `tools.ai`. For each job the runner wraps it: every call is written into `work.calls` (task, profile, model, time, tokens), and before a job's first call the runner counts the imports that asked a model in the last 24 hours. At the limit (`AI_DAILY_IMPORTS`, 100 unless set) the job fails with `ai_limit` without asking; a job that has already asked a model is let finish. An import that was discarded is gone and no longer counts: the gateway's spend limit is the cap that cannot be got round.
+- A model call that fails is turned into the import's outcome here, not in a handler. One worth another try is retried like a site that is down, and on the queue's last delivery fails with `ai_unavailable`. A used-up allowance is `ai_limit`; an answer that would not fit, or a refusal, is `ai_answer`; a model that is gone or a wrong setting is `ai_setup`.
+- The import queue delivers two messages to a batch, not ten, so two slow model calls are the most one invocation waits for.
+- `import_jobs.review` is added with `work` and is not written yet: T2.11 uses it.
+
 ### 7.3 The URL handler
 
 - Fetch the page with a size cap and a timeout; accept only `http` and `https` and reject IP-literal hosts.

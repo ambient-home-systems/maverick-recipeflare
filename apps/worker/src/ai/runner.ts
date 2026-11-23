@@ -20,6 +20,8 @@ export type AiSettings = {
   AI_GATEWAY?: string;
   /** `true` lets the gateway keep what was asked and answered in its logs. Off unless set. */
   AI_LOG_CONTENT?: string;
+  /** How many imports may ask a model in a day. Defaults to 100. */
+  AI_DAILY_IMPORTS?: string;
 };
 
 /**

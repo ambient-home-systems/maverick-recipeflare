@@ -251,6 +251,10 @@ export const importJobs = sqliteTable(
     input: text("input").notNull(),
     /** JSON: the draft, its issues and source details. */
     result: text("result"),
+    /** JSON: what a staged import has gathered so far, and the model calls it made. */
+    work: text("work"),
+    /** JSON: how far the saved recipe was from the draft. Written when the cook saves. */
+    review: text("review"),
     errorCode: text("error_code"),
     errorMessage: text("error_message"),
     attempts: integer("attempts").notNull().default(0),
