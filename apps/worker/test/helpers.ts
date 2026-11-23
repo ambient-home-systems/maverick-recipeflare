@@ -8,6 +8,8 @@ import {
   fixtureUnits,
 } from "@recipeflare/schema/fixtures";
 import { drizzle } from "drizzle-orm/d1";
+import { createApp } from "../src/app";
+import type { AppEnv } from "../src/auth/types";
 import { chunkRows } from "../src/db/chunk";
 import { foods, labels, members, organizers, units } from "../src/db/schema";
 
@@ -142,4 +144,44 @@ export function countingDatabase(real: D1Database) {
   });
 
   return { db, counts: () => ({ batches, statementsOutsideABatch }) };
+}
+
+/**
+ * The API as a signed-in member sees it. Requests go to the app on localhost
+ * with the dev sign-in on, so no token is needed. Every auth setting is stated
+ * here; nothing comes from a developer's own `.dev.vars`.
+ */
+export function signedIn(bindings: Cloudflare.Env, email: string) {
+  const app = createApp();
+  const settings = {
+    ...bindings,
+    AUTH_PROVIDERS: "",
+    AUTH_MODE: "dev",
+    DEV_MEMBER_EMAIL: email,
+    AUTH_AUTO_ENROLL: undefined,
+  } as AppEnv["Bindings"];
+
+  const send = (method: string, path: string, body?: unknown, headers: HeadersInit = {}) =>
+    app.fetch(
+      new Request(`http://localhost:8787/api/v1${path}`, {
+        method,
+        headers: body === undefined ? headers : { "Content-Type": "application/json", ...headers },
+        body:
+          body === undefined ? undefined : typeof body === "string" ? body : JSON.stringify(body),
+      }),
+      settings,
+    );
+
+  return {
+    get: (path: string) => send("GET", path),
+    post: (path: string, body: unknown) => send("POST", path, body),
+    put: (path: string, body: unknown) => send("PUT", path, body),
+    patch: (path: string, body: unknown) => send("PATCH", path, body),
+    // A delete has no body, so it says where it came from, as a browser does.
+    delete: (path: string) => send("DELETE", path, undefined, { "Sec-Fetch-Site": "same-origin" }),
+    send,
+    /** For a client that builds its own requests, such as Hono's typed client. */
+    fetch: (input: RequestInfo | URL, init?: RequestInit) =>
+      app.fetch(new Request(input, init), settings),
+  };
 }

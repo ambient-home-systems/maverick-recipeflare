@@ -646,6 +646,25 @@ Phase 2 adds the AI fallback for lines the rules cannot read, behind the same fu
 
 The package also exports the smaller schemas: organizer, food, unit, label, member, asset, import job, and the error body `{ error: { code, message, issues? } }`.
 
+### 5.3 The API as built
+
+Everything is under `/api/v1` and, except health, needs a member. Request bodies and query strings are checked by the shared schema before a handler runs; a failure is a 400 `validation_failed` with one issue per field. Each task adds its rows here.
+
+| Route | Does | Answers |
+| --- | --- | --- |
+| `GET /health` | Open to anyone | `{ status }` |
+| `GET /me` | Who is signed in | `{ member }` |
+| `GET /recipes` | One page of the list. `page` (from 1), `perPage` (1 to 100, default 30), `sort` (`changed`, `newest`, `title`) | `{ items, page, perPage, total }`; each item is a `RecipeSummary` with its cover, categories and tags |
+| `POST /recipes` | Create from a `RecipeCreate` body | 201 with the `Recipe` |
+| `GET /recipes/{idOrSlug}` | One recipe, by ID first and then by slug | The `Recipe`, or 404 |
+| `PUT /recipes/{id}` | Save over the copy the editor loaded; the `RecipeUpdate` body carries that copy's `version` | The `Recipe`; 409 `version_conflict` with `current`, the recipe as it is now; 404 |
+| `DELETE /recipes/{id}` | Delete | 204, or 404 |
+
+- A body larger than 2 MB is a 413 `too_large`; a recipe at every size cap is under 1 MB.
+- A body that is not the JSON it claims to be is a 400 `bad_request`.
+- `POST /recipes` refuses a non-null `importJobId` until T1.12, which is where confirming an import is built.
+- The web app's client is typed from the Worker's routes: `AppType` is exported from `@recipeflare/worker`, and a test drives the API through `hono/client` so a route that drifts from its client stops compiling.
+
 ## 6. Auth
 
 ### 6.1 One middleware
