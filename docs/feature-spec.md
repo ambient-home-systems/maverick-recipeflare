@@ -114,7 +114,8 @@ Three sample cards supplied by the owner on 22 Nov 2026. Every piece of writing 
 - A recipe has at most one cover. If none is chosen, the first photo is used; if there are no photos, the list shows a plain tile with the title's first letter.
 - Photos are sent when the recipe is saved, not when they are chosen, so a recipe that is abandoned leaves nothing behind. Until then they are shown from the device.
 - A file over 15 MB is refused, and the editor names the file. A photo the browser has made smaller is never that large; the limit is met by a file the browser cannot read as a picture.
-- Attachments are not in the editor yet. The server stores and serves them; no screen adds or lists one. They need drawing first.
+- An attachment is a file of any kind that goes with a recipe, such as a PDF. The editor lists attachments by file name and size under "Photos and files", each with Remove, and "Add files" adds more. A file over 15 MB is turned away when it is chosen, by name. Like photos, attachments are sent when the recipe is saved. (Decided by the owner, 23 Nov 2026: files that are not images are supported.)
+- On the recipe, attachments are listed after the notes, by file name and size. Pressing one downloads it; it is never opened inside the app. Offline they are named but not offered, with a line saying they need a connection: the device keeps photos, not attachments.
 - A recipe has an optional "From" field for where it came from. URL import fills it with the page's author or site name when the page states one, and the cook can change it. (Decided by the owner, 22 Nov 2026.)
 
 ### 2.4 The recipe view
@@ -124,7 +125,7 @@ How one recipe is shown for reading. Drawn as a mock screen in T0.8.
 **Decisions**
 
 - The recipe stands behind its category's divider tab, in that category's colour. The tab leads back to the list at that category, and "All recipes" beside it leads back to the whole list. A recipe in two categories shows both tabs.
-- Order on the page: title; description; "From" and the source link; photos and the original card; times, servings and yield; ingredients; steps; notes; nutrition; tags and tools; delete.
+- Order on the page: title; description; "From" and the source link; photos and the original card; times, servings and yield; ingredients; steps; notes; attachments; nutrition; tags and tools; delete.
 - Only what the recipe states is shown. An empty field leaves no heading, no gap and no "none". A recipe that is only a title says so and points to Edit.
 - Times, servings and yield are a row of short facts. With no total time stated, prep and cook are added.
 - Photos and the original card are small pictures under the description, each with its name and count. Pressing one opens it full screen, where the browser's pinch zoom works, with Previous and Next when there is more than one. The recipe view has no large photo at the top.
@@ -262,7 +263,7 @@ The cook types a line the way it is written on the card. The rule-based parser (
 - Offline is read-only in Phase 1. New recipe, edit, delete and import are disabled, with a short note saying why.
 - A banner says when the app is offline, and when the data shown may be out of date.
 - Offline, the list shows every recipe on the device and can be searched and filtered. The search is plainer than online: every word typed must appear in the recipe, and "Best match" orders by title.
-- A new version of the app is fetched in the background and used the next time the app is opened afresh. It never changes under a page that is open.
+- A new version of the app is fetched in the background. Refreshing the page, or opening the app again, moves to it: the page loads itself once more, by itself, within a few seconds. It never changes under a page that someone is using. (Decided by the owner, 23 Nov 2026: a refresh must be enough.)
 - The device keeps up to 800 photos, and lets the oldest go first.
 - When the sign-in session has expired the app keeps showing stored recipes and offers "Sign in again". The offer is a band across the top of every page, above the header, and signing in comes back to the page the person was on. The band goes away by itself as soon as a request gets through again.
 

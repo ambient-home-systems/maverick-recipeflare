@@ -369,3 +369,116 @@ describe("the picture an import brought", () => {
     expect(api.savedAssets(api.sent("POST", "/recipes")[0])).toEqual([]);
   });
 });
+
+describe("attachments: files that are not pictures", () => {
+  const pdf = (name: string, size = 2048) =>
+    new File([new Uint8Array(size)], name, { type: "application/pdf" });
+  const attached = (name: string, extra: Partial<Asset> = {}): Asset =>
+    stored("attachment", {
+      contentType: "application/pdf",
+      width: null,
+      height: null,
+      hasVariants: false,
+      originalFilename: name,
+      sizeBytes: 348_160,
+      ...extra,
+    });
+
+  it("are listed in the editor by name and size, and sent as they are with the save", async () => {
+    const api = fakeApi();
+    const { router } = await renderAt("/recipes/new");
+    await editorOpen();
+    setTitle("Card And All");
+
+    choose("Add files", pdf("grandmother-card.pdf"));
+
+    // The name is on the row, and again in its Remove button for someone who cannot see the row.
+    const row = screen.getAllByText("grandmother-card.pdf")[0]?.closest("li");
+    expect(row?.textContent).toContain("2 KB");
+    expect(api.sent("POST")).toEqual([]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => expect(router.state.location.pathname).toBe("/recipes/card-and-all"));
+    // Sent as an attachment, untouched: it is not a photo to be made smaller.
+    expect(api.uploads).toEqual([
+      { name: "grandmother-card.pdf", role: "attachment", type: "application/pdf" },
+    ]);
+    expect(api.savedAssets(api.sent("POST", "/recipes")[0])?.map((entry) => entry.role)).toEqual([
+      "attachment",
+    ]);
+  });
+
+  it("can be removed in the editor, by name", async () => {
+    const api = fakeApi();
+    const { router } = await renderAt("/recipes/new");
+    await editorOpen();
+    setTitle("Second Thoughts");
+    choose("Add files", pdf("first.pdf"), pdf("second.pdf"));
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove first.pdf" }));
+
+    expect(screen.queryByText("first.pdf")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(router.state.location.pathname).toBe("/recipes/second-thoughts"));
+    expect(api.uploads.map((upload) => upload.name)).toEqual(["second.pdf"]);
+  });
+
+  it("turns away a file over the limit when it is chosen, by name, and keeps the rest", async () => {
+    fakeApi();
+    await renderAt("/recipes/new");
+    await editorOpen();
+
+    choose("Add files", pdf("scan.pdf"), pdf("whole-book.pdf", 15 * 1024 * 1024 + 1));
+
+    expect(screen.getByText(/whole-book\.pdf is larger than 15 MB and was not added/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Remove scan.pdf" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Remove whole-book.pdf" })).toBeNull();
+  });
+
+  it("are kept through an edit that does not touch them", async () => {
+    const file = attached("aunt-may.pdf");
+    const recipe: Recipe = { ...BASE, assets: [file] };
+    const api = fakeApi({ recipes: [recipe] });
+    const { router } = await renderAt(`/recipes/${recipe.slug}/edit`);
+    await editorOpen();
+    expect(screen.getByRole("button", { name: "Remove aunt-may.pdf" })).toBeTruthy();
+
+    setTitle(`${recipe.title} Again`);
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => expect(router.state.location.pathname).not.toContain("/edit"));
+    expect(api.savedAssets(api.sent("PUT")[0])).toEqual([{ id: file.id, role: "attachment" }]);
+    expect(api.uploads).toEqual([]);
+  });
+
+  it("are listed on the recipe as downloads, by name and size", async () => {
+    const file = attached("aunt-may.pdf");
+    const recipe: Recipe = { ...BASE, assets: [file] };
+    fakeApi({ recipes: [recipe] });
+
+    await renderAt(`/recipes/${recipe.slug}`);
+
+    const link = await screen.findByRole("link", { name: /aunt-may\.pdf/ });
+    expect(link.getAttribute("href")).toBe(`/api/v1/assets/${file.id}/original`);
+    expect(link.getAttribute("download")).toBe("aunt-may.pdf");
+    expect(link.textContent).toContain("340 KB");
+    // An attachment is not a picture: it is not among the photos.
+    expect(images()).toEqual([]);
+  });
+
+  it("are named but not offered with no connection, and the recipe says why", async () => {
+    const file = attached("aunt-may.pdf");
+    const recipe: Recipe = { ...BASE, assets: [file] };
+    fakeApi({ recipes: [recipe] });
+    await renderAt(`/recipes/${recipe.slug}`);
+    await screen.findByRole("link", { name: /aunt-may\.pdf/ });
+
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+    window.dispatchEvent(new Event("offline"));
+
+    expect(await screen.findByText(/Attachments are not kept on this device/)).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /aunt-may\.pdf/ })).toBeNull();
+    expect(screen.getByText("aunt-may.pdf")).toBeTruthy();
+  });
+});

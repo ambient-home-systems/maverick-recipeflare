@@ -49,14 +49,31 @@ export function gradientPng(width: number, height: number): Buffer {
 
 const uuid = () => crypto.randomUUID();
 
+/** A file that is not a picture: a few bytes that begin as a PDF does. Invented, like everything here. */
+export const samplePdf = () =>
+  Buffer.from("%PDF-1.7\n% an invented attachment for the end-to-end run\n");
+
 /** Makes a recipe through the API, for a spec that needs one to look at. */
 export async function makeRecipe(
   request: APIRequestContext,
   title: string,
+  options: { attachment?: string } = {},
 ): Promise<{ id: string; slug: string }> {
+  const assets: { id: string; role: string }[] = [];
+  if (options.attachment) {
+    const upload = await request.post(
+      `/api/v1/assets?role=attachment&filename=${encodeURIComponent(options.attachment)}`,
+      { headers: { "Content-Type": "application/pdf" }, data: samplePdf() },
+    );
+    if (upload.status() !== 201) {
+      throw new Error(`Could not store an attachment: ${upload.status()}`);
+    }
+    assets.push({ id: (await upload.json()).id, role: "attachment" });
+  }
   const response = await request.post("/api/v1/recipes", {
     data: {
       title,
+      assets,
       description: "Made for the end-to-end run.",
       servings: 4,
       totalTimeSeconds: 2700,

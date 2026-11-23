@@ -1,5 +1,7 @@
 import {
   type Asset,
+  attachmentName,
+  formatFileSize,
   formatIngredient,
   type Ingredient,
   ingredientAmount,
@@ -7,7 +9,16 @@ import {
   type Recipe,
 } from "@recipeflare/schema";
 import { Link } from "@tanstack/react-router";
-import { ChefHat, ChevronDown, CloudOff, ExternalLink, Pencil, Trash2 } from "lucide-react";
+import {
+  ChefHat,
+  ChevronDown,
+  CloudOff,
+  Download,
+  ExternalLink,
+  Paperclip,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
 import { Button } from "../../ui/Button";
 import { LinkChip } from "../../ui/Chip";
@@ -40,7 +51,7 @@ type RecipeViewScreenProps = {
   onScale: (scale: Scale) => void;
   /** The divider colour of a category, by its slug. */
   stockFor: (categorySlug: string) => Stock;
-  /** The address of a photo at thumbnail or full size. */
+  /** The address of a photo at thumbnail or full size, or of an attachment, which has one size. */
   photoUrl: (asset: Asset, size: "thumb" | "full") => string | undefined;
   /** True when the device has no connection and this is the copy saved on it. */
   offline?: boolean;
@@ -198,6 +209,7 @@ export function RecipeViewScreen({
     });
   const photoAssets = byPosition.filter((a) => a.role === "cover" || a.role === "photo");
   const originalAssets = byPosition.filter((a) => a.role === "original");
+  const attachments = byPosition.filter((a) => a.role === "attachment");
   const groups = {
     photos: { title: "Photos", photos: toViewer(photoAssets, `Photo of ${recipe.title}`) },
     original: {
@@ -424,6 +436,53 @@ export function RecipeViewScreen({
                 <p className="max-w-[62ch]">{note.text}</p>
               </div>
             ))}
+          </section>
+        ) : null}
+
+        {attachments.length > 0 ? (
+          <section aria-label="Attachments">
+            <SectionHead title="Attachments" />
+            {offline ? (
+              <p className="border-t border-rule px-4 py-2 text-sm">
+                Attachments are not kept on this device. They need a connection to open.
+              </p>
+            ) : null}
+            <ul>
+              {attachments.map((asset) => {
+                const name = attachmentName(asset);
+                const url = offline ? undefined : photoUrl(asset, "full");
+                const row = (
+                  <>
+                    <Paperclip aria-hidden="true" size="1.25rem" className="flex-none" />
+                    <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">
+                      <span className="font-semibold">{name}</span>{" "}
+                      <span className="text-sm whitespace-nowrap">
+                        {formatFileSize(asset.sizeBytes)}
+                      </span>
+                    </span>
+                    {url ? (
+                      <Download aria-hidden="true" size="1.25rem" className="flex-none" />
+                    ) : null}
+                  </>
+                );
+                return (
+                  <li key={asset.id} className="border-t border-rule">
+                    {url ? (
+                      <a
+                        href={url}
+                        download={name}
+                        className="transition-rf flex min-h-touch items-center gap-3 px-4 py-2 text-ink no-underline hover:bg-surface-sunk"
+                      >
+                        {row}
+                        <span className="sr-only">(downloads the file)</span>
+                      </a>
+                    ) : (
+                      <span className="flex min-h-touch items-center gap-3 px-4 py-2">{row}</span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
           </section>
         ) : null}
 

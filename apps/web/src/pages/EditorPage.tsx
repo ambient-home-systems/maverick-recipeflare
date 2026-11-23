@@ -273,7 +273,8 @@ function Editor({
             id,
             role: group,
             position: 1000 + index,
-            contentType: file.type || "image/jpeg",
+            contentType:
+              file.type || (group === "attachment" ? "application/octet-stream" : "image/jpeg"),
             sizeBytes: file.size,
             width: null,
             height: null,
