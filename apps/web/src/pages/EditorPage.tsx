@@ -216,11 +216,14 @@ function Editor({
   };
 
   const pagePicture = importing?.assets.find((asset) => asset.role === "cover");
+  const sourceText = importing?.result?.sourceText ?? null;
+  const pasted = importing?.kind === "text";
   const review: Review | undefined =
     importing && prepared
       ? {
           from: importHost(importing),
           sourceUrl: importing.sourceUrl ?? undefined,
+          byAi: importing.result?.readBy === "ai",
           attention: prepared.attention,
           flaggedRows: prepared.flaggedRows,
           flaggedParts: prepared.flaggedParts,
@@ -236,19 +239,27 @@ function Editor({
                   }),
               }
             : undefined,
-          original: pagePicture
-            ? {
-                title: "Original",
-                caption: "The picture from the page. Open the page to check the rest against it.",
-                photos: [
-                  {
-                    id: pagePicture.id,
-                    url: assetUrl(pagePicture, "full"),
-                    alt: "The picture from the page",
-                  },
-                ],
-              }
-            : undefined,
+          original:
+            pagePicture || sourceText
+              ? {
+                  title: "Original",
+                  caption: sourceText
+                    ? pasted
+                      ? "The text as you pasted it."
+                      : "The words of the page, as they were read."
+                    : "The picture from the page. Open the page to check the rest against it.",
+                  text: sourceText ?? undefined,
+                  photos: pagePicture
+                    ? [
+                        {
+                          id: pagePicture.id,
+                          url: assetUrl(pagePicture, "full"),
+                          alt: "The picture from the page",
+                        },
+                      ]
+                    : [],
+                }
+              : undefined,
         }
       : undefined;
 

@@ -37,10 +37,13 @@ export function StepList({
   rows,
   onChange,
   errors,
+  flagged = [],
 }: {
   rows: StepListRow[];
   onChange: (rows: StepListRow[]) => void;
   errors: FieldErrors;
+  /** Steps to look at, by ID: each is marked "check". */
+  flagged?: readonly string[];
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const [entry, setEntry] = useState("");
@@ -118,6 +121,7 @@ export function StepList({
               onOpen={() => setOpenId(row.id)}
               label={`Edit step ${number}:`}
               error={error}
+              flagged={flagged.includes(row.id)}
             >
               <span className="flex gap-3">
                 <span aria-hidden="true" className="w-6 flex-none text-lg font-bold leading-snug">

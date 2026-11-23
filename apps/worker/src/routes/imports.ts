@@ -3,8 +3,8 @@ import {
   type ImportDetail,
   type ImportJob,
   type ImportListResponse,
+  ImportRequest,
   SENT_PAGE_LIMITS,
-  UrlImportRequest,
 } from "@recipeflare/schema";
 import { type Context, Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
@@ -43,7 +43,7 @@ async function enqueue(c: Context<AppEnv>, job: ImportJob): Promise<ImportJob> {
   }
 }
 
-/** A link is a line of text. A page sent from a browser is its JSON-LD, which is capped. */
+/** A link is a line of text. A page sent from a browser is its JSON-LD, and pasted text is text: both are capped. */
 const importBody = bodyLimit({
   maxSize: 2 * 1024 * 1024,
   onError: (c) => c.json(errorBody("too_large", "That page is too large to import"), 413),
@@ -57,8 +57,16 @@ export const importRoutes = new Hono<AppEnv>()
     const body: ImportListResponse = { items: await listOpenImportJobs(c.env.DB) };
     return c.json(body);
   })
-  .post("/", importBody, jsonBody(UrlImportRequest), async (c) => {
+  .post("/", importBody, jsonBody(ImportRequest), async (c) => {
     const request = c.req.valid("json");
+    if (request.kind === "text") {
+      const job = await createImportJob(
+        c.env.DB,
+        { kind: "text", sourceUrl: null, input: { text: request.text } },
+        c.get("member").id,
+      );
+      return c.json(await enqueue(c, job), 202);
+    }
     const page = request.page
       ? { siteName: request.page.siteName, blocks: request.page.blocks }
       : undefined;

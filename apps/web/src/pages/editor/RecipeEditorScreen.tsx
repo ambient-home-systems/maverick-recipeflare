@@ -36,18 +36,20 @@ export type Review = {
    * sentence goes there.
    */
   attention: { text: string; field?: string }[];
-  /** Ingredient rows to look at, by ID. */
+  /** Ingredient lines and steps to look at, by ID. */
   flaggedRows: string[];
-  /** Parts of the recipe to look at: "title", "ingredients", "steps". */
+  /** Parts of the recipe to look at: "title", "description", "ingredients", "steps". */
   flaggedParts: string[];
+  /** True when an AI model wrote the draft, not the source's own structured data. The screen says so. */
+  byAi?: boolean;
   suggestions?: Partial<Record<OrganizerKind, string[]>>;
   /** A recipe the household already has from the same link. */
   duplicate?: { title: string; onOpen: () => void };
   /**
    * What the draft was read from, to check it against. For a link this is the
-   * page's picture; from Phase 2 it is the photographed card.
+   * page's picture; for pasted text, the text; for a photographed card, its photos.
    */
-  original?: { title: string; photos: ViewerPhoto[]; caption: string };
+  original?: { title: string; photos: ViewerPhoto[]; caption: string; text?: string };
 };
 
 type RecipeEditorScreenProps = {
@@ -395,6 +397,7 @@ export function RecipeEditorScreen({
           anchor="description"
           value={value.description}
           error={errors.description}
+          flagged={flaggedPart("description")}
           onChange={(description) => set("description", description)}
         />
         <div className="grid gap-4 md:grid-cols-2">
@@ -525,7 +528,12 @@ export function RecipeEditorScreen({
             <FieldProblem>{errors.steps}</FieldProblem>
           </div>
         ) : null}
-        <StepList rows={value.steps} onChange={(steps) => set("steps", steps)} errors={errors} />
+        <StepList
+          rows={value.steps}
+          onChange={(steps) => set("steps", steps)}
+          errors={errors}
+          flagged={review?.flaggedRows}
+        />
       </div>
 
       <SectionHead title="Notes" />
@@ -667,8 +675,10 @@ export function RecipeEditorScreen({
         {review ? (
           <div className="border-b border-rule px-4 py-4">
             <p className="[overflow-wrap:anywhere]">
-              Read from <span className="font-semibold">{review.from}</span>. Nothing is saved until
-              you press Save recipe.
+              {review.byAi ? "Written up by AI from " : "Read from "}
+              <span className="font-semibold">{review.from}</span>.
+              {review.byAi ? " Check it against the original: it can misread." : ""} Nothing is
+              saved until you press Save recipe.
             </p>
             {review.sourceUrl ? (
               <a
@@ -768,6 +778,14 @@ export function RecipeEditorScreen({
                 <div className="@[44rem]:sticky @[44rem]:top-4">
                   <h2 className="font-bold">{original.title}</h2>
                   <p className="text-sm">{original.caption}</p>
+                  {original.text ? (
+                    <p
+                      data-original-text
+                      className="mt-3 rounded-sm border border-rule bg-surface-sunk px-3 py-2 text-sm whitespace-pre-wrap [overflow-wrap:anywhere]"
+                    >
+                      {original.text}
+                    </p>
+                  ) : null}
                   <ul className="mt-3 grid gap-3">
                     {original.photos.map((photo, index) => (
                       <li key={photo.id}>

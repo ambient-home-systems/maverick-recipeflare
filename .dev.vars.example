@@ -6,3 +6,8 @@ AUTH_MODE=dev
 
 # Who you are signed in as. The first person through becomes the owner.
 DEV_MEMBER_EMAIL=cook@example.com
+
+# Importing with AI, without Cloudflare: a scripted stand-in reads pasted text
+# by a few simple rules. Works on localhost only. Remove the line and run
+# `pnpm exec wrangler dev`, signed in, to use real models, which are billed.
+AI_MODE=stand-in

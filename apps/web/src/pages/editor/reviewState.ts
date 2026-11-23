@@ -1,6 +1,7 @@
 import {
   type Asset,
   type DraftLists,
+  doubtTarget,
   draftToInput,
   type OrganizerKind,
   type RecipeDraft,
@@ -25,6 +26,10 @@ const PART: Record<string, string> = {
 };
 
 const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+/** A line's own words, to say which line is meant: all of a short one, the start of a long one. */
+const shortened = (text: string, most = 48) =>
+  text.length > most ? `${text.slice(0, most).trimEnd()}…` : text;
 
 /**
  * Turns what an importer found into the editor's starting value for review.
@@ -66,11 +71,55 @@ export function prepareReview(
     });
   }
 
+  // What the importer was unsure of, each on the line it is about. The rows
+  // are in the draft's order, so a doubt's position finds its row.
+  const steps = value.steps.flatMap((row) => (row.kind === "step" ? [row] : []));
+  const doubtedRows: string[] = [];
+  const doubtedParts: string[] = [];
+  for (const doubt of draft.doubts) {
+    const target = doubtTarget(doubt.where);
+    const why = doubt.why.trim();
+    if (why === "") {
+      continue;
+    }
+    let text = why;
+    let field: string | undefined;
+    if (target?.part === "title" || target?.part === "description") {
+      field = target.part;
+      doubtedParts.push(target.part);
+    } else if (target?.part === "ingredient") {
+      const row = lines[target.index];
+      if (row) {
+        field = `row:${row.id}`;
+        doubtedRows.push(row.id);
+        text = `${shortened(row.text)}: ${why}`;
+      }
+    } else if (target?.part === "step") {
+      const row = steps[target.index];
+      if (row) {
+        field = `row:${row.id}`;
+        doubtedRows.push(row.id);
+        text = `Step ${target.index + 1}: ${why}`;
+      }
+    } else if (target?.part === "note") {
+      const note = value.notes[target.index];
+      if (note) {
+        field = `row:${note.id}`;
+        text = `Note ${target.index + 1}: ${why}`;
+      }
+    }
+    if (!attention.some((item) => item.text === text)) {
+      attention.push({ text, field });
+    }
+  }
+
   return {
     value,
     attention,
-    flaggedRows: [...unread, ...fresh].map((row) => row.id),
-    flaggedParts: missing.flatMap((issue) => PART[issue.code] ?? []),
+    flaggedRows: [...new Set([...unread, ...fresh].map((row) => row.id).concat(doubtedRows))],
+    flaggedParts: [
+      ...new Set(missing.flatMap((issue) => PART[issue.code] ?? []).concat(doubtedParts)),
+    ],
     suggestions: conversion.suggestions,
   };
 }

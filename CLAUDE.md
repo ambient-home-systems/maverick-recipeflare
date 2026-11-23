@@ -6,7 +6,7 @@ Guidance for Claude Code working in this repository.
 
 Maverick Recipeflare (Recipeflare for short) is a household recipe app on Cloudflare: one TypeScript Worker serving a React PWA and a JSON API, with D1, R2, Queues and, in later phases, Workers AI and Durable Objects. One household per install. Licensed AGPL-3.0-only.
 
-**Status: Phase 0 is complete (T0.1 to T0.13); its gate passed on 23 Nov 2026. Phase 1 is built through T1.15 (the recipe repository, the recipes API with search and filters, the API for organizers, foods, units and labels, the ingredient line parser, the recipe list, the recipe view, the editor, the manage screens and cook mode on real data, photos, importing a recipe from a link through the import jobs, installing the app and using it offline, and the end-to-end run). T1.16, the gate run by the household, is not. Phase 2 has begun beside it, by the owner's decision: T2.1 (the AI binding and the model runner) and T2.2 (imports in stages, with a daily limit) are built.** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, the database schema with its migrations, and sign-in (the auth middleware, the Access and dev providers, `/api/v1/me`) exist. The recipe list at `/`, the recipe view at `/recipes/<slug>`, the editor at `/recipes/new` and `/recipes/<slug>/edit`, cook mode at `/recipes/<slug>/cook`, the manage screens at `/manage`, importing from a link at `/add` and its review at `/imports/<id>/review` are connected to data, photos and attachments included. Recipes and the photos that have been shown are kept on the device, so the list, a recipe and cook mode open with no connection. When a pull request changes a command or path below, it updates this file in the same pull request.
+**Status: Phase 0 is complete (T0.1 to T0.13); its gate passed on 23 Nov 2026. Phase 1 is built through T1.15 (the recipe repository, the recipes API with search and filters, the API for organizers, foods, units and labels, the ingredient line parser, the recipe list, the recipe view, the editor, the manage screens and cook mode on real data, photos, importing a recipe from a link through the import jobs, installing the app and using it offline, and the end-to-end run). T1.16, the gate run by the household, is not. Phase 2 has begun beside it, by the owner's decision: T2.1 (the AI binding and the model runner), T2.2 (imports in stages, with a daily limit) and T2.3 (a draft from pasted text) are built.** The workspace, a Worker with a health route, CI, the feature spec, the shared schema package, the deploy pipeline, the web app's shell, design tokens and mock harness, all four core screens (recipe list, recipe view, recipe editor, cook mode) drawn as mock screens, the database schema with its migrations, and sign-in (the auth middleware, the Access and dev providers, `/api/v1/me`) exist. The recipe list at `/`, the recipe view at `/recipes/<slug>`, the editor at `/recipes/new` and `/recipes/<slug>/edit`, cook mode at `/recipes/<slug>/cook`, the manage screens at `/manage`, importing from a link or from pasted text at `/add` and its review at `/imports/<id>/review` are connected to data, photos and attachments included. Recipes and the photos that have been shown are kept on the device, so the list, a recipe and cook mode open with no connection. When a pull request changes a command or path below, it updates this file in the same pull request.
 
 ## Read first
 
@@ -40,9 +40,11 @@ apps/worker/          Hono API, queue consumer, auth, Drizzle schema, migrations
   src/db/importJobs.ts  Import jobs: create, claim, advance to the next stage, finish, fail, requeue
   src/db/assets.ts    The rows behind photos and attachments
   src/ai/             The model runner: runner.ts (one call, checked), profiles.ts (which model does what),
-                      failure.ts (what a failed call means). The only code that uses env.AI
+                      failure.ts (what a failed call means), prompts.ts (what each job is told, with a version),
+                      standIn.ts (a scripted model for localhost). The only code that uses env.AI
   src/media.ts        Files in R2: store (with the two smaller sizes), remove, sweep; sniffType()
-  src/imports/        runner.ts (the queue handler and one stage of one run), handlers.ts (one handler per kind), url.ts (a link)
+  src/imports/        runner.ts (the queue handler and one stage of one run), handlers.ts (one handler per kind), url.ts (a link),
+                      text.ts (pasted text), build.ts (a draft from text, by a model), sourceCheck.ts (is it in the text?)
   migrations/         One folder per migration; applied by Wrangler, in order
 apps/web/             Vite React PWA; builds to apps/web/dist, served as static assets
   src/styles/         tokens.css (the design tokens) and app.css (Tailwind theme, base styles)
@@ -87,13 +89,13 @@ Run from the repository root. Needs Node 22.12 or later and pnpm 10 (`corepack e
 
 To see the built app served by the Worker alone, as in production: `pnpm build`, then `pnpm dev:worker`, then open `http://localhost:8787`.
 
-To be signed in locally, copy `.dev.vars.example` to `.dev.vars` and run `pnpm db:migrate:local` once. `AUTH_MODE=dev` signs you in as `DEV_MEMBER_EMAIL`, on localhost only: the app opened from a phone by the computer's network address is not signed in. Without `.dev.vars` every API route except health answers 401.
+To be signed in locally, copy `.dev.vars.example` to `.dev.vars` and run `pnpm db:migrate:local` once. The same file sets `AI_MODE=stand-in`, which answers an import that needs a model with a scripted reading, on localhost only. `AUTH_MODE=dev` signs you in as `DEV_MEMBER_EMAIL`, on localhost only: the app opened from a phone by the computer's network address is not signed in. Without `.dev.vars` every API route except health answers 401.
 
 ## Rules that are easy to break
 
 ### Shared schema
 
-- `packages/schema/src` holds one module per concern: `recipe.ts` (the three recipe shapes), `draft.ts` (importer output, `checkDraft`, `draftToInput`), `parse-ingredient.ts` (the line parser), `matching.ts` (`unitMatcher`, the lists a name is matched against), `lists.ts` (organizers, foods, units, labels, members, assets), `sections.ts`, `format.ts`, `slug.ts`, `url.ts`, `name-key.ts`, `duration.ts`, `id.ts`, `import-job.ts`, `json-ld.ts` (`findRecipe`), `api.ts`. Import from `@recipeflare/schema`.
+- `packages/schema/src` holds one module per concern: `recipe.ts` (the three recipe shapes), `draft.ts` (importer output, `checkDraft`, `draftToInput`), `parse-ingredient.ts` (the line parser), `matching.ts` (`unitMatcher`, the lists a name is matched against), `lists.ts` (organizers, foods, units, labels, members, assets), `sections.ts`, `format.ts`, `slug.ts`, `url.ts`, `name-key.ts`, `duration.ts` (ISO durations, and `readStatedDuration()` for a time in words), `id.ts`, `import-job.ts`, `json-ld.ts` (`findRecipe`), `ai.ts` (the AI tasks and the check route), `api.ts`. Import from `@recipeflare/schema`.
 - Fixture recipes, lists and import jobs are imported from `@recipeflare/schema/fixtures`, never from the main entry, so they stay out of production bundles. Six are invented and three come from sample cards the owner supplied (ingredient lines as written, steps reworded, no photos). Do not add text copied from a site or a book.
 - Size caps live in `LIMITS` in `primitives.ts`. The one-batch save depends on them; change one only together with the plan's save section.
 - The JSON Schema export of `RecipeDraft` has a snapshot test. When you change the draft on purpose, review the diff and update it with `pnpm test -u`.
@@ -101,6 +103,7 @@ To be signed in locally, copy `.dev.vars.example` to `.dev.vars` and run `pnpm d
 - Match unit names with `unitMatcher()`. A one-letter unit matches by exact case only ("t" is a teaspoon, "T" a tablespoon); do not lowercase unit text before matching.
 - Every recipe shape comes from `@recipeflare/schema`. The API validates with it, the editor uses it as its form resolver, and import output is validated with it. Do not define a second recipe type anywhere.
 - `RecipeDraft` must stay exportable to JSON Schema: plain objects, arrays, strings, numbers and nullables only. Cross-field checks go in `checkDraft()`.
+- A draft's `doubts` are what the importer was unsure of. Review lists each one; do not drop them on the way to the editor.
 - An ingredient line keeps its `originalText`. Parsing fills the structured fields beside it and never overwrites it.
 - The ingredient parser in the shared package is rules only in Phase 1 and must run in the browser with no network. It never creates foods or units.
 - The parser reads only what it is sure of; a wrong reading is worse than none. It never takes a food from inside a longer name ("peanut butter" is not butter). A change to its rules comes with corpus lines in `parse-ingredient.test.ts`, including lines the new rule must leave alone.
@@ -241,7 +244,12 @@ To be signed in locally, copy `.dev.vars.example` to `.dev.vars` and run `pnpm d
 - What a failed call means is decided in `ai/failure.ts`, from the service's own error code. A handler does not catch and retry a model call itself.
 - Every call goes through the gateway and asks it not to keep what was asked and answered. `AI_LOG_CONTENT` is the only thing that changes that.
 - AI settings (`AI_PROFILE`, `AI_GATEWAY`, `AI_LOG_CONTENT`, `AI_DAILY_IMPORTS`) are deploy variables typed by `AiSettings`, not part of `wrangler.jsonc`.
-- Prompts are this project's own words. Nothing is copied from Mealie.
+- Prompts are this project's own words, in `ai/prompts.ts`, each with a version that is kept with every call. Change the words, change the version. Nothing is copied from Mealie.
+- A model copies; it does not write. It is asked for text as written (`Reading` in `imports/build.ts`), not for a `RecipeDraft`: amounts, units and foods are read from the lines by the same rules as a typed line, and a time from its words by `readStatedDuration()`. Do not ask a model to work out what code can read.
+- What a model wrote is checked against the text it was given (`imports/sourceCheck.ts`). A line, a step or a title with a word the text does not have is kept and gets a doubt; it is never dropped quietly and never accepted quietly. A yield, a time or a heading the text does not state is dropped. Do not loosen the check to make a model look better.
+- A doubt is a `{ where, why }` on the draft (`where` is `title`, `ingredient:3`, `step:0`, counted from zero across sections). `checkDraft()` turns each into an issue and review lists it. Text with no recipe in it fails with `too_thin`; it is not padded out.
+- A draft a model made is returned as `new AiDraft(draft, sourceText)`, so that review shows the text beside it and says a model wrote it.
+- The stand-in (`AI_MODE=stand-in`) is for localhost: `.dev.vars` and the end-to-end server set it, and the deploy script never does. Do not add it to `SECRET_NAMES` in `scripts/deploy.mjs`.
 
 ### Photos and attachments
 

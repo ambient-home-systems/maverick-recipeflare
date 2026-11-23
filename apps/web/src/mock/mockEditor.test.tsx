@@ -467,6 +467,17 @@ describe("reviewing an import", () => {
     await waitFor(() => expect(router.state.location.pathname).toBe("/mock/list"));
   });
 
+  it("shows a draft an AI model wrote from pasted text, with its doubts and the text beside it", async () => {
+    await renderAt("/mock/review?scene=pasted");
+
+    expect(screen.getByText(/Written up by AI from/).textContent).toContain("pasted text");
+    expect(screen.getByRole("button", { name: /^Step 4: The text does not say/ })).toBeTruthy();
+    const original = screen.getByRole("complementary", { name: "Original" });
+    expect(original.textContent).toContain("1/2 tsp baking powdr");
+    // No page stands behind it, so none is offered.
+    expect(screen.queryByRole("link", { name: /Open the page/ })).toBeNull();
+  });
+
   it("says when the link is already a recipe, and still allows saving", async () => {
     await renderAt("/mock/review?scene=duplicate");
     // A standing condition, in the notice band with its own icon: not a problem, so not announced as one.

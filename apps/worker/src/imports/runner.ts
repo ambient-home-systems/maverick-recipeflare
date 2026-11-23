@@ -80,9 +80,24 @@ export class NextStage {
 }
 
 /**
+ * A handler's answer when a model made the draft: the draft, and the text it
+ * was made from, which review shows beside it.
+ */
+export class AiDraft {
+  readonly draft: unknown;
+  readonly sourceText: string;
+
+  constructor(draft: unknown, sourceText: string) {
+    this.draft = draft;
+    this.sourceText = sourceText;
+  }
+}
+
+/**
  * One kind of import. It is called once for each stage: `job.stage` says
  * which (null for the first), and `work` is what earlier stages kept. It
- * returns the draft, or a `NextStage`. It saves nothing.
+ * returns the draft (in an `AiDraft` when a model made it), or a `NextStage`.
+ * It saves nothing.
  */
 export type ImportHandler = (
   job: ImportJob,
@@ -146,6 +161,7 @@ function aiForJob(tools: ImportTools, jobId: string, calls: AiCallRecord[]): AiR
         task: answer.task,
         profile: answer.profile,
         model: answer.model,
+        prompt: answer.promptVersion,
         milliseconds: answer.milliseconds,
         inputTokens: answer.usage?.inputTokens ?? null,
         outputTokens: answer.usage?.outputTokens ?? null,
@@ -239,14 +255,20 @@ export async function runImportJob(
       return { ack: true };
     }
 
-    const draft = RecipeDraft.parse(answer);
+    const byAi = answer instanceof AiDraft;
+    const draft = RecipeDraft.parse(byAi ? answer.draft : answer);
     // The picture the source points at is fetched here, for every kind of
     // import, so that a handler still saves nothing itself.
     await keepPicture({ id: job.id, createdBy }, draft.imageUrl, tools);
     await finishImportJob(
       db,
       jobId,
-      { draft, issues: checkDraft(draft) },
+      {
+        draft,
+        issues: checkDraft(draft),
+        sourceText: byAi ? answer.sourceText : null,
+        readBy: byAi ? "ai" : "structured-data",
+      },
       calls.length > 0 ? withCalls(loaded.work) : undefined,
     );
     return { ack: true };

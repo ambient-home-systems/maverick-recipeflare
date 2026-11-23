@@ -22,6 +22,8 @@ export type AiSettings = {
   AI_LOG_CONTENT?: string;
   /** How many imports may ask a model in a day. Defaults to 100. */
   AI_DAILY_IMPORTS?: string;
+  /** `stand-in` swaps the model for a scripted one. For localhost; lives in `.dev.vars`. */
+  AI_MODE?: string;
 };
 
 /**
@@ -50,6 +52,8 @@ export type AiRequest<T> = {
   system: string;
   /** This call's own material. */
   prompt: string;
+  /** Which wording of the prompt this is, kept with the job. See `prompts.ts`. */
+  promptVersion?: string;
   images?: AiImage[];
   /** What the answer must be. Plain objects, arrays, strings, numbers and nullables only. */
   schema: z.ZodType<T>;
@@ -69,6 +73,7 @@ export type AiAnswer<T> = {
   requested: string;
   /** The model that answered, as the service names it. */
   model: string;
+  promptVersion: string | null;
   milliseconds: number;
   usage: AiUsage | null;
   logId: string | null;
@@ -263,6 +268,7 @@ export function createAiRunner(
             profile: chosen.name,
             requested: model.id,
             model: answer.model ?? model.id,
+            promptVersion: request.promptVersion ?? null,
             milliseconds: Math.max(0, Math.round(now() - started)),
             usage: answer.usage,
             logId: binding.aiGatewayLogId ?? null,

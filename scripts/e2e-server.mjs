@@ -60,6 +60,10 @@ const server = spawn(
     "AUTH_MODE:dev",
     "--var",
     "DEV_MEMBER_EMAIL:cook@example.com",
+    // A scripted stand-in for the AI model, so that an import that needs one
+    // can be driven from end to end without a Cloudflare account.
+    "--var",
+    "AI_MODE:stand-in",
     "--show-interactive-dev-session=false",
   ],
   { cwd: root, stdio: "inherit", shell: process.platform === "win32" },
