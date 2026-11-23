@@ -45,7 +45,8 @@ const START: Record<CaptureScene, number> = {
   sitting: 7,
   empty: 0,
   twelve: 12,
-  sending: 12,
+  // Two of twelve have gone, and have left the pile.
+  sending: 10,
   stopped: 7,
   offline: 4,
 };

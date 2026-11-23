@@ -92,6 +92,9 @@ export function CaptureScreen({
   const [openId, setOpenId] = useState<string | null>(null);
   const [asking, setAsking] = useState(false);
   const [viewing, setViewing] = useState<{ cardId: string; index: number } | null>(null);
+  // A photo taken off is gone for good, so taking one off asks first, in the row.
+  const [removing, setRemoving] = useState<{ cardId: string; sideId?: string } | null>(null);
+  const [arrived, setArrived] = useState<string | null>(null);
   const camera = useRef<HTMLInputElement>(null);
   const chooser = useRef<HTMLInputElement>(null);
   const wanted = useRef<Wanted>({ for: "cards" });
@@ -102,18 +105,31 @@ export function CaptureScreen({
   const full = cards.length >= most;
   const number = (cardId: string) => cards.findIndex((card) => card.id === cardId) + 1;
 
-  // A card that has just joined the pile is brought into view, above the buttons that follow it.
+  // A card that has just joined the pile is brought into view, above the buttons
+  // that follow it, and rests on the sunk ground for a moment so the eye finds it.
   const count = cards.length;
+  const newestId = latest?.id ?? null;
   const seen = useRef(count);
   useEffect(() => {
-    if (count > seen.current) {
-      newest.current?.scrollIntoView?.({ block: "nearest" });
-    }
+    const grew = count > seen.current;
     seen.current = count;
-  }, [count]);
+    if (!grew) {
+      return;
+    }
+    newest.current?.scrollIntoView?.({ block: "nearest" });
+    setArrived(newestId);
+    const settle = setTimeout(() => setArrived(null), 1400);
+    return () => clearTimeout(settle);
+  }, [count, newestId]);
 
   const ask = (input: HTMLInputElement | null, next: Wanted) => {
     wanted.current = next;
+    // Going on to a new card closes the one being mended, so that the pile is
+    // whole again and the newest card's back is offered when the photo arrives.
+    if (next.for === "cards") {
+      setRemoving(null);
+      setOpenId(null);
+    }
     input?.click();
   };
   const took = (input: HTMLInputElement) => {
@@ -148,21 +164,6 @@ export function CaptureScreen({
         {offline ? (
           <Notice icon={<CloudOff aria-hidden="true" size="1.125rem" className="flex-none" />}>
             You are offline. You can go on photographing; importing needs a connection.
-          </Notice>
-        ) : null}
-        {problem ? <Notice problem>{problem}</Notice> : null}
-        {sending ? (
-          <Notice
-            icon={
-              <LoaderCircle
-                aria-hidden="true"
-                size="1.125rem"
-                className="flex-none animate-spin motion-reduce:animate-none"
-              />
-            }
-          >
-            Sending card {Math.min(sending.sent + 1, sending.total)} of {sending.total}. Keep this
-            page open.
           </Notice>
         ) : null}
         {full && !busy ? (
@@ -206,7 +207,8 @@ export function CaptureScreen({
                   <li
                     key={card.id}
                     ref={last ? newest : undefined}
-                    className="scroll-mb-28 border-b border-rule"
+                    // Clear of the navigation and the capture bar, on any phone and when the bar wraps.
+                    className={`transition-rf scroll-mb-[calc(var(--rf-nav-height)+8.5rem)] border-b border-rule ${arrived === card.id ? "bg-surface-sunk" : ""}`}
                   >
                     {openId === card.id && !busy ? (
                       <div className="px-4 py-3">
@@ -252,7 +254,9 @@ export function CaptureScreen({
                                   <button
                                     type="button"
                                     className={SMALL}
-                                    onClick={() => onRemoveSide(card.id, side.id)}
+                                    onClick={() =>
+                                      setRemoving({ cardId: card.id, sideId: side.id })
+                                    }
                                   >
                                     <Trash2 aria-hidden="true" size="1.125rem" />
                                     Remove
@@ -266,68 +270,114 @@ export function CaptureScreen({
                             </li>
                           ))}
                         </ul>
-                        <div className="mt-4 flex flex-wrap gap-2 border-t border-rule pt-3">
-                          {card.sides.length === 2 && onSwapSides ? (
+                        {removing?.cardId === card.id ? (
+                          <div className="mt-4 border-t border-rule pt-3">
+                            <p role="alert" className="max-w-[38ch]">
+                              {removing.sideId && card.sides.length > 1
+                                ? `Remove the ${sideName(
+                                    card.sides.findIndex((side) => side.id === removing.sideId),
+                                  ).toLowerCase()} of ${name.toLowerCase()}? The photo is only on this device, so it cannot be put back.`
+                                : `Remove ${name.toLowerCase()}? ${
+                                    card.sides.length > 1
+                                      ? "Its photos are only on this device, so they cannot be put back."
+                                      : "The photo is only on this device, so it cannot be put back."
+                                  }`}
+                            </p>
+                            {/* "Keep it" comes first and takes the whole line, so that it is
+                                under the finger that asked wherever that finger was. */}
+                            <div className="mt-3 grid justify-items-start gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setRemoving(null)}
+                                className="transition-rf inline-flex min-h-touch w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-on-primary hover:bg-primary-press"
+                              >
+                                Keep it
+                              </button>
+                              <button
+                                type="button"
+                                className={SMALL}
+                                onClick={() => {
+                                  const { sideId } = removing;
+                                  setRemoving(null);
+                                  if (sideId && card.sides.length > 1) {
+                                    onRemoveSide?.(card.id, sideId);
+                                  } else {
+                                    setOpenId(null);
+                                    onRemoveCard?.(card.id);
+                                  }
+                                }}
+                              >
+                                <Trash2 aria-hidden="true" size="1.125rem" />
+                                Remove it
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="mt-4 flex flex-wrap gap-2 border-t border-rule pt-3">
+                            {card.sides.length === 2 && onSwapSides ? (
+                              <button
+                                type="button"
+                                className={SMALL}
+                                onClick={() => onSwapSides(card.id)}
+                              >
+                                <ArrowLeftRight aria-hidden="true" size="1.125rem" />
+                                Swap sides
+                              </button>
+                            ) : null}
+                            {card.sides.length < MAX_SIDES && onAddSide ? (
+                              <button
+                                type="button"
+                                className={SMALL}
+                                onClick={() =>
+                                  ask(camera.current, { for: "side", cardId: card.id })
+                                }
+                              >
+                                <Camera aria-hidden="true" size="1.125rem" />
+                                {card.sides.length === 1 ? "Add the back" : "Add a side"}
+                              </button>
+                            ) : null}
+                            {before && onJoin ? (
+                              <button
+                                type="button"
+                                className={SMALL}
+                                onClick={() => {
+                                  setOpenId(before.id);
+                                  onJoin(card.id);
+                                }}
+                              >
+                                <CopyPlus aria-hidden="true" size="1.125rem" />
+                                It is the back of card {number(before.id)}
+                              </button>
+                            ) : null}
+                            {onRemoveCard ? (
+                              <button
+                                type="button"
+                                className={SMALL}
+                                onClick={() => setRemoving({ cardId: card.id })}
+                              >
+                                <Trash2 aria-hidden="true" size="1.125rem" />
+                                Remove card
+                              </button>
+                            ) : null}
                             <button
                               type="button"
-                              className={SMALL}
-                              onClick={() => onSwapSides(card.id)}
+                              onClick={() => setOpenId(null)}
+                              className="transition-rf inline-flex min-h-touch items-center justify-center gap-1.5 rounded-md bg-primary px-4 text-sm font-semibold text-on-primary hover:bg-primary-press"
                             >
-                              <ArrowLeftRight aria-hidden="true" size="1.125rem" />
-                              Swap sides
+                              <Check aria-hidden="true" size="1.125rem" strokeWidth={2.5} />
+                              Done
                             </button>
-                          ) : null}
-                          {card.sides.length < MAX_SIDES && onAddSide ? (
-                            <button
-                              type="button"
-                              className={SMALL}
-                              onClick={() => ask(camera.current, { for: "side", cardId: card.id })}
-                            >
-                              <Camera aria-hidden="true" size="1.125rem" />
-                              {card.sides.length === 1 ? "Add the back" : "Add a side"}
-                            </button>
-                          ) : null}
-                          {before && onJoin ? (
-                            <button
-                              type="button"
-                              className={SMALL}
-                              onClick={() => {
-                                setOpenId(before.id);
-                                onJoin(card.id);
-                              }}
-                            >
-                              <CopyPlus aria-hidden="true" size="1.125rem" />
-                              It is the back of card {number(before.id)}
-                            </button>
-                          ) : null}
-                          {onRemoveCard ? (
-                            <button
-                              type="button"
-                              className={SMALL}
-                              onClick={() => {
-                                setOpenId(null);
-                                onRemoveCard(card.id);
-                              }}
-                            >
-                              <Trash2 aria-hidden="true" size="1.125rem" />
-                              Remove card
-                            </button>
-                          ) : null}
-                          <button
-                            type="button"
-                            onClick={() => setOpenId(null)}
-                            className="transition-rf inline-flex min-h-touch items-center justify-center gap-1.5 rounded-md bg-primary px-4 text-sm font-semibold text-on-primary hover:bg-primary-press"
-                          >
-                            <Check aria-hidden="true" size="1.125rem" strokeWidth={2.5} />
-                            Done
-                          </button>
-                        </div>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <button
                         type="button"
                         disabled={busy}
-                        onClick={() => setOpenId(card.id)}
+                        onClick={() => {
+                          setRemoving(null);
+                          setOpenId(card.id);
+                        }}
                         className="transition-rf flex min-h-[4.25rem] w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-surface-sunk disabled:cursor-not-allowed disabled:hover:bg-surface"
                       >
                         <span className="flex flex-none gap-1.5">
@@ -352,11 +402,26 @@ export function CaptureScreen({
               })}
             </ol>
 
-            <div className="px-4 py-4">
+            {problem ? <Notice problem>{problem}</Notice> : null}
+            {sending ? (
+              <Notice
+                icon={
+                  <LoaderCircle
+                    aria-hidden="true"
+                    size="1.125rem"
+                    className="flex-none animate-spin motion-reduce:animate-none"
+                  />
+                }
+              >
+                {sending.sent} of {sending.total} sent. Keep this page open.
+              </Notice>
+            ) : null}
+            <div className="px-4 pt-4 pb-6">
               <p className="max-w-[38ch]">
                 {busy
                   ? "Each card leaves this list as it is sent."
-                  : "Nothing has been sent yet. Each card becomes a recipe to check against its photos."}
+                  : // After a stop some have gone, and the notice above says how many.
+                    `${problem ? "" : "Nothing has been sent yet. "}Press a card to retake, swap or remove a photo. Each card becomes a recipe to check against its photos.`}
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {onImport ? (
@@ -383,12 +448,14 @@ export function CaptureScreen({
             </div>
 
             {/* The two buttons pressed for every card. They sit where the thumb already is. */}
+            {/* A computer has no camera to open: there, "Choose photos" above is the way in. */}
             {onAddCards || onAddSide ? (
-              <div className="bottom-[var(--rf-nav-height)] z-[5] flex flex-wrap gap-2 border-t border-rule-strong bg-surface px-4 py-2.5 [@media(min-height:36rem)]:sticky">
-                {latest && latest.sides.length === 1 && onAddSide ? (
+              <div className="bottom-[var(--rf-nav-height)] z-[5] flex flex-wrap gap-2 border-t border-rule-strong bg-surface px-4 py-2.5 md:pointer-fine:hidden [@media(min-height:36rem)]:sticky">
+                {/* While a card is open its own buttons speak for it; this one would mean another card. */}
+                {latest && latest.sides.length === 1 && onAddSide && openId === null ? (
                   <Button
                     variant="quiet"
-                    className="whitespace-nowrap"
+                    className="flex-1 whitespace-nowrap"
                     disabled={busy}
                     onClick={() => ask(camera.current, { for: "side", cardId: latest.id })}
                   >

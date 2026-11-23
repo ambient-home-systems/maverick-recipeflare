@@ -18,7 +18,8 @@ const FAILURES: Record<string, string> = {
   no_recipe:
     "Nothing could be read from that page. If it shows a recipe, copy its text and use Paste text on the Add page.",
   too_thin: "There was not enough there to make a recipe from.",
-  unreadable: "Nothing could be read from the photo. Try a sharper one, taken in better light.",
+  unreadable:
+    "Nothing could be read from the photo. Remove this, and photograph the card again, sharper and in better light.",
   not_queued: "The import could not be started. Try again.",
   ai_limit: "Today's allowance for importing with AI is used up. Try again tomorrow.",
   ai_unavailable: "The AI that reads recipes could not be reached. Try again later.",

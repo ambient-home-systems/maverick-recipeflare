@@ -39,12 +39,14 @@ DECISIONS:
 - Offline, photographing still works and Import waits: the notice says so.
 - On the list, a card's import is a row like a link's, with a camera on its tile: "Reading the card", "Writing it up", "Ready to review". A card that could not be read says so and what to try.
 
-FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance.
+FINISH: reviewed by the finish reviewer on 23 Nov 2026, verdict "fix", eight fixes, then two verdict passes. Seven are resolved: the card just taken is scrolled clear of the capture bar and rests on the sunk ground for a moment; sending progress and a stop are said directly above the Import button; the sending scene shows sent cards gone and counts them ("2 of 12 sent"); the line at the pile's end says a card can be pressed to mend it; the bar's "Add the back" is withheld while a row is open, and taking the next card closes the row; removing a photo or a card asks first, in the row; and the capture bar is not shown on a computer, with both its buttons on a line each on a very narrow phone. One is partly resolved: the unreadable-photo row now names the recovery it offers, but cannot say which card of the sitting it was until an import carries that (T2.6). The reviewer's last note, that "Remove it" still sat under the edge of "Remove card", was fixed afterwards by giving "Keep it" the row's whole width; that last change has not been through a verdict. DESIGN.md is updated for what this screen adds ("Card pile") and for the import row's new words.
 
 ## Unresolved
 
 - The owner has not been through it on an iPhone and an Android phone: one-sided cards, two-sided cards, a wrong photo removed, sides swapped, twelve cards in a sitting. That is this task's acceptance check.
 - Whether a browser gives the page back with its pile intact after the camera on a phone short of memory. If it does not, the pile has to be kept on the device between shots (T2.6).
-- Whether the import row should show the card's own photo on its tile. The list does not carry an import's pictures yet.
+- Whether the import row should show the card's own photo on its tile, and how a failed card says which card of the sitting it was. The list carries neither an import's pictures nor its place in a sitting yet; T2.6 decides.
+- Where "From photos" sits on the Add page. It is second, under typing; on a phone, where cards are photographed, it may belong first.
+- A tablet, which keeps the capture bar, was not captured in review: the browser used reports a mouse even when it imitates a touch device.
 - How many cards one sitting may hold. The mock stops at 30.
 - Turning a photo that was taken sideways.

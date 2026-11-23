@@ -111,7 +111,10 @@ describe("photographing cards, mid-sitting", () => {
   it("says how many cards Import will send, and that nothing has been sent yet", async () => {
     const { router } = await renderAt("/mock/capture?scene=twelve");
 
-    expect(screen.getByText(/Nothing has been sent yet/)).toBeTruthy();
+    // The line at the pile's end also says that a card can be opened and mended.
+    expect(screen.getByText(/Nothing has been sent yet/).textContent).toContain(
+      "Press a card to retake, swap or remove a photo.",
+    );
     fireEvent.click(screen.getByRole("button", { name: "Import 12 cards" }));
 
     await waitFor(() => expect(router.state.location.pathname).toBe("/mock/list"));
@@ -153,6 +156,9 @@ describe("mending a card before it is sent", () => {
 
     open(2);
     fireEvent.click(screen.getByRole("button", { name: "Remove the front" }));
+    // A photo taken off cannot be put back, so the row asks first.
+    expect(screen.getByRole("alert").textContent).toContain("Remove the front of card 2?");
+    fireEvent.click(screen.getByRole("button", { name: "Remove it" }));
 
     expect(screen.getByText("7 cards")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Done" }));
@@ -176,9 +182,79 @@ describe("mending a card before it is sent", () => {
 
     open(3);
     fireEvent.click(screen.getByRole("button", { name: "Remove card" }));
+    expect(screen.getByRole("alert").textContent).toBe(
+      "Remove card 3? The photo is only on this device, so it cannot be put back.",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Remove it" }));
 
     expect(screen.getByText("6 cards")).toBeTruthy();
     expect(summaries()[2]).toBe("Card 3Front and back");
+  });
+
+  it("speaks of a two-sided card's photos, and puts “Keep it” first, under the finger", async () => {
+    await renderAt("/mock/capture");
+
+    open(2);
+    fireEvent.click(screen.getByRole("button", { name: "Remove card" }));
+
+    expect(screen.getByRole("alert").textContent).toBe(
+      "Remove card 2? Its photos are only on this device, so they cannot be put back.",
+    );
+    const choices = within(rows()[1] as HTMLElement)
+      .getAllByRole("button")
+      .map((button) => button.textContent)
+      .filter((name) => name === "Keep it" || name === "Remove it");
+    expect(choices).toEqual(["Keep it", "Remove it"]);
+  });
+
+  it("closes a card being mended when the next card is taken, so its back is offered again", async () => {
+    await renderAt("/mock/capture");
+
+    open(2);
+    expect(screen.queryByRole("heading", { name: "Card 2" })).toBeTruthy();
+    shoot(screen.getByRole("button", { name: "Next card" }), "camera", photo());
+
+    expect(screen.queryByRole("heading", { name: "Card 2" })).toBeNull();
+    expect(summaries()[7]).toBe("Card 8Front only");
+    expect(screen.getByRole("button", { name: "Add the back" })).toBeTruthy();
+  });
+
+  it("keeps a card when the cook thinks better of removing it", async () => {
+    await renderAt("/mock/capture");
+
+    open(3);
+    fireEvent.click(screen.getByRole("button", { name: "Remove card" }));
+    fireEvent.click(screen.getByRole("button", { name: "Keep it" }));
+
+    expect(screen.getByText("7 cards")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Remove card" })).toBeTruthy();
+  });
+
+  it("removes the card when its only photo is taken off", async () => {
+    await renderAt("/mock/capture");
+
+    open(3);
+    fireEvent.click(screen.getByRole("button", { name: "Remove the front" }));
+    expect(screen.getByRole("alert").textContent).toContain("Remove card 3?");
+    fireEvent.click(screen.getByRole("button", { name: "Remove it" }));
+
+    expect(screen.getByText("6 cards")).toBeTruthy();
+  });
+
+  it("offers one “Add the back” at a time: the open card's, not the newest card's", async () => {
+    await renderAt("/mock/capture");
+    expect(screen.getAllByRole("button", { name: "Add the back" })).toHaveLength(1);
+
+    open(3);
+    const offered = screen.getAllByRole("button", { name: "Add the back" });
+    expect(offered).toHaveLength(1);
+    shoot(offered[0] as HTMLElement, "camera", photo());
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+
+    // The photo went to the card that was open, and the newest card still wants its back.
+    expect(summaries()[2]).toBe("Card 3Front and back");
+    expect(summaries()[6]).toBe("Card 7Front only");
+    expect(screen.getAllByRole("button", { name: "Add the back" })).toHaveLength(1);
   });
 
   it("joins a one-sided card to the card before it, as its back", async () => {
@@ -258,7 +334,10 @@ describe("the edges of a sitting", () => {
   it("says how far sending has got, and holds the pile still meanwhile", async () => {
     await renderAt("/mock/capture?scene=sending");
 
-    expect(screen.getByText(/Sending card 3 of 12/)).toBeTruthy();
+    // Two have gone and have left the pile. The count is said beside the button that was pressed.
+    expect(screen.getByText(/2 of 12 sent/)).toBeTruthy();
+    expect(screen.getByText("10 cards")).toBeTruthy();
+    expect(screen.getByText("Each card leaves this list as it is sent.")).toBeTruthy();
     expect(
       (screen.getByRole("button", { name: /^Change Card 1\b/ }) as HTMLButtonElement).disabled,
     ).toBe(true);
