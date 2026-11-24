@@ -1,10 +1,11 @@
 import { createExecutionContext, createMessageBatch, getQueueResult } from "cloudflare:test";
 import { env } from "cloudflare:workers";
-import { ErrorBody, ImportJob, ImportListResponse, newId } from "@recipeflare/schema";
+import { ErrorBody, ImportDetail, ImportJob, ImportListResponse, newId } from "@recipeflare/schema";
 import { fixtureMember } from "@recipeflare/schema/fixtures";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import worker from "../src";
+import { AI_PROFILES } from "../src/ai/profiles";
 import { createAiRunner } from "../src/ai/runner";
 import {
   createImportJob,
@@ -246,6 +247,28 @@ describe("running an import from the queue", () => {
     expect(result.ackAll).toBe(false);
     expect(result.retryBatch.retry).toBe(false);
     expect((await job(good.id)).status).toBe("needs_review");
+  });
+
+  it("runs the jobs of a batch side by side, so one slow import does not hold up the next", async () => {
+    const first = await queued("https://example.com/slow-one");
+    const second = await queued("https://example.com/slow-two");
+    const batch = batchOf(QUEUE, { jobId: first.id }, { jobId: second.id });
+    const order: string[] = [];
+
+    const result = await deliver(batch, async (running) => {
+      const name = running.id === first.id ? "first" : "second";
+      order.push(`${name} starts`);
+      // Stands for the wait for a model: long enough for the other job to start.
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      order.push(`${name} ends`);
+      return DRAFT;
+    });
+
+    // Run in turn, the second would start only after the first had ended.
+    expect(order.slice(0, 2).sort()).toEqual(["first starts", "second starts"]);
+    expect(result.explicitAcks).toEqual(acked(batch));
+    expect((await job(first.id)).status).toBe("needs_review");
+    expect((await job(second.id)).status).toBe("needs_review");
   });
 });
 
@@ -655,6 +678,90 @@ describe("an import that asks a model", () => {
 
     expect(await job(created.id)).toMatchObject({ status: "failed", error: { code: "ai_answer" } });
     expect(binding.calls).toHaveLength(2);
+  });
+
+  it("keeps a call that gave no answer too, with why and how long it was waited for", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    await forgetCalls();
+    const created = await queued();
+    const { tools: aiTools } = toolsWith([
+      upstream("3040: Capacity temporarily exceeded, please try again."),
+      chatAnswer({ title: "Garlic Bread" }),
+    ]);
+
+    // The first try gets no answer and the job waits to be tried again.
+    expect(await runImportJob(created.id, { url: asking }, aiTools)).toMatchObject({ ack: false });
+    const first = (await loadImportJobForRun(db, created.id))?.work.calls;
+    expect(first).toHaveLength(1);
+    expect(first?.[0]).toMatchObject({
+      task: "build",
+      // No answer came, so the model is the one that was asked.
+      model: AI_PROFILES.standard?.models.build.id,
+      inputTokens: null,
+      outputTokens: null,
+      tries: 0,
+      failed: "unavailable: 3040: Capacity temporarily exceeded, please try again.",
+    });
+    expect(first?.[0]?.milliseconds).toBeGreaterThanOrEqual(0);
+
+    // The second try answers, and the record has both, in order.
+    await runImportJob(created.id, { url: asking }, aiTools);
+    const both = (await loadImportJobForRun(db, created.id))?.work.calls;
+    expect(both?.map((call) => call.failed !== undefined)).toEqual([true, false]);
+  });
+
+  it("shows the calls with the import, and nothing of what was asked or answered", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    await forgetCalls();
+    const created = await queued();
+    const { tools: aiTools } = toolsWith([
+      upstream("3040: Capacity temporarily exceeded, please try again."),
+      chatAnswer({ title: "Garlic Bread" }),
+    ]);
+    await runImportJob(created.id, { url: asking }, aiTools);
+    await runImportJob(created.id, { url: asking }, aiTools);
+
+    const api = signedIn(env, fixtureMember.email ?? "");
+    const shown = ImportDetail.parse(await (await api.get(`/imports/${created.id}`)).json());
+
+    expect(shown.calls).toHaveLength(2);
+    expect(shown.calls[0]).toMatchObject({ task: "build", tries: 0 });
+    expect(shown.calls[0]?.failed).toMatch(/^unavailable: 3040/);
+    expect(shown.calls[1]).toMatchObject({
+      task: "build",
+      model: "@cf/test/stand-in",
+      inputTokens: 12,
+      outputTokens: 7,
+      tries: 1,
+      failed: null,
+    });
+    // Times and counts only: the same keys for every call.
+    expect(Object.keys(shown.calls[1] ?? {}).sort()).toEqual([
+      "at",
+      "failed",
+      "inputTokens",
+      "milliseconds",
+      "model",
+      "outputTokens",
+      "task",
+      "tries",
+    ]);
+  });
+
+  it("does not record a call that was never made", async () => {
+    await forgetCalls();
+    const created = await queued();
+    const { binding, tools: aiTools } = toolsWith([chatAnswer({ title: "Garlic Bread" })]);
+    const misnamed: ImportTools = {
+      ...aiTools,
+      ai: createAiRunner(binding, { AI_PROFILE: "no-such-profile" }),
+    };
+
+    await runImportJob(created.id, { url: asking }, misnamed);
+
+    expect(await job(created.id)).toMatchObject({ status: "failed", error: { code: "ai_setup" } });
+    expect((await loadImportJobForRun(db, created.id))?.work.calls ?? []).toEqual([]);
+    expect(binding.calls).toHaveLength(0);
   });
 
   it("keeps the record of a call whose stage then failed", async () => {

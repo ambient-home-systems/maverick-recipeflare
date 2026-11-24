@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ImportJob } from "./import-job";
+import { ImportCall, ImportJob } from "./import-job";
 import { Asset, Food, Label, Member, Organizer, Unit } from "./lists";
 import { Id, Slug } from "./primitives";
 import { Recipe, RecipeSummary } from "./recipe";
@@ -150,5 +150,7 @@ export const ImportDetail = ImportJob.extend({
   duplicate: z.object({ slug: Slug, title: z.string() }).nullable(),
   /** What the import brought with it: for a link, the page's picture. */
   assets: z.array(Asset),
+  /** The model calls made for it so far, oldest first, failed ones included. */
+  calls: z.array(ImportCall).default([]),
 });
 export type ImportDetail = z.infer<typeof ImportDetail>;

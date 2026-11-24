@@ -15,6 +15,7 @@ import {
   createPhotoImportJob,
   deleteImportJob,
   failImportJob,
+  importCalls,
   listOpenImportJobs,
   loadImportJob,
   recipeFromLink,
@@ -107,6 +108,8 @@ export const importRoutes = new Hono<AppEnv>()
       ...job,
       duplicate: job.sourceUrl ? await recipeFromLink(c.env.DB, job.sourceUrl) : null,
       assets: await assetsOfImport(c.env.DB, job.id),
+      // What each model call took, so that a slow or failed import can be explained.
+      calls: await importCalls(c.env.DB, job.id),
     };
     return c.json(body);
   })

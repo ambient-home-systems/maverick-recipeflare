@@ -131,6 +131,10 @@ Once the check passes, on the Add page paste a recipe's text under **Paste text*
 
 For T2.6, photograph cards: on a phone, Add, then **From photos**. Do five printed cards and five handwritten ones, some with a back, and press **Import**. Each should come up on the list as "Card 1", "Card 2" and so on, say "Reading the card" and then "Writing it up", and offer **Review**, where the card's photos sit beside the draft and **Save and next card** goes on to the next. Say how each came out, and above all whether any failed with "Nothing could be read from the photo" or "importing with AI is not working": this is the first time a picture is sent to a model, and the first place a wrong guess about what the models accept would show.
 
+### When an import is slow or fails
+
+Every call an import makes to a model is kept with it: which model, how long it took, how much it read and wrote, and for a call that gave no answer, why. Nothing that was asked or answered is kept. To see it, signed in on a computer, open `/api/v1/imports` on the hostname, copy the `id` of the import, and open `/api/v1/imports/` followed by that id. The `calls` list is oldest first. A call whose `failed` says the model took too long was given up on by the app: a minute and a half for most calls, three minutes for reading a card's photos.
+
 ### Settings
 
 Each is optional. Add it as an environment **variable** of the GitHub environment (`staging` or `production`), and deploy.

@@ -94,7 +94,7 @@ A stage is one model call, or one piece of work in code. The job row records whi
 
 - **Each stage is safe to run twice.** It reads the job's `work`, does its one thing, and writes the result. A message delivered twice runs a stage whose result is already there and overwrites it with the same.
 - **Retries are per stage.** A failed model call retries that stage, not the whole import, so a card is not read again because organizing failed. The existing attempt count, back-off and dead-letter path apply.
-- **Batch size.** The import queue's `max_batch_size` drops from 10 to 2, so two slow model calls are the most one invocation waits for. Concurrency does the rest.
+- **Batch size.** The import queue's `max_batch_size` dropped from 10 to 2 in T2.2, so that two slow model calls were the most one invocation waited for. The first real cards showed what that cost: the jobs of a batch ran one after the other, and the queue adds consumers only between batches, so the cards of one sitting waited for each other. Since then the jobs of a batch run side by side and a batch holds four.
 - **A photo import with two photos** makes one job, not two. The cook says which photos are one card when capturing them.
 
 ### 4.2 The model runner
@@ -234,6 +234,16 @@ Each task is one pull request with its ID in the title. Hours are estimates and 
   - *A fault found on the way.* `keepPicture()`, which stores the picture a link's page names, used to clear every asset of the job first. It now clears only an earlier cover, or it would have deleted a card's photos.
   - *A card's place in its sitting* is new: the T2.5 review found that a failed card could not say which card it was. The page sends each card's number, the list calls an untitled card by it, and after a sitting is partly sent the cards left in the pile keep their numbers.
   - *Still open, from the brief's "Unresolved".* The pile is held in the page's memory, not on the device. If a phone short of memory throws the page away while its camera is open, the pile is lost; whether that happens is for the owner's walk-through to show.
+- **The owner's checks, 23 and 24 Nov 2026.** These close what the entries above list as not checked, except where said.
+  - *T2.1:* "Check the AI connection" answered from the deployed app; the gateway's spend limit is set at $5 a month; and the gateway's log of a call shows its model, time and cost and nothing of what was asked or answered, so the request not to keep content is honoured through the binding.
+  - *T2.3:* three pasted recipes each landed in review as written up by AI, as expected.
+  - *T2.4:* three wiki pages with no recipe data each landed in review as written up by AI, one with a discrepancy in the page rightly flagged. A page of a site that answers apps with a page of script and no words failed with `no_recipe`, as designed. The bookmark was checked on a recipe site.
+  - *T2.5:* the walk-through of the capture screen passed on an iPhone. **Not checked on an Android phone:** the owner has none.
+  - *T2.6:* two photographed cards were read, reviewed and saved. The rest of the five is the next entry; the count of five printed and five handwritten is still to do.
+- **The first real cards** (the owner, 24 Nov 2026). Photographed cards came through a real model, which settled that the models take the pictures as sent. But a sitting of five took over twenty minutes and one card failed: the reader was given up on after a minute and a half, four times running. Three things changed:
+  - *The reader is waited for three minutes*, twice as long as other calls (`READ_TIMEOUT_MS` in `imports/photo.ts`). Why it needs that long is not yet known: the model reasons before it answers and the app sends it nothing to say how hard, and the photos are sent at the size the phone made them. Either may be the cause, and the record below is how it will be found out.
+  - *The jobs of a batch run side by side*, four to a batch, as above.
+  - *A call that gave no answer is recorded too*, with how long it was waited for and the service's own words, and `GET /imports/{id}` shows a job's calls: the task, the model, the time and the tokens read and written. Nothing that was asked or answered is in them. Before this, nothing said why an import had been slow.
 - **The deploy token** needs no new permission. The staging deploy that followed T2.1, on 23 Nov 2026, uploaded the Worker with its `AI` binding using the token as it was.
 
 Suggested order: T2.1 and T2.5 first, since both wait on the owner. Then T2.2 to T2.4, which give a working import with no camera in the way. Then T2.6, T2.7 and T2.8. T2.11 as soon as cards can be imported, because its result decides the models every later task is judged with. T2.9 and T2.10 can follow the gate if time is short: neither is in the gate's twenty cards.

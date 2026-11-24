@@ -30,6 +30,12 @@ const Unsure = CardReading.shape.unsure;
 const SHOWN_AS_IT_IS = new Set(["image/jpeg", "image/png"]);
 /** A photo as the phone sent it is about a megabyte. One much larger is shown in its smaller size. */
 const SHOWN_AS_IT_IS_BYTES = 4 * 1024 * 1024;
+/**
+ * How long the reader is waited for. Reading photographs is the slowest thing
+ * asked of a model: on the first real cards it often ran past the minute and
+ * a half that other calls get, and was given up on while still at work.
+ */
+const READ_TIMEOUT_MS = 180_000;
 
 const unreadable = (message = "Nothing could be read from the photo.") =>
   new PermanentImportError("unreadable", message);
@@ -86,6 +92,7 @@ export const importFromPhoto: ImportHandler = async (job, _input, tools, work) =
     schema: CardReading,
     schemaName: "card_reading",
     maxTokens: 8000,
+    timeoutMs: READ_TIMEOUT_MS,
   });
   const sides = answer.value.sides.map((side) => side.trim()).filter((side) => side !== "");
   if (!answer.value.readable || sides.length === 0) {

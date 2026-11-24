@@ -1,7 +1,7 @@
 import { checkDraft, type ImportJob, type ImportJobKind, RecipeDraft } from "@recipeflare/schema";
 import { z } from "zod";
 import { AiFailure } from "../ai/failure";
-import type { AiRunner, AiSettings } from "../ai/runner";
+import type { AiAnswer, AiRequest, AiRunner, AiSettings } from "../ai/runner";
 import {
   type AiCallRecord,
   advanceImportJob,
@@ -147,7 +147,7 @@ function aiForJob(tools: ImportTools, jobId: string, calls: AiCallRecord[]): AiR
   const limit = Number(tools.env.AI_DAILY_IMPORTS?.trim() || DAILY_AI_IMPORTS);
   return {
     profile: () => tools.ai.profile(),
-    async run(request) {
+    async run<T>(request: AiRequest<T>) {
       if (calls.length === 0) {
         // A job that has already asked a model is let finish: stopping it
         // half-way would waste what it has spent.
@@ -156,7 +156,30 @@ function aiForJob(tools: ImportTools, jobId: string, calls: AiCallRecord[]): AiR
           throw new AiFailure("limit", false, "Today's allowance of AI imports is used up.");
         }
       }
-      const answer = await tools.ai.run(request);
+      const started = Date.now();
+      let answer: AiAnswer<T>;
+      try {
+        answer = await tools.ai.run(request);
+      } catch (error) {
+        // A call that gave no answer is kept too, with how long it was waited
+        // for: without it nobody can say afterwards why an import was slow.
+        // One that was never made (no such profile) has nothing to record.
+        if (error instanceof AiFailure && error.reason !== "settings") {
+          calls.push({
+            task: request.task,
+            profile: tools.ai.profile().name,
+            model: request.model ?? tools.ai.profile().models[request.task].id,
+            prompt: request.promptVersion ?? null,
+            milliseconds: Date.now() - started,
+            inputTokens: null,
+            outputTokens: null,
+            tries: 0,
+            at: new Date().toISOString(),
+            failed: `${error.reason}: ${error.message}`.slice(0, 300),
+          });
+        }
+        throw error;
+      }
       calls.push({
         task: answer.task,
         profile: answer.profile,
@@ -303,41 +326,57 @@ export async function runImportJob(
 /** True for the dead-letter queue, whatever the install calls its queues. */
 const isDeadLetterQueue = (name: string) => name.endsWith("-dlq");
 
+/** One message of a batch: run its job, then acknowledge it or ask for it back. */
+async function handleImportMessage(
+  message: Message<unknown>,
+  deadLetter: boolean,
+  handlers: ImportHandlers,
+  tools: ImportTools,
+): Promise<void> {
+  const parsed = ImportMessage.safeParse(message.body);
+  if (!parsed.success) {
+    // Not one of ours. Bringing it back would not make it one.
+    message.ack();
+    return;
+  }
+  try {
+    if (deadLetter) {
+      await failImportJob(tools.env.DB, parsed.data.jobId, {
+        code: "retries_exhausted",
+        message: "The import was tried several times and did not work.",
+      });
+      message.ack();
+      return;
+    }
+    const outcome = await runImportJob(parsed.data.jobId, handlers, tools, parsed.data.stage);
+    if (outcome.ack) {
+      message.ack();
+    } else {
+      message.retry({ delaySeconds: outcome.delaySeconds });
+    }
+  } catch (error) {
+    // The database itself failed. The message comes back and the run is tried again.
+    console.error("import: could not run a job", error);
+    message.retry({ delaySeconds: 60 });
+  }
+}
+
 /**
  * The Worker's queue handler. Each message is acknowledged or retried by
  * itself, so one bad job cannot make the whole batch come back.
+ *
+ * The jobs of a batch run side by side, not one after another. Nearly all of
+ * a job's time is spent waiting for a model, and the queue adds consumers only
+ * between batches: run in turn, the cards of one sitting wait for each other,
+ * and the last of five waits for the four before it.
  */
 export async function handleImportBatch(
   batch: MessageBatch<unknown>,
   handlers: ImportHandlers,
   tools: ImportTools,
 ): Promise<void> {
-  for (const message of batch.messages) {
-    const parsed = ImportMessage.safeParse(message.body);
-    if (!parsed.success) {
-      // Not one of ours. Bringing it back would not make it one.
-      message.ack();
-      continue;
-    }
-    if (isDeadLetterQueue(batch.queue)) {
-      await failImportJob(tools.env.DB, parsed.data.jobId, {
-        code: "retries_exhausted",
-        message: "The import was tried several times and did not work.",
-      });
-      message.ack();
-      continue;
-    }
-    try {
-      const outcome = await runImportJob(parsed.data.jobId, handlers, tools, parsed.data.stage);
-      if (outcome.ack) {
-        message.ack();
-      } else {
-        message.retry({ delaySeconds: outcome.delaySeconds });
-      }
-    } catch (error) {
-      // The database itself failed. The message comes back and the run is tried again.
-      console.error("import: could not run a job", error);
-      message.retry({ delaySeconds: 60 });
-    }
-  }
+  const deadLetter = isDeadLetterQueue(batch.queue);
+  await Promise.all(
+    batch.messages.map((message) => handleImportMessage(message, deadLetter, handlers, tools)),
+  );
 }
