@@ -145,6 +145,20 @@ export const standInBinding: AiBinding = {
             note: null,
           })),
         });
+      case "organizer_choice": {
+        // Of the names it was given, those the recipe's own text has in it.
+        const [given = "", recipe = ""] = asked(inputs).split("\n\nThe recipe:\n\n");
+        const has = (name: string) => recipe.toLowerCase().includes(name.toLowerCase());
+        const under = (heading: string) =>
+          (new RegExp(`${heading}:\\n([\\s\\S]*?)(?:\\n\\n|$)`).exec(given)?.[1] ?? "")
+            .split("\n")
+            .filter((name) => name.trim() !== "" && has(name));
+        return answer({
+          categories: under("Categories"),
+          tags: under("Tags"),
+          tools: under("Tools"),
+        });
+      }
       case "recipe_reading":
         return answer(readByRule(asked(inputs).replace(/^The text:\s*/, "")));
       default:

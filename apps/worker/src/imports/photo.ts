@@ -4,8 +4,9 @@ import { READ_PROMPT } from "../ai/prompts";
 import type { AiImage } from "../ai/runner";
 import { assetsOfImport } from "../db/assets";
 import { assetKey } from "../media";
-import { buildDraft, doubtsAbout } from "./build";
+import { doubtsAbout } from "./build";
 import { afterBuild, detailsStage } from "./details";
+import { draftWithOrganizers } from "./organizers";
 import { type ImportHandler, NextStage, PermanentImportError } from "./runner";
 
 /**
@@ -72,7 +73,7 @@ export const importFromPhoto: ImportHandler = async (job, _input, tools, work) =
   }
   if (job.stage === "build") {
     const text = typeof work.text === "string" ? work.text : "";
-    const draft = await buildDraft(text, tools.ai);
+    const draft = await draftWithOrganizers(text, tools);
     const unsure = Unsure.safeParse(work.unsure);
     return afterBuild(
       { ...draft, doubts: [...draft.doubts, ...doubtsAbout(draft, unsure.data ?? [])] },

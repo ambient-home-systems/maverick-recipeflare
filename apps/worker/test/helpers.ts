@@ -129,14 +129,32 @@ export const chatAnswer = (content: unknown, extra: Record<string, unknown> = {}
  * Stands in for the Workers AI binding. Each call takes the next of
  * `answers`: an `Error` is thrown, anything else is returned as the service's
  * answer. The last answer is repeated.
+ *
+ * The question of which organizers fit a recipe is asked beside the one that
+ * writes it up, so its place in the order is not fixed. It is kept apart: it
+ * is answered with `organizers` (by default, none fit), and its calls are
+ * listed under `organizerCalls`, so a test that is not about organizers is
+ * not disturbed by it.
  */
-export function standInBinding(answers: unknown[]): AiBinding & { calls: AiCall[] } {
+export function standInBinding(
+  answers: unknown[],
+  organizers: unknown = chatAnswer({ categories: [], tags: [], tools: [] }),
+): AiBinding & { calls: AiCall[]; organizerCalls: AiCall[] } {
   const calls: AiCall[] = [];
+  const organizerCalls: AiCall[] = [];
   return {
     calls,
+    organizerCalls,
     aiGatewayLogId: "log-1",
     lastRequestHttpStatusCode: null,
     run(model, inputs, options) {
+      const asked = inputs as { response_format?: { json_schema?: { name?: string } } };
+      if (asked.response_format?.json_schema?.name === "organizer_choice") {
+        organizerCalls.push({ model, inputs, options });
+        return organizers instanceof Error
+          ? Promise.reject(organizers)
+          : Promise.resolve(organizers);
+      }
       calls.push({ model, inputs, options });
       const answer = answers[Math.min(calls.length, answers.length) - 1];
       return answer instanceof Error ? Promise.reject(answer) : Promise.resolve(answer);

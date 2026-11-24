@@ -143,6 +143,9 @@ const lemonBarsDraft = RecipeDraft.parse({
       ],
     },
   ],
+  // A model's guesses among the household's own. Review offers them; none is chosen.
+  suggestedCategories: ["Dessert"],
+  suggestedTags: ["Family favorite", "Holiday"],
   doubts: [
     {
       where: "ingredient:7",

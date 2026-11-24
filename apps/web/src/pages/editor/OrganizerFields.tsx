@@ -34,6 +34,7 @@ export function OrganizerFields({
   stockFor,
   onCreate,
   suggestions,
+  offeredOwn,
   error,
 }: {
   organizers: Organizer[];
@@ -44,6 +45,8 @@ export function OrganizerFields({
   onCreate: (kind: OrganizerKind, name: string) => string;
   /** Names found by an import that the household does not have. Offered, never chosen for the cook. */
   suggestions?: Partial<Record<OrganizerKind, string[]>>;
+  /** The household's own organizers that a model suggested, by ID. Offered until the cook adds one. */
+  offeredOwn?: Partial<Record<OrganizerKind, string[]>>;
   error?: string;
 }) {
   const [picking, setPicking] = useState<OrganizerKind | null>(null);
@@ -64,6 +67,10 @@ export function OrganizerFields({
         const offered = (suggestions?.[kind] ?? []).filter(
           (name) => !all.some((organizer) => organizer.name.toLowerCase() === name.toLowerCase()),
         );
+        // A model's guesses among the household's own: shown until one is added, and again if it is taken off.
+        const own = (offeredOwn?.[kind] ?? [])
+          .flatMap((id) => all.find((organizer) => organizer.id === id) ?? [])
+          .filter((organizer) => !ids[kind].includes(organizer.id));
         return (
           <div key={kind}>
             <h3 className="mb-1.5 text-sm font-semibold">{title}</h3>
@@ -85,6 +92,32 @@ export function OrganizerFields({
                 </button>
               </li>
             </ul>
+            {own.length > 0 ? (
+              <div className="mt-2">
+                <p className="text-sm">
+                  {own.length === 1
+                    ? "AI suggests this one of yours. Press it to add it."
+                    : "AI suggests these of yours. Press one to add it."}
+                </p>
+                <ul
+                  className="mt-1.5 flex flex-wrap gap-2"
+                  aria-label={`Suggested ${title.toLowerCase()}`}
+                >
+                  {own.map((organizer) => (
+                    <li key={organizer.id}>
+                      <button
+                        type="button"
+                        className={SMALL_BUTTON}
+                        onClick={() => toggle(kind, organizer.id)}
+                      >
+                        <Plus aria-hidden="true" size="1.125rem" />
+                        {organizer.name}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
             {offered.length > 0 ? (
               <div className="mt-2">
                 <p className="text-sm">

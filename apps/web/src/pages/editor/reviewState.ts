@@ -19,6 +19,8 @@ export type PreparedReview = {
   flaggedParts: string[];
   /** Organizer names from the source that the household does not have. */
   suggestions: Record<OrganizerKind, string[]>;
+  /** The household's own organizers that a model suggested, by ID. Offered, never chosen for the cook. */
+  offered: Record<OrganizerKind, string[]>;
 };
 
 const PART: Record<string, string> = {
@@ -44,8 +46,12 @@ export function prepareReview(
   lists: DraftLists,
   parse: LineParser,
   assets: Asset[] = [],
+  /** True when a model wrote the draft: its organizers are then guesses, offered and not chosen. */
+  byAi = false,
 ): PreparedReview {
-  const conversion = draftToInput(draft, lists);
+  const conversion = draftToInput(draft, lists, undefined, {
+    organizers: byAi ? "offer" : "choose",
+  });
   const value = fromInput(conversion.input, assets);
   // The draft's lines, in the order the editor's line rows are in.
   const drafted = draft.ingredientSections.flatMap((section) => section.items);
@@ -161,5 +167,6 @@ export function prepareReview(
       ...new Set(missing.flatMap((issue) => PART[issue.code] ?? []).concat(doubtedParts)),
     ],
     suggestions: conversion.suggestions,
+    offered: conversion.offered,
   };
 }

@@ -314,7 +314,8 @@ export function MockReview() {
     }
     const lists = { units: fixtureUnits, foods: fixtureFoods, organizers: fixtureOrganizers };
     if (fromText) {
-      return prepareReview(draft, lists, ingredientParser(lists));
+      // A model wrote this one, so the organizers it suggests are offered, not chosen.
+      return prepareReview(draft, lists, ingredientParser(lists), [], true);
     }
     // The page's main picture arrives as the cover, and can be removed like any other.
     const cover: Asset = {
@@ -346,6 +347,7 @@ export function MockReview() {
     flaggedRows: prepared.flaggedRows,
     flaggedParts: prepared.flaggedParts,
     suggestions: prepared.suggestions,
+    offered: prepared.offered,
     duplicate:
       scene === "duplicate"
         ? {
