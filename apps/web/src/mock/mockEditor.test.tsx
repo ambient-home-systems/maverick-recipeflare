@@ -26,6 +26,68 @@ const typeLine = (text: string) => {
 };
 const sheet = (name: string | RegExp) => within(screen.getByRole("dialog", { name }));
 
+describe("a line the app could not read", () => {
+  const open = (text: string) =>
+    fireEvent.click(screen.getByRole("button", { name: startsWith(`Edit ${text}`) }));
+
+  it("offers Read with AI, fills in what was read, and says a model read it", async () => {
+    await renderAt("/mock/new");
+    typeLine("Juice of 2 lemons");
+    expect(read(rowOf("Juice of 2 lemons") as HTMLElement)).toBe("as written");
+
+    open("Juice of 2 lemons");
+    fireEvent.click(screen.getByRole("button", { name: "Read with AI" }));
+    // While the model is asked the button says so and cannot be pressed again.
+    expect((screen.getByRole("button", { name: "Reading…" }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+
+    expect(
+      await screen.findByText("Read by AI. Check it against the line. Keep as written undoes it."),
+    ).toBeTruthy();
+    expect((screen.getByLabelText("Amount") as HTMLInputElement).value).toBe("2");
+    // Read is no longer offered: the line is not as written any more.
+    expect(screen.queryByRole("button", { name: "Read with AI" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    expect(read(rowOf("Juice of 2 lemons") as HTMLElement)).toBe("2 · lemon");
+  });
+
+  it("is undone by Keep as written", async () => {
+    await renderAt("/mock/new");
+    typeLine("Juice of 2 lemons");
+    open("Juice of 2 lemons");
+    fireEvent.click(screen.getByRole("button", { name: "Read with AI" }));
+    await screen.findByText(/^Read by AI\./);
+
+    fireEvent.click(screen.getByRole("button", { name: "Keep as written" }));
+
+    expect(screen.queryByText(/^Read by AI\./)).toBeNull();
+    expect(screen.getByRole("button", { name: "Read with AI" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    expect(read(rowOf("Juice of 2 lemons") as HTMLElement)).toBe("as written");
+  });
+
+  it("says so when the model has nothing to add, and leaves the line as written", async () => {
+    await renderAt("/mock/new");
+    typeLine("Salt and pepper to taste");
+    open("Salt and pepper to taste");
+    fireEvent.click(screen.getByRole("button", { name: "Read with AI" }));
+
+    expect(
+      await screen.findByText("AI could not read any more from this line. It stays as written."),
+    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Read with AI" })).toBeTruthy();
+  });
+
+  it("is not offered for a line the app read itself", async () => {
+    await renderAt("/mock/new");
+    typeLine("2 cups flour");
+    open("2 cups flour");
+
+    expect(screen.queryByRole("button", { name: "Read with AI" })).toBeNull();
+  });
+});
+
 describe("typing a new recipe", () => {
   it("starts empty, with Save and Cancel in reach", async () => {
     await renderAt("/mock/new");
@@ -476,6 +538,20 @@ describe("reviewing an import", () => {
     expect(original.textContent).toContain("1/2 tsp baking powdr");
     // No page stands behind it, so none is offered.
     expect(screen.queryByRole("link", { name: /Open the page/ })).toBeNull();
+  });
+
+  it("points out a line an AI model read, with what it read", async () => {
+    await renderAt("/mock/review?scene=pasted");
+
+    // The rules could not read the line; the model's reading is shown, and flagged.
+    const row = rowOf("Zest of 1 lemon") as HTMLElement;
+    expect(read(row)).toBe("1 · lemon · Zest of");
+    expect(row.textContent).toContain("check");
+    expect(
+      screen.getByRole("button", {
+        name: "1 ingredient line was read by AI. Check it against the original.",
+      }),
+    ).toBeTruthy();
   });
 
   it("says when the link is already a recipe, and still allows saving", async () => {

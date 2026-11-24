@@ -422,6 +422,97 @@ describe("typing a new recipe", () => {
   });
 });
 
+describe("reading a line with AI", () => {
+  /** Answers the editor's question about a line, in front of the rest of the API. */
+  function aiAnswers(answer: (lines: string[]) => Response | Promise<Response>) {
+    const rest = globalThis.fetch;
+    const asked: string[][] = [];
+    vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (new URL(String(input), "http://localhost").pathname === "/api/v1/ai/ingredients") {
+        const { lines } = JSON.parse(String(init?.body)) as { lines: string[] };
+        asked.push(lines);
+        return answer(lines);
+      }
+      return rest(input, init);
+    });
+    return asked;
+  }
+  const ask = async (line: string) => {
+    await renderAt("/recipes/new");
+    await editorOpen();
+    typeLine(line);
+    fireEvent.click(screen.getByRole("button", { name: startsWith(`Edit ${line}`) }));
+    fireEvent.click(screen.getByRole("button", { name: "Read with AI" }));
+  };
+
+  it("sends the line, and matches what comes back to the household's own foods and units", async () => {
+    fakeApi();
+    const asked = aiAnswers(() =>
+      Response.json({
+        lines: [{ quantity: 2, unitName: null, foodName: "lemons", note: "Juice of" }],
+      }),
+    );
+    await ask("Juice of 2 lemons");
+
+    expect(await screen.findByText(/^Read by AI\./)).toBeTruthy();
+    expect(asked).toEqual([["Juice of 2 lemons"]]);
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    // "lemons" is the household's lemon; nothing was created to say so.
+    expect(read(rowOf("Juice of 2 lemons"))).toBe("2 · lemon · Juice of");
+  });
+
+  it("carries a food the household lacks as a new food, to be confirmed at save", async () => {
+    const api = fakeApi();
+    aiAnswers(() =>
+      Response.json({
+        lines: [{ quantity: 1, unitName: null, foodName: "quince", note: "Zest of" }],
+      }),
+    );
+    await ask("Zest of 1 quince");
+    await screen.findByText(/^Read by AI\./);
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+
+    expect(read(rowOf("Zest of 1 quince"))).toBe("1 · quince · new · Zest of");
+    expect(api.sent("POST", "/foods")).toEqual([]);
+  });
+
+  it("says so when the model had nothing to add", async () => {
+    fakeApi();
+    aiAnswers(() => Response.json({ lines: [null] }));
+    await ask("Salt and pepper to taste");
+
+    expect(
+      await screen.findByText("AI could not read any more from this line. It stays as written."),
+    ).toBeTruthy();
+  });
+
+  it.each([
+    [503, "ai_unavailable", "The AI could not be reached. Try again later."],
+    [429, "ai_limit", "The allowance for AI is used up for now. Try again later."],
+    [502, "ai_setup", "The line could not be read with AI."],
+  ])("says what went wrong when the answer is %i %s", async (status, code, words) => {
+    fakeApi();
+    aiAnswers(() => Response.json({ error: { code, message: code } }, { status }));
+    await ask("Juice of 2 lemons");
+
+    expect((await screen.findByRole("alert")).textContent).toBe(words);
+    // The line is as it was, and can be asked about again.
+    expect(screen.getByRole("button", { name: "Read with AI" })).toBeTruthy();
+  });
+
+  it("says it needs a connection when there is none", async () => {
+    fakeApi();
+    aiAnswers(() => {
+      throw new TypeError("Failed to fetch");
+    });
+    await ask("Juice of 2 lemons");
+
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "Reading with AI needs a connection.",
+    );
+  });
+});
+
 describe("leaving the editor", () => {
   it("goes at once when nothing was typed", async () => {
     fakeApi();

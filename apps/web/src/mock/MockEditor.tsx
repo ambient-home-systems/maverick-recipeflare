@@ -2,6 +2,7 @@ import {
   type Asset,
   type Food,
   ingredientParser,
+  matchReading,
   newId,
   type Organizer,
   type OrganizerKind,
@@ -18,7 +19,12 @@ import {
 } from "@recipeflare/schema/fixtures";
 import { getRouteApi, Link, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useMemo, useRef, useState } from "react";
-import { type EditorValue, emptyEditorValue, fromRecipe } from "../pages/editor/editorState";
+import {
+  type EditorValue,
+  emptyEditorValue,
+  fromRecipe,
+  type LineReading,
+} from "../pages/editor/editorState";
 import { RecipeEditorScreen, type Review } from "../pages/editor/RecipeEditorScreen";
 import { prepareReview } from "../pages/editor/reviewState";
 import { EmptyState } from "../ui/Notice";
@@ -86,6 +92,25 @@ function useMockLists() {
     lists: { units, foods, organizers },
     parse: useMemo(() => ingredientParser({ units, foods: fixtureFoods }), [units]),
     stockFor: (categoryId: string) => stocks.get(categoryId) ?? "plain",
+    // Stands in for the model: the line's first number as its amount and its
+    // last word as its food, after a moment, so the waiting state can be seen.
+    // A line with no number in it gets no reading.
+    readLine: async (text: string): Promise<LineReading> => {
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      const amount = /\d+/.exec(text)?.[0];
+      const read = amount
+        ? matchReading(
+            {
+              quantity: Number(amount),
+              unitName: null,
+              foodName: text.trim().split(/\s+/).at(-1) ?? null,
+              note: "",
+            },
+            { units, foods },
+          )
+        : null;
+      return read ? { read } : { read: null, why: "nothing" };
+    },
     addedUrl: (asset: Asset) => added.current.get(asset.id),
     onCreateUnit: (name: string) => {
       const id = newId();
@@ -201,6 +226,7 @@ export function MockEdit() {
         photoUrl={(asset) => mock.addedUrl(asset) ?? placeholderPhoto(recipe, asset)}
         onAddPhotos={mock.onAddPhotos}
         onCreateUnit={mock.onCreateUnit}
+        onReadLine={mock.readLine}
         onCreateOrganizer={mock.onCreateOrganizer}
         onSave={back}
         onLeave={back}
@@ -253,6 +279,7 @@ export function MockNew() {
         photoUrl={mock.addedUrl}
         onAddPhotos={mock.onAddPhotos}
         onCreateUnit={mock.onCreateUnit}
+        onReadLine={mock.readLine}
         onCreateOrganizer={mock.onCreateOrganizer}
         onSave={leave}
         onLeave={leave}
@@ -369,6 +396,7 @@ export function MockReview() {
         }
         onAddPhotos={mock.onAddPhotos}
         onCreateUnit={mock.onCreateUnit}
+        onReadLine={mock.readLine}
         onCreateOrganizer={mock.onCreateOrganizer}
         onSave={leave}
         onLeave={leave}

@@ -1,9 +1,10 @@
 import { formatQuantity } from "@recipeflare/schema";
-import { ChevronDown, Plus, Rows3 } from "lucide-react";
+import { ChevronDown, Plus, Rows3, ScanText } from "lucide-react";
 import { useRef, useState } from "react";
 import { Button } from "../../ui/Button";
 import { Mark, TextField } from "../../ui/Field";
 import { FIELD } from "../../ui/field";
+import { Notice } from "../../ui/Notice";
 import { Picker } from "../../ui/Picker";
 import {
   type EditorLists,
@@ -11,6 +12,7 @@ import {
   type IngredientListRow,
   isAsWritten,
   type LineParser,
+  type LineReader,
   type LineRow,
   lineSummary,
   moveRow,
@@ -21,6 +23,17 @@ import {
 } from "./editorState";
 import { ClosedRow, DividerClosed, DividerOpen, RowActions, SMALL_BUTTON } from "./rowParts";
 import { SortableRows } from "./SortableRows";
+
+/** What the panel says after a model was asked to read the line. */
+const READING_SAID: Record<string, { text: string; problem?: boolean }> = {
+  read: { text: "Read by AI. Check it against the line. Keep as written undoes it." },
+  nothing: { text: "AI could not read any more from this line. It stays as written." },
+  offline: { text: "Reading with AI needs a connection.", problem: true },
+  "signed-out": { text: "Sign in again to read this line with AI.", problem: true },
+  busy: { text: "The AI could not be reached. Try again later.", problem: true },
+  limit: { text: "The allowance for AI is used up for now. Try again later.", problem: true },
+  failed: { text: "The line could not be read with AI.", problem: true },
+};
 
 const PICK =
   "transition-rf flex min-h-touch w-full items-center justify-between gap-2 rounded-md border border-rule-strong bg-surface px-3 text-left text-base hover:bg-surface-sunk";
@@ -33,11 +46,14 @@ function LinePanel({
   error,
   onChange,
   onCreateUnit,
+  readLine,
   actions,
 }: {
   row: LineRow;
   lists: EditorLists;
   parse: LineParser;
+  /** Asks a model to read the line. Without it the panel does not offer to. */
+  readLine?: LineReader;
   error?: string;
   onChange: (row: LineRow) => void;
   onCreateUnit: (name: string) => string;
@@ -50,6 +66,31 @@ function LinePanel({
   const amountRead = amount.trim() === "" ? null : readQuantity(amount);
   const amountBad = amount.trim() !== "" && amountRead?.rest.trim() !== "";
   const asWritten = isAsWritten(row);
+  const [asking, setAsking] = useState(false);
+  const [said, setSaid] = useState<keyof typeof READING_SAID | null>(null);
+  // The line as it is now, so that an answer about an earlier wording is let go.
+  const text = useRef(row.text);
+  text.current = row.text;
+  const askAi = async () => {
+    if (!readLine) {
+      return;
+    }
+    const asked = row.text;
+    setAsking(true);
+    setSaid(null);
+    const answer = await readLine(asked.trim());
+    setAsking(false);
+    if (text.current !== asked) {
+      return;
+    }
+    if (answer.read) {
+      onChange({ ...row, ...answer.read });
+      setAmount(answer.read.quantity ? formatQuantity(answer.read.quantity) : "");
+      setSaid("read");
+    } else {
+      setSaid(answer.why);
+    }
+  };
 
   return (
     <div className="py-3 pr-4 pl-1">
@@ -61,6 +102,7 @@ function LinePanel({
         hint="Kept exactly as you type it. Changing it reads the line again."
         onChange={(text) => {
           // The words changed, so what was read from them is read afresh.
+          setSaid(null);
           const next = parse(text.trim());
           onChange({
             ...row,
@@ -80,6 +122,27 @@ function LinePanel({
           What the app read
           {asWritten ? <Mark>as written</Mark> : null}
         </legend>
+        {asWritten && readLine && row.text.trim() !== "" ? (
+          <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+            <p className="min-w-0 flex-1 basis-48 text-sm">
+              The app could not read this line. An AI model can try, when you ask.
+            </p>
+            <button
+              type="button"
+              className={SMALL_BUTTON}
+              disabled={asking}
+              onClick={() => void askAi()}
+            >
+              <ScanText aria-hidden="true" size="1.125rem" />
+              {asking ? "Reading…" : "Read with AI"}
+            </button>
+          </div>
+        ) : null}
+        {said ? (
+          <div className="mb-3">
+            <Notice problem={READING_SAID[said]?.problem}>{READING_SAID[said]?.text}</Notice>
+          </div>
+        ) : null}
         <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-3 gap-y-3">
           <TextField
             label="Amount"
@@ -152,6 +215,7 @@ function LinePanel({
           disabled={asWritten}
           onClick={() => {
             setAmount("");
+            setSaid(null);
             onChange({
               ...row,
               quantity: null,
@@ -212,11 +276,14 @@ export function IngredientList({
   errors,
   flagged = [],
   onCreateUnit,
+  readLine,
 }: {
   rows: IngredientListRow[];
   onChange: (rows: IngredientListRow[]) => void;
   lists: EditorLists;
   parse: LineParser;
+  /** Asks a model to read a line the rules could not. Without it no line offers to. */
+  readLine?: LineReader;
   errors: FieldErrors;
   /** Rows the cook should look at, by ID: used in review. */
   flagged?: readonly string[];
@@ -287,6 +354,7 @@ export function IngredientList({
                 error={error}
                 onChange={replace}
                 onCreateUnit={onCreateUnit}
+                readLine={readLine}
                 actions={actions}
               />
             );

@@ -6,6 +6,7 @@ import {
   LabelListResponse,
   OrganizerListResponse,
   RECIPES_PER_PAGE,
+  ReadIngredientsResponse,
   Recipe,
   RecipeListResponse,
   type RecipeSort,
@@ -219,6 +220,17 @@ export type StartImport =
   | { kind: "text"; text: string }
   // One photographed card: its sides, front first, already uploaded.
   | { kind: "photo"; photos: string[]; card?: number };
+
+/**
+ * Asks a model to read ingredient lines the rules could not. Nothing is kept
+ * by it and nothing it answers is stale later, so it touches no cached data.
+ */
+export function useReadLines() {
+  return useMutation({
+    mutationFn: (lines: string[]) =>
+      api("/ai/ingredients", { method: "POST", body: { lines }, schema: ReadIngredientsResponse }),
+  });
+}
 
 /** Starts an import. The list shows it from then on. */
 export function useStartImport() {

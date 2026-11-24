@@ -17,6 +17,7 @@ import {
   type EditorValue,
   isDirty,
   type LineParser,
+  type LineReader,
   NUTRITION_FIELDS,
 } from "./editorState";
 import { IngredientList } from "./IngredientList";
@@ -63,6 +64,8 @@ type RecipeEditorScreenProps = {
   initial: EditorValue;
   lists: EditorLists;
   parse: LineParser;
+  /** Asks a model to read an ingredient line the rules could not. Without it no line offers to. */
+  onReadLine?: LineReader;
   stockFor: (categoryId: string) => Stock;
   photoUrl: (asset: Asset) => string | undefined;
   /** Adds photos or attachments from the device. Without it the editor has no section for them. */
@@ -263,6 +266,7 @@ export function RecipeEditorScreen({
   initial,
   lists,
   parse,
+  onReadLine,
   stockFor,
   photoUrl,
   onAddPhotos,
@@ -524,6 +528,7 @@ export function RecipeEditorScreen({
           errors={errors}
           flagged={review?.flaggedRows}
           onCreateUnit={onCreateUnit}
+          readLine={onReadLine}
         />
       </div>
 

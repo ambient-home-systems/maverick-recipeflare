@@ -56,7 +56,7 @@ export function importStatus(job: ImportJob): string {
     case "running":
       // A link is read as the page states it, and a card by a model that reads
       // its photos. Then, for a card and for text, a model writes the recipe up.
-      if (job.kind === "text" || job.stage === "build") {
+      if (job.kind === "text" || job.stage === "build" || job.stage === "details") {
         return "Writing it up";
       }
       return job.kind === "photo" ? "Reading the card" : "Reading the page";
