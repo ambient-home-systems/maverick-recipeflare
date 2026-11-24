@@ -80,12 +80,13 @@ export function validateMockEditorSearch(raw: Record<string, unknown>): {
   return scene === "editing" ? {} : { scene };
 }
 
-export const REVIEW_SCENES = ["link", "duplicate", "pasted", "card"] as const;
+export const REVIEW_SCENES = ["link", "duplicate", "pasted", "foreign", "card"] as const;
 export type ReviewScene = (typeof REVIEW_SCENES)[number];
 export const REVIEW_SCENE_LABELS: Record<ReviewScene, string> = {
   link: "From a link",
   duplicate: "Link already saved",
   pasted: "From pasted text",
+  foreign: "In another language",
   card: "From a card (Phase 2)",
 };
 

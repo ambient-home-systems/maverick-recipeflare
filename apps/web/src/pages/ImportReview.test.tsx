@@ -5,6 +5,7 @@ import {
   fixtureOrganizers,
   fixtureRecipes,
   fixtureUnits,
+  importForeign,
   importNeedsReview,
   importPastedText,
   importRunning,
@@ -41,6 +42,7 @@ function fakeApi(
     assets?: Asset[];
     refuseStart?: boolean;
     refuseDiscard?: boolean;
+    refuseTranslate?: boolean;
   } = {},
 ) {
   const jobs = new Map((options.jobs ?? [importNeedsReview]).map((job) => [job.id, job]));
@@ -99,6 +101,16 @@ function fakeApi(
       };
       jobs.set(job.id, job);
       return Response.json(job, { status: 202 });
+    }
+    if (method === "POST" && path.endsWith("/translate")) {
+      const job = jobs.get(path.replace("/imports/", "").replace("/translate", ""));
+      if (options.refuseTranslate || !job) {
+        return refusal(options.refuseTranslate ? 500 : 404, "internal");
+      }
+      // Back in line, at the stage that translates it; its draft is put away meanwhile.
+      const waiting: ImportJob = { ...job, status: "queued", stage: "translate", result: null };
+      jobs.set(job.id, waiting);
+      return Response.json(waiting, { status: 202 });
     }
     if (method === "DELETE" && path.startsWith("/imports/")) {
       if (options.refuseDiscard) {
@@ -349,6 +361,64 @@ describe("reviewing an import an AI model wrote up from pasted text", () => {
     await waitFor(() => expect(router.state.location.pathname).toBe("/recipes/lemon-bars"));
     const saved = api.sent("POST", "/recipes")[0]?.body;
     expect(saved).toMatchObject({ title: "Lemon Bars", importJobId: importPastedText.id });
+  });
+});
+
+describe("reviewing a draft that is not in English", () => {
+  const FOREIGN = `/imports/${importForeign.id}/review`;
+  const offer = () => screen.queryByRole("button", { name: "Translate into English" });
+
+  it("offers to have it translated, and says what becomes of the words as written", async () => {
+    fakeApi({ jobs: [importForeign] });
+    await renderAt(FOREIGN);
+
+    expect((await reviewOpen()).value).toBe("Kartoffelsuppe");
+    expect(offer()).toBeTruthy();
+    expect(screen.getByText(/does not look to be in English/).textContent).toContain(
+      "The words as written are kept as a note on the recipe; anything changed here so far is not.",
+    );
+  });
+
+  it("sends it to be translated only when asked, and shows it on the list being translated", async () => {
+    const api = fakeApi({ jobs: [importForeign] });
+    const { router } = await renderAt(FOREIGN);
+    await reviewOpen();
+    expect(api.sent("POST")).toEqual([]);
+
+    fireEvent.click(offer() as HTMLElement);
+
+    await waitFor(() => expect(router.state.location.pathname).toBe("/"));
+    expect(api.sent("POST", `/imports/${importForeign.id}/translate`)).toHaveLength(1);
+    const imports = await screen.findByRole("list", { name: "Imports" });
+    expect(imports.textContent).toContain("Waiting to be translated");
+  });
+
+  it("says so on the list while it is being translated", async () => {
+    fakeApi({ jobs: [{ ...importForeign, status: "running", stage: "translate", result: null }] });
+    await renderAt("/");
+
+    const imports = await screen.findByRole("list", { name: "Imports" });
+    expect(imports.textContent).toContain("Translating it");
+  });
+
+  it("stays, and says so, when it could not be sent", async () => {
+    fakeApi({ jobs: [importForeign], refuseTranslate: true });
+    const { router } = await renderAt(FOREIGN);
+    await reviewOpen();
+
+    fireEvent.click(offer() as HTMLElement);
+
+    expect(await screen.findByText(/It was not sent to be translated/)).toBeTruthy();
+    expect(router.state.location.pathname).toBe(FOREIGN);
+    expect((screen.getByLabelText("Title") as HTMLInputElement).value).toBe("Kartoffelsuppe");
+  });
+
+  it("does not offer it for a draft that is in English", async () => {
+    fakeApi({ jobs: [importPastedText] });
+    await renderAt(`/imports/${importPastedText.id}/review`);
+    await reviewOpen();
+
+    expect(offer()).toBeNull();
   });
 });
 

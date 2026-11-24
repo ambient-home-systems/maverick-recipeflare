@@ -7,6 +7,7 @@ import {
   PermanentImportError,
   RetryableImportError,
 } from "./runner";
+import { translateStage } from "./translate";
 
 /**
  * Importing a recipe from a link, as docs/implementation-plan.md §7.3
@@ -490,6 +491,9 @@ function pictureAddress(value: string | null, page: URL): string | null {
  * the page's words go on to `build`, where a model copies the recipe out of them.
  */
 export const importFromUrl: ImportHandler = async (job, input, tools, work) => {
+  if (job.stage === "translate") {
+    return translateStage(work, tools);
+  }
   const url = checkedUrl(input.url);
 
   if (job.stage === "details") {

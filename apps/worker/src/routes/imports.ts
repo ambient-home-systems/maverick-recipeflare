@@ -1,9 +1,11 @@
 import {
+  draftText,
   Id,
   type ImportDetail,
   type ImportJob,
   type ImportListResponse,
   ImportRequest,
+  looksEnglish,
   SENT_PAGE_LIMITS,
 } from "@recipeflare/schema";
 import { type Context, Hono } from "hono";
@@ -19,6 +21,7 @@ import {
   listOpenImportJobs,
   loadImportJob,
   recipeFromLink,
+  requeueForTranslation,
   requeueImportJob,
 } from "../db/importJobs";
 import { errorBody, invalid, jsonBody, notFound } from "../http";
@@ -117,6 +120,23 @@ export const importRoutes = new Hono<AppEnv>()
     const id = idParam(c);
     const job = id ? await requeueImportJob(c.env.DB, id) : null;
     // Only a failed import can be tried again.
+    return job ? c.json(await enqueue(c, job), 202) : notFound(c);
+  })
+  // Asked for in review, of a draft that is not in English. One that is, is not sent.
+  .post("/:id/translate", async (c) => {
+    const id = idParam(c);
+    const waiting = id ? await loadImportJob(c.env.DB, id) : null;
+    const draft = waiting?.status === "needs_review" ? waiting.result?.draft : undefined;
+    if (!id || !waiting || !draft) {
+      return notFound(c);
+    }
+    const words = draftText(draft);
+    if (looksEnglish(words)) {
+      return c.json(errorBody("already_english", "This recipe is already in English"), 409);
+    }
+    // What the draft was made from is what review shows beside it. A draft
+    // read from a page's own data has no such text: its own words stand in.
+    const job = await requeueForTranslation(c.env.DB, id, waiting.result?.sourceText || words);
     return job ? c.json(await enqueue(c, job), 202) : notFound(c);
   })
   .delete("/:id", async (c) => {

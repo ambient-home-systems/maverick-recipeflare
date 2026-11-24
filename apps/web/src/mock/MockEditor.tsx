@@ -14,6 +14,7 @@ import {
   fixtureFoods,
   fixtureOrganizers,
   fixtureUnits,
+  importForeign,
   importNeedsReview,
   importPastedText,
 } from "@recipeflare/schema/fixtures";
@@ -305,8 +306,10 @@ export function MockReview() {
   const { scene = "link" } = reviewRoute.useSearch();
   const navigate = useNavigate();
   const mock = useMockLists();
-  const fromText = scene === "pasted";
-  const draft = (fromText ? importPastedText : importNeedsReview).result?.draft;
+  const foreign = scene === "foreign";
+  const fromText = scene === "pasted" || foreign;
+  const pasted = foreign ? importForeign : importPastedText;
+  const draft = (fromText ? pasted : importNeedsReview).result?.draft;
 
   const prepared = useMemo(() => {
     if (!draft) {
@@ -348,6 +351,8 @@ export function MockReview() {
     flaggedParts: prepared.flaggedParts,
     suggestions: prepared.suggestions,
     offered: prepared.offered,
+    // Nothing is sent from the mock: asking for a translation only leads back to the list.
+    onTranslate: foreign ? leave : undefined,
     duplicate:
       scene === "duplicate"
         ? {
@@ -373,7 +378,7 @@ export function MockReview() {
         ? {
             title: "Original",
             caption: "The text as you pasted it.",
-            text: importPastedText.result?.sourceText ?? undefined,
+            text: pasted.result?.sourceText ?? undefined,
             photos: [],
           }
         : {
@@ -422,6 +427,10 @@ export function MockReview() {
         <p className="mt-3 text-sm">
           “From pasted text” is a draft an AI model wrote up, with two things it was unsure of and
           the pasted text to check it against.
+        </p>
+        <p className="mt-3 text-sm">
+          “In another language” is a draft that is not in English, which review offers to have
+          translated. Here the offer only leads back to the list.
         </p>
         <p className="mt-3 text-sm">
           “From a card” shows where the photographed card will sit in Phase 2: it takes turns with

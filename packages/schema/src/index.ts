@@ -6,6 +6,7 @@ export * from "./format";
 export * from "./id";
 export * from "./import-job";
 export * from "./json-ld";
+export * from "./language";
 export * from "./lists";
 export * from "./matching";
 export * from "./name-key";

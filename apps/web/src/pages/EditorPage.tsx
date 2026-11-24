@@ -1,8 +1,10 @@
 import {
   type Asset,
+  draftText,
   type Food,
   type ImportDetail,
   ingredientParser,
+  looksEnglish,
   matchReading,
   newId,
   type Organizer,
@@ -262,6 +264,28 @@ function Editor({
     }
   };
 
+  // A draft that is not in English can be sent back to be translated. It
+  // leaves review for the list and comes back in English; what was corrected
+  // here in the meantime is not kept, and the offer says so.
+  const foreign = importing?.result ? !looksEnglish(draftText(importing.result.draft)) : false;
+  const translate = () => {
+    if (!importing) {
+      return;
+    }
+    leavingOnPurpose.current = true;
+    setProblem(undefined);
+    changeImport.mutate(
+      { id: importing.id, action: "translate" },
+      {
+        onSuccess: () => void navigate({ to: "/", search: {} }),
+        onError: () => {
+          leavingOnPurpose.current = false;
+          setProblem("It was not sent to be translated. It is still here; try again.");
+        },
+      },
+    );
+  };
+
   const pagePicture = importing?.assets.find((asset) => asset.role === "cover");
   const sourceText = importing?.result?.sourceText ?? null;
   const pasted = importing?.kind === "text";
@@ -282,6 +306,7 @@ function Editor({
           flaggedParts: prepared.flaggedParts,
           suggestions: prepared.suggestions,
           offered: prepared.offered,
+          onTranslate: foreign ? translate : undefined,
           duplicate: importing.duplicate
             ? {
                 title: importing.duplicate.title,

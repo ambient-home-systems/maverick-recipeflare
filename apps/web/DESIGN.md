@@ -517,6 +517,7 @@ A text box or a native select on card white: at least 2.75rem tall, 10 px radius
 - **Mark:** a small outlined word (body small, 600, `rule-strong` outline, 6 px corners) beside a label or on a row: "check" for something an import wants looked at, "new" for a food that will be created at save, "as written" for a line kept as typed, "cover" on the cover photo. A mark is a word, never a colour.
 - **Small button:** a quiet button at label size, 2.75rem tall with 0.75rem inside, for actions inside a row or a block: Up, Down, Delete, Add a note, Choose tags. Its icon is 18 px.
 - **Duration:** two short boxes with "hr" and "min" after them under one legend.
+- **Translate (review):** a notice band above the Recipe and Original switch, with a languages icon, saying the draft does not look to be in English and what becomes of the words as written, and under the words an underlined button, "Translate into English", as the notice for a link already saved has its recipe's title. Shown only for a draft that is not in English.
 - **Offered organizers (review):** under a kind's chosen chips, a line of body small and then one small button for each offer, with a plus icon. "The page also names these, which you do not have" offers a name to create; "AI suggests these of yours" offers one the household already has. Pressing one adds it as a chip. Nothing a model suggests is chosen for the cook.
 
 ### Editor rows

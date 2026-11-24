@@ -159,6 +159,14 @@ export const standInBinding: AiBinding = {
           tools: under("Tools"),
         });
       }
+      case "recipe_translation":
+        // Each numbered piece, marked as English: its numbers are as they were.
+        return answer({
+          pieces: [...asked(inputs).matchAll(/^(\d+)\. (.+)$/gm)].map(([, number, text = ""]) => ({
+            number: Number(number),
+            text: `${text} (in English)`,
+          })),
+        });
       case "recipe_reading":
         return answer(readByRule(asked(inputs).replace(/^The text:\s*/, "")));
       default:

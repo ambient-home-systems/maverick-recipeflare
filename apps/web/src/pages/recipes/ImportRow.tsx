@@ -52,10 +52,14 @@ export function importFailure(job: ImportJob): string {
 export function importStatus(job: ImportJob): string {
   switch (job.status) {
     case "queued":
-      return "Waiting to start";
+      // One sent back from review has started long ago; it waits for its translation.
+      return job.stage === "translate" ? "Waiting to be translated" : "Waiting to start";
     case "running":
       // A link is read as the page states it, and a card by a model that reads
       // its photos. Then, for a card and for text, a model writes the recipe up.
+      if (job.stage === "translate") {
+        return "Translating it";
+      }
       if (job.kind === "text" || job.stage === "build" || job.stage === "details") {
         return "Writing it up";
       }
