@@ -4,9 +4,13 @@ import {
   type ImportCall,
   ImportJob,
   type ImportJobKind,
+  ImportJobStatus,
+  ImportReview,
+  type ImportRun,
   newId,
   type ReadBy,
   type RecipeDraft,
+  type ReportCard,
 } from "@recipeflare/schema";
 import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
@@ -30,6 +34,11 @@ export type JobInput = {
   photos?: string[];
   /** The card's place in the sitting it was photographed in, counted from one. */
   card?: number;
+  /**
+   * Set on a comparison: the saved import this one runs again, and the profile
+   * it runs under. Such a job is never reviewed and never becomes a recipe.
+   */
+  compare?: { of: string; profile: string };
 };
 
 /** One call a job made to a model: what it was for, who answered and what it cost. */
@@ -260,12 +269,18 @@ export async function loadImportJobForRun(
     : null;
 }
 
-/** The imports a person still has to wait for or deal with, newest first. */
+/** True of a job that is a comparison, in SQL. */
+const isComparison = sql`json_extract(${importJobs.input}, '$.compare.of') IS NOT NULL`;
+
+/**
+ * The imports a person still has to wait for or deal with, newest first. A
+ * comparison is not one of them: nobody reviews it, and the report shows it.
+ */
 export async function listOpenImportJobs(db: D1Database): Promise<ImportJob[]> {
   const rows = await drizzle(db)
     .select()
     .from(importJobs)
-    .where(inArray(importJobs.status, OPEN))
+    .where(and(inArray(importJobs.status, OPEN), sql`NOT (${isComparison})`))
     .orderBy(desc(importJobs.createdAt))
     .limit(50);
   return rows.map(toJob);
@@ -360,6 +375,206 @@ export async function finishImportJob(
       finishedAt: at,
     })
     .where(and(eq(importJobs.id, id), eq(importJobs.status, "running")));
+}
+
+/** The recipe an import was saved as, if it was and the recipe is still here. */
+export async function recipeOfImport(db: D1Database, id: string): Promise<string | null> {
+  const row = await drizzle(db)
+    .select({ recipeId: importJobs.recipeId })
+    .from(importJobs)
+    .where(eq(importJobs.id, id))
+    .get();
+  return row?.recipeId ?? null;
+}
+
+/**
+ * Ends a comparison: its draft is kept, with how far the saved recipe is from
+ * it. Only a running job can be ended, and nothing here hands it to a person.
+ */
+export async function finishComparison(
+  db: D1Database,
+  id: string,
+  result: { draft: RecipeDraft; issues: DraftIssue[]; sourceText?: string | null; readBy?: ReadBy },
+  review: ImportReview,
+  work: JobWork,
+): Promise<void> {
+  const at = now();
+  await drizzle(db)
+    .update(importJobs)
+    .set({
+      status: "compared",
+      result: JSON.stringify(result),
+      review: JSON.stringify(review),
+      work: JSON.stringify(work),
+      errorCode: null,
+      errorMessage: null,
+      updatedAt: at,
+      finishedAt: at,
+    })
+    .where(and(eq(importJobs.id, id), eq(importJobs.status, "running")));
+}
+
+/** How many saved imports one press starts again. The rest wait for the next press. */
+export const COMPARED_AT_ONCE = 20;
+/** How many saved imports the report goes back. */
+const REPORTED = 100;
+
+/**
+ * Starts comparisons under `profile`: for each saved import a model wrote up,
+ * from a photographed card or pasted text, that has none under that profile
+ * yet, a queued job with the same input. One that failed is put back in line
+ * where it stopped. A link is never run again: its site would be asked twice.
+ *
+ * Answers with the jobs to send to the queue, and how many cards were left over.
+ */
+export async function startComparisons(
+  db: D1Database,
+  profile: string,
+  memberId: string,
+): Promise<{ jobs: ImportJob[]; waiting: number }> {
+  const orm = drizzle(db);
+  const retried = await orm
+    .update(importJobs)
+    .set({
+      status: "queued",
+      attempts: 0,
+      errorCode: null,
+      errorMessage: null,
+      updatedAt: now(),
+      finishedAt: null,
+    })
+    .where(
+      and(
+        eq(importJobs.status, "failed"),
+        sql`json_extract(${importJobs.input}, '$.compare.profile') = ${profile}`,
+      ),
+    )
+    .returning();
+
+  const saved = await db
+    .prepare(
+      `SELECT j.id, j.kind, j.input FROM import_jobs j
+       WHERE j.status = 'completed' AND j.recipe_id IS NOT NULL
+         AND j.kind IN ('photo', 'text')
+         AND json_extract(j.result, '$.readBy') = 'ai'
+         AND NOT EXISTS (
+           SELECT 1 FROM import_jobs c
+           WHERE json_extract(c.input, '$.compare.of') = j.id
+             AND json_extract(c.input, '$.compare.profile') = ?1
+         )
+       ORDER BY j.created_at
+       LIMIT ?2`,
+    )
+    .bind(profile, REPORTED)
+    .all<{ id: string; kind: string; input: string }>();
+  const room = Math.max(0, COMPARED_AT_ONCE - retried.length);
+  const chosen = saved.results.slice(0, room);
+
+  const at = now();
+  const rows = chosen.map((card) => ({
+    id: newId(),
+    kind: card.kind,
+    status: "queued",
+    stage: null,
+    sourceUrl: null,
+    input: JSON.stringify({
+      ...(JSON.parse(card.input) as JobInput),
+      compare: { of: card.id, profile },
+    } satisfies JobInput),
+    result: null,
+    work: null,
+    review: null,
+    errorCode: null,
+    errorMessage: null,
+    attempts: 0,
+    recipeId: null,
+    createdBy: memberId,
+    createdAt: at,
+    updatedAt: at,
+    finishedAt: null,
+  }));
+  const [first, ...rest] = rows.map((row) => orm.insert(importJobs).values(row));
+  if (first) {
+    await orm.batch([first, ...rest]);
+  }
+  return {
+    jobs: [...retried.map(toJob), ...rows.map(toJob)],
+    waiting: saved.results.length - chosen.length,
+  };
+}
+
+type ReportRow = {
+  id: string;
+  kind: string;
+  status: string;
+  input: string;
+  review: string | null;
+  error_code: string | null;
+  error_message: string | null;
+  updated_at: string;
+  recipe_slug: string | null;
+  recipe_title: string | null;
+  draft_title: string | null;
+  draft_profile: string | null;
+  ms: number;
+};
+
+function toRun(row: ReportRow, input: JobInput): ImportRun {
+  const review = row.review === null ? null : ImportReview.parse(JSON.parse(row.review));
+  return {
+    id: row.id,
+    profile: input.compare?.profile ?? review?.profile ?? row.draft_profile,
+    status: ImportJobStatus.parse(row.status),
+    review,
+    error:
+      row.error_code === null ? null : { code: row.error_code, message: row.error_message ?? "" },
+    milliseconds: Math.max(0, Math.round(row.ms)),
+  };
+}
+
+/**
+ * The report: saved imports, newest first, each with how it was changed in
+ * review and with every comparison run of it. Counts and times only; nothing
+ * of a recipe's words but its title.
+ */
+export async function importReport(db: D1Database): Promise<ReportCard[]> {
+  const columns = `j.id, j.kind, j.status, j.input, j.review, j.error_code, j.error_message, j.updated_at,
+       r.slug AS recipe_slug, r.title AS recipe_title,
+       json_extract(j.result, '$.draft.title') AS draft_title,
+       json_extract(j.work, '$.calls[0].profile') AS draft_profile,
+       (SELECT COALESCE(SUM(json_extract(value, '$.milliseconds')), 0)
+          FROM json_each(j.work, '$.calls')) AS ms`;
+  const [saved, compared] = await db.batch<ReportRow>([
+    db
+      .prepare(
+        `SELECT ${columns} FROM import_jobs j LEFT JOIN recipes r ON r.id = j.recipe_id
+         WHERE j.status = 'completed' ORDER BY j.updated_at DESC LIMIT ?1`,
+      )
+      .bind(REPORTED),
+    db.prepare(
+      `SELECT ${columns} FROM import_jobs j LEFT JOIN recipes r ON r.id = j.recipe_id
+       WHERE json_extract(j.input, '$.compare.of') IS NOT NULL ORDER BY j.created_at`,
+    ),
+  ]);
+
+  const runs = new Map<string, ImportRun[]>();
+  for (const row of compared?.results ?? []) {
+    const input = JSON.parse(row.input) as JobInput;
+    const of = input.compare?.of ?? "";
+    runs.set(of, [...(runs.get(of) ?? []), toRun(row, input)]);
+  }
+  return (saved?.results ?? []).map((row) => {
+    const input = JSON.parse(row.input) as JobInput;
+    return {
+      ...toRun(row, input),
+      kind: row.kind as ImportJobKind,
+      ...(row.kind === "photo" && typeof input.card === "number" ? { card: input.card } : {}),
+      title: row.recipe_title ?? row.draft_title ?? "",
+      slug: row.recipe_slug,
+      savedAt: row.updated_at,
+      comparisons: runs.get(row.id) ?? [],
+    };
+  });
 }
 
 /** Marks a job failed, with a code the app can explain. A job a person already has is left alone. */

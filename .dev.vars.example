@@ -11,3 +11,8 @@ DEV_MEMBER_EMAIL=cook@example.com
 # by a few simple rules. Works on localhost only. Remove the line and run
 # `pnpm exec wrangler dev`, signed in, to use real models, which are billed.
 AI_MODE=stand-in
+
+# Lets the owner run saved imports again under another AI profile, from the
+# import report (Manage, Import report). With the stand-in every profile
+# reads alike, so here it only shows that the runs are made.
+AI_COMPARE=on

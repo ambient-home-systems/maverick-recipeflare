@@ -74,6 +74,20 @@ export async function assetsOfImport(db: D1Database, importJobId: string): Promi
   return rows as Asset[];
 }
 
+/**
+ * The pictures an import brought that are still here, whoever has them now:
+ * for a photographed card that was saved, the card's sides on the recipe, in
+ * the order the recipe keeps them.
+ */
+export async function photosOfSavedImport(db: D1Database, importJobId: string): Promise<Asset[]> {
+  const rows = await drizzle(db)
+    .select(columns)
+    .from(assets)
+    .where(eq(assets.importJobId, importJobId))
+    .orderBy(asc(assets.position), asc(assets.createdAt));
+  return (rows as Asset[]).filter((asset) => asset.contentType.startsWith("image/"));
+}
+
 /** The IDs of a recipe's assets: what to remove from storage when the recipe goes. */
 export async function assetIdsOfRecipe(db: D1Database, recipeId: string): Promise<string[]> {
   const rows = await drizzle(db)

@@ -2,7 +2,7 @@ import { LIMITS } from "@recipeflare/schema";
 import { z } from "zod";
 import { READ_PROMPT } from "../ai/prompts";
 import type { AiImage } from "../ai/runner";
-import { assetsOfImport } from "../db/assets";
+import { assetsOfImport, photosOfSavedImport } from "../db/assets";
 import { assetKey } from "../media";
 import { doubtsAbout } from "./build";
 import { afterBuild, detailsStage } from "./details";
@@ -48,8 +48,13 @@ const unreadable = (message = "Nothing could be read from the photo.") =>
  * shown as it was sent, which keeps handwriting sharpest; any other kind is
  * shown in the smaller size the app made of it, when it could make one.
  */
-async function cardImages(env: Env, jobId: string): Promise<AiImage[]> {
-  const sides = (await assetsOfImport(env.DB, jobId)).slice(0, LIMITS.cardPhotos);
+async function cardImages(env: Env, jobId: string, comparedWith?: string): Promise<AiImage[]> {
+  // A comparison has no photos of its own: it is shown the ones the card it
+  // compares was read from, which the saved recipe now has.
+  const all = comparedWith
+    ? await photosOfSavedImport(env.DB, comparedWith)
+    : await assetsOfImport(env.DB, jobId);
+  const sides = all.slice(0, LIMITS.cardPhotos);
   const images: AiImage[] = [];
   for (const side of sides) {
     const asIs = SHOWN_AS_IT_IS.has(side.contentType) && side.sizeBytes <= SHOWN_AS_IT_IS_BYTES;
@@ -68,7 +73,7 @@ async function cardImages(env: Env, jobId: string): Promise<AiImage[]> {
   return images;
 }
 
-export const importFromPhoto: ImportHandler = async (job, _input, tools, work) => {
+export const importFromPhoto: ImportHandler = async (job, input, tools, work) => {
   if (job.stage === "translate") {
     return translateStage(work, tools);
   }
@@ -86,7 +91,7 @@ export const importFromPhoto: ImportHandler = async (job, _input, tools, work) =
     );
   }
 
-  const images = await cardImages(tools.env, job.id);
+  const images = await cardImages(tools.env, job.id, input.compare?.of);
   if (images.length === 0) {
     throw unreadable("The card has no photo.");
   }

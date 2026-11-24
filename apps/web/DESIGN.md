@@ -571,6 +571,15 @@ A sitting of paper cards before it is sent: the pile on the table as a ruled lis
 - **Add box:** a labelled text box and a primary Add button on one row at the top of the list. Not rule red: red adds a recipe.
 - **Entry sheet:** the entry's boxes, each with its label above; a tick box is a 1.5rem native box inside a 2.75rem label with a line of help. Save is the primary button and Delete a quiet one with its icon. Delete asks in the same sheet, in a sentence that says what the entry will be taken off. Where an entry cannot be deleted the sheet says why and shows no Delete button.
 
+### Import report
+A plain account of what review changed, under Manage. Ruled rows and sentences; it is not a dashboard, and has no charts, tiles or colour of its own.
+- **Reached by** a row on the Manage index, below the six lists and parted from them by a `rule-strong` hairline, in the index row's own shape.
+- **Added up:** under a section head, one row a name ("As you saved them", then "Run again with" each profile): the name in 600 and a sentence of body small with the counts.
+- **Each import:** under a section head, one row an import. Its title in title weight over a line of body small (where it came from and when it was saved) is a link across the row to the recipe, with a chevron. Under it, in body small, one sentence for the cook's own review and one for each run with another profile: the lead in 600 ("Run again with gemma: 4 changes."), then where the changes were at 400.
+- **An amount corrected with no warning** is a line of its own in 600 behind the warning icon. Not red, and not a band: it is a fact about one row.
+- **A run under way** has the small turning mark the import row has, which stops under reduced motion.
+- **Compare models:** the last section, for the owner where it is switched on: a paragraph saying what a run costs, then one quiet button for each profile. What a press came to is said in a notice band above the buttons.
+
 ### Navigation
 - **Phone bar:** card white with a top hairline. Each item is an icon in a 3.5rem by 2.25rem box over a nav label, at least 3.25rem tall. Ink on white. The current destination has a `surface-sunk` ground and 700 weight; it does not change colour.
 - **Rail (from 768 px):** navy. Items are rows: icon box 2.5rem wide, then the label in body size, `on-shell`, weight 400. Current and hovered items take `shell-raised`.

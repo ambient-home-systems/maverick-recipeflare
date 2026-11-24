@@ -1,15 +1,19 @@
 import {
+  CompareRequest,
+  type CompareResponse,
   draftText,
   Id,
   type ImportDetail,
   type ImportJob,
   type ImportListResponse,
+  type ImportReport,
   ImportRequest,
   looksEnglish,
   SENT_PAGE_LIMITS,
 } from "@recipeflare/schema";
 import { type Context, Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
+import { AI_PROFILES } from "../ai";
 import type { AppEnv } from "../auth/types";
 import { assetsOfImport } from "../db/assets";
 import {
@@ -18,11 +22,13 @@ import {
   deleteImportJob,
   failImportJob,
   importCalls,
+  importReport,
   listOpenImportJobs,
   loadImportJob,
   recipeFromLink,
   requeueForTranslation,
   requeueImportJob,
+  startComparisons,
 } from "../db/importJobs";
 import { errorBody, invalid, jsonBody, notFound } from "../http";
 import type { ImportMessage } from "../imports/runner";
@@ -55,6 +61,13 @@ const importBody = bodyLimit({
 });
 
 const idParam = (c: Context) => Id.safeParse(c.req.param("id")).data ?? null;
+
+/**
+ * Whether saved imports may be run again under another profile here. It is a
+ * setting, switched on for staging: every run asks a model and is billed, and
+ * what it measures is the models, not the household's cooking.
+ */
+const comparingIsOn = (c: Context<AppEnv>) => c.env.AI_COMPARE?.trim().toLowerCase() === "on";
 
 /** `/api/v1/imports`. */
 export const importRoutes = new Hono<AppEnv>()
@@ -99,6 +112,34 @@ export const importRoutes = new Hono<AppEnv>()
     );
     // 202: the import has been taken on, not done.
     return c.json(await enqueue(c, job), 202);
+  })
+  // How each saved import was changed in review, and how other profiles did on the same cards.
+  .get("/report", async (c) => {
+    const mayCompare = comparingIsOn(c) && c.get("member").role === "owner";
+    const body: ImportReport = {
+      cards: await importReport(c.env.DB),
+      compareWith: mayCompare ? Object.keys(AI_PROFILES) : [],
+    };
+    return c.json(body);
+  })
+  // Runs the saved cards again under one profile. The owner's, and only where it is switched on.
+  .post("/compare", jsonBody(CompareRequest), async (c) => {
+    if (!comparingIsOn(c)) {
+      return c.json(errorBody("compare_off", "Comparing models is not switched on here"), 403);
+    }
+    if (c.get("member").role !== "owner") {
+      return c.json(errorBody("owner_only", "Only the household's owner can compare models"), 403);
+    }
+    const { profile } = c.req.valid("json");
+    if (!Object.hasOwn(AI_PROFILES, profile)) {
+      return invalid(c, [{ path: ["profile"], message: "There is no AI profile of that name" }]);
+    }
+    const { jobs, waiting } = await startComparisons(c.env.DB, profile, c.get("member").id);
+    for (const job of jobs) {
+      await enqueue(c, job);
+    }
+    const body: CompareResponse = { started: jobs.length, waiting };
+    return c.json(body, 202);
   })
   .get("/:id", async (c) => {
     const id = idParam(c);

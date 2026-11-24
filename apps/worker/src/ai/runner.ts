@@ -22,6 +22,8 @@ export type AiSettings = {
   AI_LOG_CONTENT?: string;
   /** How many imports may ask a model in a day. Defaults to 100. */
   AI_DAILY_IMPORTS?: string;
+  /** `on` lets the owner run saved imports again under another profile. For staging. */
+  AI_COMPARE?: string;
   /** `stand-in` swaps the model for a scripted one. For localhost; lives in `.dev.vars`. */
   AI_MODE?: string;
 };
@@ -63,6 +65,8 @@ export type AiRequest<T> = {
   maxTokens?: number;
   /** One model by ID, in place of the profile's. For the owner's check. */
   model?: string;
+  /** One profile by name, in place of the setting's. For a comparison. */
+  profile?: string;
   /** How long this call may take, when it is known to need longer than most: reading photographs. */
   timeoutMs?: number;
 };
@@ -242,7 +246,7 @@ export function createAiRunner(
   return {
     profile,
     async run<T>(request: AiRequest<T>): Promise<AiAnswer<T>> {
-      const chosen = profile();
+      const chosen = request.profile ? profileNamed(request.profile) : profile();
       const model: AiModel = request.model ? { id: request.model } : chosen.models[request.task];
       const input = inputFor(request, model);
       const started = now();

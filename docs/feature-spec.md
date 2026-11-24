@@ -363,5 +363,11 @@ Added with the Phase 2 tasks, each as it is built. The [Phase 2 plan](phase-2-pl
   - **The words as written are kept** as a note on the recipe, "As written, before translation", which the cook can delete. Review still shows the original beside the draft.
   - A recipe read from a page's own recipe data can be translated too. Asking is what sends it to a model; otherwise such an import never reaches one.
   - If the model gives no answer the draft comes back as it was, saying it could not be translated, and it can be asked again.
+- **The import report** (T2.11). Manage, "Import report". For each import that was reviewed and saved it says what review changed: "3 changes", and where ("Ingredients: 1 changed, 1 added. Steps: 1 removed."), and whether the title changed. One change is an ingredient line or a step that was reworded, added, removed or moved.
+  - An amount that was corrected with no doubt raised about it is said on a line of its own, with a warning mark: it is the mistake that matters most.
+  - At the top the report is added up: how many imports, how many changes, and how many were within minor fixes (three changes or fewer, and no such amount).
+  - A title leads to the recipe. An import saved before the record was kept says so; one whose recipe has been deleted says that.
+  - **Comparing models** is for the owner, on an install where it is switched on (staging). "Run again with" a profile runs every saved card and pasted text again with that set of models and measures each new draft against the recipe that was saved. Each run appears under its import: waiting, reading, its changes, or why it could not be compared. Nothing a comparison makes is reviewed or saved, and it does not appear on the list of imports.
+  - The report needs a connection.
 - **Failures** say what happened: there was not enough there to make a recipe from; the day's allowance for importing with AI is used up; the AI could not be reached; the AI could not make a recipe of it; or importing with AI is not working and whoever looks after the app can check it. "Try again" and "Remove" are offered as for a link.
 - **No recipe is made up.** Text with no recipe in it fails; it is not padded out. A recipe with a gap in it keeps its gap, and review says what is missing, as it does for a link.

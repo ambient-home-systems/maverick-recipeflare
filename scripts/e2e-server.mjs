@@ -64,6 +64,9 @@ const server = spawn(
     // can be driven from end to end without a Cloudflare account.
     "--var",
     "AI_MODE:stand-in",
+    // The owner may run saved imports again under another profile, so the report's buttons can be driven.
+    "--var",
+    "AI_COMPARE:on",
     "--show-interactive-dev-session=false",
   ],
   { cwd: root, stdio: "inherit", shell: process.platform === "win32" },

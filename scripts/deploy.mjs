@@ -25,6 +25,9 @@
 //                        of a model and what it answered.
 //   AI_DAILY_IMPORTS     Optional. How many imports may ask a model in a day.
 //                        Unset means 100.
+//   AI_COMPARE           Optional. "on" lets the owner run saved imports again
+//                        under another AI profile, from the import report. For
+//                        a staging install; every run is billed.
 //
 // Wrangler reads CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID itself.
 //
@@ -49,6 +52,7 @@ const SECRET_NAMES = [
   "AI_GATEWAY",
   "AI_LOG_CONTENT",
   "AI_DAILY_IMPORTS",
+  "AI_COMPARE",
 ];
 
 function fail(message) {
