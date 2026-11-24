@@ -54,4 +54,4 @@ FINISH (step details): reviewed by the finish reviewer on 24 Nov 2026, verdict "
 - On a step the cook is not on, a line with no amount ("a bay leaf") differs from the step's words by size and a small gap only. If it blurs at the stove, the gap above the details wants to grow.
 - Timers. A step's time is shown and nothing counts it down; the feature spec keeps timers out.
 - Whether a done step should keep its details for a cook who looks back. They are put away for now.
-- The owner has not been through it at the stove on a phone and on a tablet on its side: that is T2.9's acceptance check.
+- The owner approved the step details on 24 Nov 2026 and expects they may want adjusting later. They have not been through it at the stove on a phone and on a tablet on its side.
