@@ -4,7 +4,7 @@
 
 **Status.** The owner approved this plan on 23 Nov 2026 and said to go ahead with T2.1 to T2.5 before the Phase 1 gate has been run, and then, the same day, with T2.6. The other decisions in [section 9](#9-decisions-for-the-owner) stand at their defaults. T2.1 to T2.6 are built; the task list says what each built task could not check.
 
-**Phase 1 is not finished.** It is built through T1.15, and its gate, T1.16 (ten family recipes entered on production without workarounds), has not been run. Phase 2 work is going on beside it, by the owner's decision.
+**Phase 1 is finished.** Its gate, T1.16 (ten family recipes entered on production without workarounds), was declared passed by the owner on 24 Nov 2026. Phase 2 work had begun beside it, by the owner's decision, and T2.1 to T2.6 were built before it passed.
 
 ## Contents
 
@@ -246,6 +246,7 @@ Each task is one pull request with its ID in the title. Hours are estimates and 
   - *The jobs of a batch run side by side*, four to a batch, as above.
   - *It worked.* The same card, two sides, was read in 5.6 seconds, writing 212 tokens where it had written 4,422 in 101 seconds. The whole card went from photo to review in 74 seconds.
   - *The writer is told the same.* With the reader quick, writing the draft up was nearly all of the wait: 53 seconds and 1,751 tokens for a draft of about 500, at the text model's lowest reasoning effort. Its page has the same switch, and the profile now sends it. Not yet measured on a real card, and whether a draft is worse for it is for T2.11.
+  - *That worked too.* The same card again: the draft was written up in 13.5 seconds and 564 tokens, and the card went from photo to review in 25 seconds, where the first sitting had taken over twenty minutes. With the new instructions its title came without the card's printed label, the line and the step that run over the card's edge each came whole, and the misspelt word was copied and not flagged. That is one card, printed labels and a clear hand; the count of five printed and five handwritten is still to do.
   - *The writer's instructions changed* (`build-2`), for three things the first cards showed. A sentence that runs over the card's edge was sometimes made two ingredients or two steps: it is now said to be one. A card's printed labels ("A recipe for", "Ingredients") were copied into the title: they are now said not to be part of what follows them. And a misspelt word was flagged as a doubt, because the instructions asked for that: a doubt is now for what would leave a cook unsure what to do.
   - *A call that gave no answer is recorded too*, with how long it was waited for and the service's own words, and `GET /imports/{id}` shows a job's calls: the task, the model, the time, the tokens read and written, and how many of those written were reasoning. Nothing that was asked or answered is in them. Before this, nothing said why an import had been slow.
 - **The deploy token** needs no new permission. The staging deploy that followed T2.1, on 23 Nov 2026, uploaded the Worker with its `AI` binding using the token as it was.

@@ -2,7 +2,7 @@
 
 22 Nov 2026. Companion to the [build plan](build-plan.md), which stays the source of truth for scope, architecture, roadmap and decisions. This document turns Phase 0 (foundations and design) and Phase 1 (core recipes) into buildable work. Later phases appear only where they constrain a choice made now.
 
-**Phase 0 is complete.** Its gate passed on 23 Nov 2026 ([§2.3](#23-phase-0-gate)), and tasks T0.1 to T0.13 are built. Phase 1 starts with T1.1. Sections 1 to 8 were written before any code existed and have been kept current as tasks changed them.
+**Phase 0 is complete.** Its gate passed on 23 Nov 2026 ([§2.3](#23-phase-0-gate)), and tasks T0.1 to T0.13 are built. **Phase 1 is complete.** Tasks T1.1 to T1.15 are built, and the owner declared its gate, T1.16, passed on 24 Nov 2026. Sections 1 to 8 were written before any code existed and have been kept current as tasks changed them.
 
 Updated the same day with the owner's answers to the first five open questions; see [Decisions since the build plan](#decisions-since-the-build-plan).
 
@@ -1011,6 +1011,8 @@ T0.5 comes before the mockups so that they can be reviewed on phones. T0.11 and 
 | T1.16 | **Gate run** (needs you) | Ten family recipes entered on production by the people who will use it, on phones and a desktop. Every workaround is written down as an issue. The gate passes when ten recipes in a row go in and are edited with none | 2.5 plus fixes |
 
 Suggested mix for the gate's ten: at least one with ingredient sections, one with instruction sections, one with a card photo, one imported from a URL and then edited, and one cooked from cook mode with the network off.
+
+**The gate passed on 24 Nov 2026**, by the owner's word: more than ten recipes are in the household's library on production, and no workaround was reported. The owner goes on trying it with different recipes. The recipes were not seen from the repository's side, so which of the suggested mix they cover is not recorded here.
 
 ## 10. Open questions
 
