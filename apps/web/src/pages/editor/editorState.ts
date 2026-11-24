@@ -92,6 +92,21 @@ const NO_PARSE: ParsedLine = {
   note: "",
 };
 
+/**
+ * How asking a model to read a line came out. `read` is what it read, matched
+ * to the household's own; null says nothing was added, and `why`.
+ */
+export type LineReading =
+  | { read: ParsedLine }
+  | {
+      read: null;
+      /** The model had nothing to add; no connection; signed out; busy; out of allowance; or it went wrong. */
+      why: "nothing" | "offline" | "signed-out" | "busy" | "limit" | "failed";
+    };
+
+/** Reads one line with a model, when the cook asks. It always answers; it never throws. */
+export type LineReader = (text: string) => Promise<LineReading>;
+
 /** True when a line has no parsed fields and is kept exactly as written. */
 export function isAsWritten(line: ParsedLine): boolean {
   return (

@@ -3,6 +3,7 @@ import {
   type Food,
   type ImportDetail,
   ingredientParser,
+  matchReading,
   newId,
   type Organizer,
   type OrganizerKind,
@@ -21,6 +22,7 @@ import {
   useImport,
   useImports,
   useOrganizers,
+  useReadLines,
   useRecipe,
   useUnits,
 } from "../api/queries";
@@ -29,7 +31,7 @@ import { Button } from "../ui/Button";
 import { EmptyState, Notice } from "../ui/Notice";
 import { Page } from "../ui/Page";
 import type { Stock } from "../ui/stock";
-import { emptyEditorValue, fromRecipe } from "./editor/editorState";
+import { emptyEditorValue, fromRecipe, type LineReader } from "./editor/editorState";
 import { RecipeEditorScreen, type Review } from "./editor/RecipeEditorScreen";
 import { prepareReview } from "./editor/reviewState";
 import { importHost } from "./recipes/ImportRow";
@@ -151,6 +153,29 @@ function Editor({
     () => ingredientParser({ units, foods: lists.foods }),
     [units, lists.foods],
   );
+  // A line the rules could not read, read by a model when the cook asks. What
+  // comes back are names; they are matched to the household's own here, as a
+  // typed line's are, and a food it lacks rides on the line until the save.
+  const readLines = useReadLines();
+  const readLine: LineReader = async (text) => {
+    try {
+      const reading = (await readLines.mutateAsync([text])).lines[0];
+      const read = reading ? matchReading(reading, { units, foods: lists.foods }) : null;
+      return read ? { read } : { read: null, why: "nothing" };
+    } catch (error) {
+      if (error instanceof SignedOutError) {
+        return { read: null, why: "signed-out" };
+      }
+      if (error instanceof UnreachableError) {
+        return { read: null, why: "offline" };
+      }
+      const code = error instanceof ApiError ? error.code : "";
+      return {
+        read: null,
+        why: code === "ai_unavailable" ? "busy" : code === "ai_limit" ? "limit" : "failed",
+      };
+    }
+  };
   // biome-ignore lint/correctness/useExhaustiveDependencies: `round` is what makes a reload start afresh
   const initial = useMemo(
     () => prepared?.value ?? (base ? fromRecipe(base) : emptyEditorValue()),
@@ -312,6 +337,7 @@ function Editor({
       initial={initial}
       lists={{ units, foods: lists.foods, organizers }}
       parse={parse}
+      onReadLine={readLine}
       stockFor={(categoryId): Stock =>
         organizers.find((entry) => entry.id === categoryId)?.color ?? "plain"
       }

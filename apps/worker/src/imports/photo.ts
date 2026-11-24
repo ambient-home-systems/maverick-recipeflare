@@ -5,7 +5,8 @@ import type { AiImage } from "../ai/runner";
 import { assetsOfImport } from "../db/assets";
 import { assetKey } from "../media";
 import { buildDraft, doubtsAbout } from "./build";
-import { AiDraft, type ImportHandler, NextStage, PermanentImportError } from "./runner";
+import { afterBuild, detailsStage } from "./details";
+import { type ImportHandler, NextStage, PermanentImportError } from "./runner";
 
 /**
  * A photographed card. See docs/phase-2-plan.md §4.
@@ -66,13 +67,17 @@ async function cardImages(env: Env, jobId: string): Promise<AiImage[]> {
 }
 
 export const importFromPhoto: ImportHandler = async (job, _input, tools, work) => {
+  if (job.stage === "details") {
+    return detailsStage(work, tools);
+  }
   if (job.stage === "build") {
     const text = typeof work.text === "string" ? work.text : "";
     const draft = await buildDraft(text, tools.ai);
     const unsure = Unsure.safeParse(work.unsure);
-    return new AiDraft(
+    return afterBuild(
       { ...draft, doubts: [...draft.doubts, ...doubtsAbout(draft, unsure.data ?? [])] },
       text,
+      tools,
     );
   }
 

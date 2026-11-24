@@ -3,6 +3,8 @@ import {
   type DraftLists,
   doubtTarget,
   draftToInput,
+  isUnread,
+  matchReading,
   type OrganizerKind,
   type RecipeDraft,
 } from "@recipeflare/schema";
@@ -45,9 +47,39 @@ export function prepareReview(
 ): PreparedReview {
   const conversion = draftToInput(draft, lists);
   const value = fromInput(conversion.input, assets);
-  value.ingredients = value.ingredients.map((row) =>
-    row.kind === "line" && !row.foodId ? { ...row, ...(parse(row.text) ?? {}) } : row,
-  );
+  // The draft's lines, in the order the editor's line rows are in.
+  const drafted = draft.ingredientSections.flatMap((section) => section.items);
+  let next = 0;
+  const readByAi: string[] = [];
+  value.ingredients = value.ingredients.map((row) => {
+    if (row.kind !== "line") {
+      return row;
+    }
+    const item = drafted[next++];
+    const byRule = parse(row.text);
+    const structured =
+      item !== undefined &&
+      (item.quantity !== null || item.unitName !== null || item.foodName !== null);
+    if (structured && isUnread(byRule)) {
+      // The rules read nothing here and a model did. Its names are matched to
+      // the household's own as a typed line's are, and the line is pointed out.
+      const reading = matchReading(
+        {
+          quantity: item.quantity !== null && item.quantity > 0 ? item.quantity : null,
+          unitName: item.unitName,
+          foodName: item.foodName,
+          note: item.note,
+        },
+        lists,
+      );
+      if (reading) {
+        readByAi.push(row.id);
+        return { ...row, ...reading };
+      }
+      return row;
+    }
+    return row.foodId ? row : { ...row, ...(byRule ?? {}) };
+  });
 
   const lines = value.ingredients.flatMap((row) => (row.kind === "line" ? [row] : []));
   const unread = lines.filter(isAsWritten);
@@ -62,6 +94,12 @@ export function prepareReview(
     attention.push({
       text: `${count(unread.length, "ingredient line", "ingredient lines")} could not be read and ${unread.length === 1 ? "is" : "are"} kept as written.`,
       field: `row:${unread[0]?.id}`,
+    });
+  }
+  if (readByAi.length > 0) {
+    attention.push({
+      text: `${count(readByAi.length, "ingredient line was", "ingredient lines were")} read by AI. Check ${readByAi.length === 1 ? "it" : "each"} against the original.`,
+      field: `row:${readByAi[0]}`,
     });
   }
   if (fresh.length > 0) {
@@ -116,7 +154,9 @@ export function prepareReview(
   return {
     value,
     attention,
-    flaggedRows: [...new Set([...unread, ...fresh].map((row) => row.id).concat(doubtedRows))],
+    flaggedRows: [
+      ...new Set([...unread, ...fresh].map((row) => row.id).concat(readByAi, doubtedRows)),
+    ],
     flaggedParts: [
       ...new Set(missing.flatMap((issue) => PART[issue.code] ?? []).concat(doubtedParts)),
     ],

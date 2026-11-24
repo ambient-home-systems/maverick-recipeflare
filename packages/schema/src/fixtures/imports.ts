@@ -98,6 +98,7 @@ For the top:
 3 tbsp lemon juice
 2 tbsp flour
 1/2 tsp baking powdr
+Zest of 1 lemon
 
 Rub the butter into the flour and powdered sugar and press into an 8 inch pan.
 Bake at 350 until pale gold, about 15 minutes.
@@ -125,6 +126,8 @@ const lemonBarsDraft = RecipeDraft.parse({
         { originalText: "3 tbsp lemon juice" },
         { originalText: "2 tbsp flour" },
         { originalText: "1/2 tsp baking powder" },
+        // The rules cannot read this one; a model did, and each part is in the line.
+        { originalText: "Zest of 1 lemon", quantity: 1, foodName: "lemon", note: "Zest of" },
       ],
     },
   ],

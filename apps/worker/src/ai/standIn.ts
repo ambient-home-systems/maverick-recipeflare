@@ -134,6 +134,17 @@ export const standInBinding: AiBinding = {
               },
         );
       }
+      case "ingredient_lines":
+        // Each numbered line: its first number as the amount and its last word as the food.
+        return answer({
+          lines: [...asked(inputs).matchAll(/^(\d+)\. (.+)$/gm)].map(([, number, line = ""]) => ({
+            number: Number(number),
+            quantity: Number(/\d+/.exec(line)?.[0] ?? Number.NaN) || null,
+            unit: null,
+            food: line.trim().split(/\s+/).at(-1) ?? null,
+            note: null,
+          })),
+        });
       case "recipe_reading":
         return answer(readByRule(asked(inputs).replace(/^The text:\s*/, "")));
       default:

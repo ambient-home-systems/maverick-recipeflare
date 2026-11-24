@@ -1,3 +1,4 @@
+import type { IngredientReading } from "./ai";
 import { type DraftLists, indexByName, unitMatcher } from "./matching";
 import { nameKey } from "./name-key";
 import { LIMITS } from "./primitives";
@@ -457,6 +458,51 @@ export function ingredientParser(lists: ParserLists): LineParser {
       .slice(0, LIMITS.ingredientTextLength);
 
     return { quantity, unitId, foodId, newFood, note };
+  };
+}
+
+/** True when the rules read nothing from a line, and it is kept as written. */
+export function isUnread(read: ParsedLine | null): boolean {
+  return (
+    read === null ||
+    (read.quantity === null &&
+      read.unitId === null &&
+      read.foodId === null &&
+      read.newFood === null)
+  );
+}
+
+/**
+ * Matches a model's reading of a line to the household's own units and foods,
+ * as a typed line is matched. A unit the household does not have is left out;
+ * a food it does not have rides on the line as a new food, for the cook to
+ * confirm at save. Nothing is created. Null when nothing is left to say.
+ */
+export function matchReading(reading: IngredientReading, lists: ParserLists): ParsedLine | null {
+  const unitName = reading.unitName?.trim() ?? "";
+  const unitId = unitName === "" ? null : unitMatcher(lists.units)(unitName);
+
+  const foodName = (reading.foodName?.trim() ?? "").slice(0, LIMITS.nameLength);
+  let foodId: string | null = null;
+  if (foodName !== "") {
+    const index = indexByName(lists.foods, (f) => [f.name, f.pluralName, ...f.aliases], nameKey);
+    foodId =
+      [foodName, ...singulars(foodName)]
+        .map((name) => index.get(nameKey(name)))
+        .find((id) => id !== undefined) ?? null;
+  }
+  const newFood = foodId === null && foodName !== "" ? foodName : null;
+  const quantity = reading.quantity !== null && reading.quantity > 0 ? reading.quantity : null;
+
+  if (quantity === null && unitId === null && foodId === null && newFood === null) {
+    return null;
+  }
+  return {
+    quantity,
+    unitId,
+    foodId,
+    newFood,
+    note: reading.note.trim().slice(0, LIMITS.ingredientTextLength),
   };
 }
 

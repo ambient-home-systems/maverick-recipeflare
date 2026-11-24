@@ -1,7 +1,7 @@
 import { findRecipe, LIMITS, Nutrition, parseIsoDuration } from "@recipeflare/schema";
 import { buildDraft } from "./build";
+import { afterBuild, detailsStage } from "./details";
 import {
-  AiDraft,
   type ImportHandler,
   NextStage,
   PermanentImportError,
@@ -492,10 +492,13 @@ function pictureAddress(value: string | null, page: URL): string | null {
 export const importFromUrl: ImportHandler = async (job, input, tools, work) => {
   const url = checkedUrl(input.url);
 
+  if (job.stage === "details") {
+    return detailsStage(work, tools);
+  }
   if (job.stage === "build") {
     const text = typeof work.text === "string" ? work.text : "";
     const draft = await buildDraft(text, tools.ai);
-    return new AiDraft(
+    return afterBuild(
       {
         ...draft,
         sourceUrl: url.toString(),
@@ -504,6 +507,7 @@ export const importFromUrl: ImportHandler = async (job, input, tools, work) => {
         imageUrl: typeof work.imageUrl === "string" ? work.imageUrl : null,
       },
       text,
+      tools,
     );
   }
 
