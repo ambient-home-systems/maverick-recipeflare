@@ -22,7 +22,13 @@ export type AiProfile = { name: string; models: Record<AiTask, AiModel> };
 
 // Checked against the catalog on 23 Nov 2026. Both take pictures and a JSON
 // Schema, run on Cloudflare and need no paid plan.
-const GEMMA: AiModel = { id: "@cf/google/gemma-4-26b-a4b-it" };
+// Reasons before it answers unless told not to (`enable_thinking`, on by
+// default: its model page, read 24 Nov 2026). Left on, reading a two-sided
+// card ran past three minutes. Copying out what is written does not need it.
+const GEMMA: AiModel = {
+  id: "@cf/google/gemma-4-26b-a4b-it",
+  input: { chat_template_kwargs: { enable_thinking: false } },
+};
 // Reasons as hard as it can unless told otherwise, which copying out a recipe does not need.
 const QWEN: AiModel = { id: "@cf/qwen/qwen3.8-27b", input: { reasoning_effort: "low" } };
 

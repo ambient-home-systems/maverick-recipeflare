@@ -103,6 +103,32 @@ describe("asking a model", () => {
     expect(inputs.reasoning_effort).toBe("low");
   });
 
+  it("tells the model that reads photographs not to reason first", async () => {
+    // Left to itself it reasons before answering, and a two-sided card ran past three minutes.
+    const binding = standInBinding([chatAnswer(GOOD)]);
+    await createAiRunner(binding, {}).run({ ...ASK, task: "read" });
+
+    const inputs = binding.calls[0]?.inputs as {
+      chat_template_kwargs?: { enable_thinking?: boolean };
+    };
+    expect(inputs.chat_template_kwargs).toEqual({ enable_thinking: false });
+  });
+
+  it("says how much of what a model wrote was reasoning, when the model says", async () => {
+    const reasoned = chatAnswer(GOOD, {
+      usage: {
+        prompt_tokens: 20,
+        completion_tokens: 90,
+        completion_tokens_details: { reasoning_tokens: 75 },
+      },
+    });
+    const told = await createAiRunner(standInBinding([reasoned]), {}).run(ASK);
+    expect(told.usage).toEqual({ inputTokens: 20, outputTokens: 90, reasoningTokens: 75 });
+
+    const untold = await createAiRunner(standInBinding([chatAnswer(GOOD)]), {}).run(ASK);
+    expect(untold.usage).toEqual({ inputTokens: 12, outputTokens: 7, reasoningTokens: null });
+  });
+
   it("goes through the gateway the setting names", async () => {
     const binding = standInBinding([chatAnswer(GOOD)]);
     await createAiRunner(binding, { AI_GATEWAY: "kitchen" }).run(ASK);

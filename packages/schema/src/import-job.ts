@@ -67,6 +67,8 @@ export const ImportCall = z.object({
   milliseconds: z.int().min(0),
   inputTokens: z.int().min(0).nullable(),
   outputTokens: z.int().min(0).nullable(),
+  /** How many of the tokens written were the model reasoning before it answered, when it says. */
+  reasoningTokens: z.int().min(0).nullable().default(null),
   /** How many times the model was asked before its answer fitted. Nought for a call that gave none. */
   tries: z.int().min(0),
   /** Why the call gave no answer, in the service's own words; null for one that did. */

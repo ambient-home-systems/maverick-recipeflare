@@ -117,7 +117,11 @@ const Output = z.object({
     .optional(),
   response: z.unknown().optional(),
   usage: z
-    .object({ prompt_tokens: z.number().optional(), completion_tokens: z.number().optional() })
+    .object({
+      prompt_tokens: z.number().optional(),
+      completion_tokens: z.number().optional(),
+      completion_tokens_details: z.object({ reasoning_tokens: z.number().nullish() }).nullish(),
+    })
     .nullish(),
 });
 
@@ -170,6 +174,10 @@ function read<T>(raw: unknown, schema: z.ZodType<T>) {
       ? {
           inputTokens: Math.round(usage.prompt_tokens ?? 0),
           outputTokens: Math.round(usage.completion_tokens ?? 0),
+          reasoningTokens:
+            typeof usage.completion_tokens_details?.reasoning_tokens === "number"
+              ? Math.round(usage.completion_tokens_details.reasoning_tokens)
+              : null,
         }
       : null,
   };

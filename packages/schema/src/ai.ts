@@ -34,7 +34,12 @@ export const AiCheckRequest = z.object({
 export type AiCheckRequest = z.infer<typeof AiCheckRequest>;
 
 /** How many tokens a call read and wrote, when the model says. */
-export const AiUsage = z.object({ inputTokens: z.int().min(0), outputTokens: z.int().min(0) });
+export const AiUsage = z.object({
+  inputTokens: z.int().min(0),
+  outputTokens: z.int().min(0),
+  /** How many of the tokens written were the model reasoning, when it says. */
+  reasoningTokens: z.int().min(0).nullable().default(null),
+});
 export type AiUsage = z.infer<typeof AiUsage>;
 
 const checked = {

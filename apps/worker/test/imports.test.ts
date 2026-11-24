@@ -743,6 +743,7 @@ describe("an import that asks a model", () => {
       "milliseconds",
       "model",
       "outputTokens",
+      "reasoningTokens",
       "task",
       "tries",
     ]);

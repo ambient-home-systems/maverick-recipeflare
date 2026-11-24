@@ -42,6 +42,8 @@ export type AiCallRecord = {
   milliseconds: number;
   inputTokens: number | null;
   outputTokens: number | null;
+  /** How many of the tokens written were reasoning, when the model says. */
+  reasoningTokens?: number | null;
   tries: number;
   at: string;
   /** Why the call gave no answer: the failure's reason and the service's words. Absent for one that did. */
@@ -220,6 +222,7 @@ export async function importCalls(db: D1Database, id: string): Promise<ImportCal
     milliseconds: call.milliseconds,
     inputTokens: call.inputTokens,
     outputTokens: call.outputTokens,
+    reasoningTokens: call.reasoningTokens ?? null,
     tries: call.tries,
     failed: call.failed ?? null,
     at: call.at,
