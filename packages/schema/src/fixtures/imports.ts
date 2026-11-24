@@ -175,6 +175,60 @@ export const importPastedText: ImportJob = {
   finishedAt: "2026-11-23T10:02:40.000Z",
 };
 
+/** Text in another language, as a cook might paste it from a relative's message. Invented. */
+export const pastedKartoffelsuppe = `Kartoffelsuppe
+
+500 g Kartoffeln, geschält
+1 Zwiebel, fein gehackt
+1,5 l Gemüsebrühe
+
+Die Zwiebel in Butter anschwitzen. Kartoffeln und Brühe dazugeben und 20 Minuten kochen lassen.
+Mit Salz und Pfeffer abschmecken.`;
+
+const kartoffelsuppeDraft = RecipeDraft.parse({
+  title: "Kartoffelsuppe",
+  ingredientSections: [
+    {
+      title: null,
+      items: [
+        { originalText: "500 g Kartoffeln, geschält" },
+        { originalText: "1 Zwiebel, fein gehackt" },
+        { originalText: "1,5 l Gemüsebrühe" },
+      ],
+    },
+  ],
+  stepSections: [
+    {
+      steps: [
+        {
+          text: "Die Zwiebel in Butter anschwitzen. Kartoffeln und Brühe dazugeben und 20 Minuten kochen lassen.",
+        },
+        { text: "Mit Salz und Pfeffer abschmecken." },
+      ],
+    },
+  ],
+});
+
+/** Written up by a model from text that is not in English. Review offers to translate it. */
+export const importForeign: ImportJob = {
+  ...base,
+  kind: "text",
+  id: fixtureId(IMPORT_JOB_GROUP, 9),
+  status: "needs_review",
+  stage: null,
+  sourceUrl: null,
+  result: {
+    draft: kartoffelsuppeDraft,
+    issues: checkDraft(kartoffelsuppeDraft),
+    sourceText: pastedKartoffelsuppe,
+    readBy: "ai",
+  },
+  attempts: 1,
+  createdAt: "2026-11-23T10:05:00.000Z",
+  updatedAt: "2026-11-23T10:05:20.000Z",
+  finishedAt: "2026-11-23T10:05:20.000Z",
+};
+
 const cardBase = { ...base, kind: "photo", sourceUrl: null } as const;
 
 /**

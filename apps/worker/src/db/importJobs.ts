@@ -403,6 +403,40 @@ export async function requeueImportJob(db: D1Database, id: string): Promise<Impo
   return rows[0] ? toJob(rows[0]) : null;
 }
 
+/**
+ * Sends a draft that is waiting in review back to be translated. The draft
+ * and the words it was made from go into the job's `work`, where the
+ * `translate` stage finds them; the calls already made stay on its record.
+ * Null if the job is not one waiting in review with a draft.
+ */
+export async function requeueForTranslation(
+  db: D1Database,
+  id: string,
+  text: string,
+): Promise<ImportJob | null> {
+  const orm = drizzle(db);
+  const row = await orm.select().from(importJobs).where(eq(importJobs.id, id)).get();
+  const result = row ? toJob(row).result : null;
+  if (row?.status !== "needs_review" || !result) {
+    return null;
+  }
+  const work: JobWork = { ...toWork(row.work), draft: result.draft, text };
+  const rows = await orm
+    .update(importJobs)
+    .set({
+      status: "queued",
+      stage: "translate",
+      attempts: 0,
+      work: JSON.stringify(work),
+      result: null,
+      updatedAt: now(),
+      finishedAt: null,
+    })
+    .where(and(eq(importJobs.id, id), eq(importJobs.status, "needs_review")))
+    .returning();
+  return rows[0] ? toJob(rows[0]) : null;
+}
+
 /** Removes a job. False if there was none. */
 export async function deleteImportJob(db: D1Database, id: string): Promise<boolean> {
   const removed = await drizzle(db)

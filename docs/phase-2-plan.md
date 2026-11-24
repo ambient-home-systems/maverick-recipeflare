@@ -2,7 +2,7 @@
 
 23 Nov 2026. Companion to the [build plan](build-plan.md), which stays the source of truth for scope, architecture, roadmap and decisions, and to the [implementation plan for Phases 0 and 1](implementation-plan.md), whose data model, shared schema, import jobs and rules this builds on. This document turns Phase 2 into buildable work.
 
-**Status.** The owner approved this plan on 23 Nov 2026 and said to go ahead with T2.1 to T2.5 before the Phase 1 gate has been run, and then, the same day, with T2.6. On 24 Nov 2026, with Phase 1's gate passed, the owner said to go on with T2.7 to T2.10. The other decisions in [section 9](#9-decisions-for-the-owner) stand at their defaults. T2.1 to T2.9 are built; the task list says what each built task could not check.
+**Status.** The owner approved this plan on 23 Nov 2026 and said to go ahead with T2.1 to T2.5 before the Phase 1 gate has been run, and then, the same day, with T2.6. On 24 Nov 2026, with Phase 1's gate passed, the owner said to go on with T2.7 to T2.10. The other decisions in [section 9](#9-decisions-for-the-owner) stand at their defaults. T2.1 to T2.10 are built; the task list says what each built task could not check. T2.11 to T2.14 wait for the owner's word.
 
 **Phase 1 is finished.** Its gate, T1.16 (ten family recipes entered on production without workarounds), was declared passed by the owner on 24 Nov 2026. Phase 2 work had begun beside it, by the owner's decision, and T2.1 to T2.6 were built before it passed.
 
@@ -266,6 +266,13 @@ Each task is one pull request with its ID in the title. Hours are estimates and 
   - *A recipe from before is left alone* by reading a step only when it is added or its words are edited. A step with neither a time nor an ingredient counts as never read, so editing it reads it; a step the cook has corrected keeps the correction through later edits of its words.
   - *Two times, or two lines of one food, give nothing.* The rules do not choose.
   - *Cook mode's scaling sentence changed* to "Amounts written in the steps are not changed", since the lines under a step now are.
+- **T2.10** is built. Checked with a stand-in for the model: a draft in another language comes back in English with its amounts unchanged, which code checks piece by piece; a translation that changed an amount is not used; a draft already in English is not sent, and is refused by the server if asked; the words as written are kept as a note. **Not checked: a real model on a real recipe in another language**, which is the owner's ([operations](operations.md)). How it differs from the plan:
+  - *It is asked for in review, not when the import is started.* The plan has a choice on each way in. As built, review offers "Translate into English" when the draft is not in English, and only then: the cook is asked at the moment they can see the words, there is nothing to tick on the Add page, the capture screen or the bookmark, and a recipe in English is never offered it. The cost is that review is left and come back to.
+  - *Whether a draft is in English is a rule, not a model's opinion* (`looksEnglish()` in the shared package): the share of its words that are common English ones. It errs towards English, and text too short to tell counts as English.
+  - *"Amounts unchanged" is checked as numbers* (`sameAmounts()` in `imports/translate.ts`): a translated piece must have the numbers its original had, each as often. "1,5 l" and "1.5 l" are the same; "250 g" and "2 cups" are not. A unit's name may be put into English; an amount may not be converted.
+  - *It cannot fail an import*, like `details`: the draft was already in review. With no answer it goes back as it was, with a line saying so.
+  - *The translated lines are read afresh.* What had been read from a line's old words is let go, the rules read the English line, and `details` follows for any they cannot.
+  - *A draft read from a page's own data can be translated.* That is the one way such an import reaches a model, and only on the cook's ask.
 - **The deploy token** needs no new permission. The staging deploy that followed T2.1, on 23 Nov 2026, uploaded the Worker with its `AI` binding using the token as it was.
 
 Suggested order: T2.1 and T2.5 first, since both wait on the owner. Then T2.2 to T2.4, which give a working import with no camera in the way. Then T2.6, T2.7 and T2.8. T2.11 as soon as cards can be imported, because its result decides the models every later task is judged with. T2.9 and T2.10 can follow the gate if time is short: neither is in the gate's twenty cards.

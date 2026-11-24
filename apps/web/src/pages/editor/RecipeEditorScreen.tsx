@@ -1,5 +1,14 @@
 import { type Asset, newId, type OrganizerKind, type RecipeInput } from "@recipeflare/schema";
-import { ArrowDown, ChevronDown, Copy, ExternalLink, Plus, Save, Trash2 } from "lucide-react";
+import {
+  ArrowDown,
+  ChevronDown,
+  Copy,
+  ExternalLink,
+  Languages,
+  Plus,
+  Save,
+  Trash2,
+} from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { Button } from "../../ui/Button";
 import { DividerBack } from "../../ui/DividerTabs";
@@ -54,6 +63,11 @@ export type Review = {
   suggestions?: Partial<Record<OrganizerKind, string[]>>;
   /** The household's own organizers that a model suggested, by ID. Offered, never chosen for the cook. */
   offered?: Partial<Record<OrganizerKind, string[]>>;
+  /**
+   * Sends the draft to be translated into English. Given only when the draft
+   * is not in English; without it review does not offer to.
+   */
+  onTranslate?: () => void;
   /** A recipe the household already has from the same link. */
   duplicate?: { title: string; onOpen: () => void };
   /**
@@ -757,6 +771,21 @@ export function RecipeEditorScreen({
               className="mt-1 flex min-h-touch items-center text-left font-bold underline"
             >
               {review.duplicate.title}
+            </button>
+          </Notice>
+        ) : null}
+
+        {review?.onTranslate ? (
+          <Notice icon={<Languages aria-hidden="true" size="1.125rem" className="flex-none" />}>
+            This recipe does not look to be in English. An AI model can translate it. The words as
+            written are kept as a note on the recipe; anything changed here so far is not.
+            <button
+              type="button"
+              disabled={saving}
+              onClick={review.onTranslate}
+              className="mt-1 flex min-h-touch items-center text-left font-bold underline disabled:no-underline"
+            >
+              Translate into English
             </button>
           </Notice>
         ) : null}

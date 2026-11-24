@@ -8,6 +8,7 @@ import { doubtsAbout } from "./build";
 import { afterBuild, detailsStage } from "./details";
 import { draftWithOrganizers } from "./organizers";
 import { type ImportHandler, NextStage, PermanentImportError } from "./runner";
+import { translateStage } from "./translate";
 
 /**
  * A photographed card. See docs/phase-2-plan.md §4.
@@ -68,6 +69,9 @@ async function cardImages(env: Env, jobId: string): Promise<AiImage[]> {
 }
 
 export const importFromPhoto: ImportHandler = async (job, _input, tools, work) => {
+  if (job.stage === "translate") {
+    return translateStage(work, tools);
+  }
   if (job.stage === "details") {
     return detailsStage(work, tools);
   }

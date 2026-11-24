@@ -1,6 +1,7 @@
 import { afterBuild, detailsStage } from "./details";
 import { draftWithOrganizers } from "./organizers";
 import type { ImportHandler } from "./runner";
+import { translateStage } from "./translate";
 
 /**
  * Text the cook pasted in: a recipe copied from a message, a document or a
@@ -9,6 +10,9 @@ import type { ImportHandler } from "./runner";
  * there is a second stage, in which a model reads those.
  */
 export const importFromText: ImportHandler = async (job, input, tools, work) => {
+  if (job.stage === "translate") {
+    return translateStage(work, tools);
+  }
   if (job.stage === "details") {
     return detailsStage(work, tools);
   }

@@ -713,6 +713,19 @@ describe("reviewing an import", () => {
     expect(offered()).toEqual(["Family favorite", "Holiday"]);
   });
 
+  it("offers to translate a draft that is not in English, and not one that is", async () => {
+    const { router } = await renderAt("/mock/review?scene=foreign");
+    expect((screen.getByLabelText("Title") as HTMLInputElement).value).toBe("Kartoffelsuppe");
+
+    fireEvent.click(screen.getByRole("button", { name: "Translate into English" }));
+    // Nothing is sent from the mock; the real page leaves for the list in the same way.
+    await waitFor(() => expect(router.state.location.pathname).toBe("/mock/list"));
+
+    cleanup();
+    await renderAt("/mock/review?scene=pasted");
+    expect(screen.queryByRole("button", { name: "Translate into English" })).toBeNull();
+  });
+
   it("points out a line an AI model read, with what it read", async () => {
     await renderAt("/mock/review?scene=pasted");
 

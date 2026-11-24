@@ -248,14 +248,15 @@ export function useStartImport() {
   });
 }
 
-/** Tries a failed import again, or removes an import. Either way the imports are fetched again. */
+/** Tries a failed import again, has one translated, or removes one. Whichever, the imports are fetched again. */
 export function useChangeImport() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (change: { id: string; action: "retry" | "remove" }) =>
-      change.action === "retry"
-        ? api(`/imports/${change.id}/retry`, { method: "POST", schema: ImportJob })
-        : api(`/imports/${change.id}`, { method: "DELETE" }),
+    mutationFn: (change: { id: string; action: "retry" | "translate" | "remove" }) =>
+      change.action === "remove"
+        ? api(`/imports/${change.id}`, { method: "DELETE" })
+        : // Trying a failed import again, or sending a draft in review back to be translated.
+          api(`/imports/${change.id}/${change.action}`, { method: "POST", schema: ImportJob }),
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["imports"] }),
   });
 }
