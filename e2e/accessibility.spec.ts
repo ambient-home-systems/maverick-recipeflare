@@ -59,7 +59,7 @@ const screens: { name: string; open: (page: Page) => Promise<void> }[] = [
     open: async (page) => {
       await page.goto(`/recipes/${slug}/edit`);
       await page.getByRole("button", { name: /^Edit step 1:/ }).click();
-      await expect(page.getByLabel("Time")).toHaveValue("10 min");
+      await expect(page.getByLabel("Time", { exact: true })).toHaveValue("10 min");
       await expect(page.getByRole("button", { name: "Choose ingredients" })).toBeVisible();
     },
   },
@@ -69,7 +69,7 @@ const screens: { name: string; open: (page: Page) => Promise<void> }[] = [
       await page.goto(`/recipes/${slug}/cook`);
       // The first step shows its time and the line it uses under its words.
       await expect(page.getByText("Soften the onions for 10 minutes.")).toBeVisible();
-      await expect(page.getByText("2 onions, sliced").first()).toBeVisible();
+      await expect(page.locator("[data-step-details]").first()).toContainText("2 onions, sliced");
     },
   },
   {
