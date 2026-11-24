@@ -50,6 +50,8 @@ export type Review = {
    */
   saveLabel?: string;
   suggestions?: Partial<Record<OrganizerKind, string[]>>;
+  /** The household's own organizers that a model suggested, by ID. Offered, never chosen for the cook. */
+  offered?: Partial<Record<OrganizerKind, string[]>>;
   /** A recipe the household already has from the same link. */
   duplicate?: { title: string; onOpen: () => void };
   /**
@@ -646,6 +648,7 @@ export function RecipeEditorScreen({
           stockFor={stockFor}
           onCreate={onCreateOrganizer}
           suggestions={review?.suggestions}
+          offeredOwn={review?.offered}
           error={errors.organizers}
         />
       </div>

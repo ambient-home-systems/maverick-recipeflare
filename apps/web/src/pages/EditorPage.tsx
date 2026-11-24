@@ -114,7 +114,13 @@ function Editor({
   // Read once: the review is a copy of what the import found, as the lists stood when it opened.
   const [prepared] = useState(() =>
     importing?.result
-      ? prepareReview(importing.result.draft, lists, ingredientParser(lists), importing.assets)
+      ? prepareReview(
+          importing.result.draft,
+          lists,
+          ingredientParser(lists),
+          importing.assets,
+          importing.result.readBy === "ai",
+        )
       : null,
   );
   // Photos added here are shown from the device and sent with the save, so an
@@ -275,6 +281,7 @@ function Editor({
           flaggedRows: prepared.flaggedRows,
           flaggedParts: prepared.flaggedParts,
           suggestions: prepared.suggestions,
+          offered: prepared.offered,
           duplicate: importing.duplicate
             ? {
                 title: importing.duplicate.title,

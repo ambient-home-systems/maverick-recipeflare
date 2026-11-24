@@ -7,7 +7,7 @@ import {
 } from "@recipeflare/schema";
 import { fixtureFoods, fixtureMember, fixtureUnits } from "@recipeflare/schema/fixtures";
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { LINES_PROMPT } from "../src/ai/prompts";
+import { LINES_PROMPT, ORGANIZE_PROMPT } from "../src/ai/prompts";
 import { createAiRunner } from "../src/ai/runner";
 import { createImportJob, loadImportJob, loadImportJobForRun } from "../src/db/importJobs";
 import { checkReading, type LineReadings, readLines, statedAmount } from "../src/imports/details";
@@ -290,7 +290,9 @@ describe("an import with lines the rules cannot read", () => {
     expect(after).toMatchObject({ status: "needs_review", stage: "details" });
     expect(after?.result).toMatchObject({ readBy: "ai", sourceText: TEXT });
     // Both calls are kept with the job, each under its own task and wording.
-    const calls = (await loadImportJobForRun(db, job.id))?.work.calls;
+    const calls = (await loadImportJobForRun(db, job.id))?.work.calls?.filter(
+      (call) => call.prompt !== ORGANIZE_PROMPT.version,
+    );
     expect(calls?.map((call) => [call.task, call.prompt])).toEqual([
       ["build", expect.any(String)],
       ["details", LINES_PROMPT.version],

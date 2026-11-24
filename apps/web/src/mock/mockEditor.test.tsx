@@ -540,6 +540,32 @@ describe("reviewing an import", () => {
     expect(screen.queryByRole("link", { name: /Open the page/ })).toBeNull();
   });
 
+  it("offers the organizers an AI model suggested, and chooses none of them", async () => {
+    await renderAt("/mock/review?scene=pasted");
+
+    // Nothing is chosen for the cook: a model is guessing.
+    const categories = within(screen.getByRole("list", { name: "Categories" }));
+    const tags = within(screen.getByRole("list", { name: "Tags" }));
+    expect(categories.queryByRole("button", { name: /^Remove the category/ })).toBeNull();
+    expect(tags.queryByRole("button", { name: /^Remove the tag/ })).toBeNull();
+    expect(screen.getByText("AI suggests this one of yours. Press it to add it.")).toBeTruthy();
+    expect(screen.getByText("AI suggests these of yours. Press one to add it.")).toBeTruthy();
+    const offered = () =>
+      within(screen.getByRole("list", { name: "Suggested tags" }))
+        .getAllByRole("button")
+        .map((button) => button.textContent);
+    expect(offered()).toEqual(["Family favorite", "Holiday"]);
+
+    // Pressing one adds it, and it is no longer offered.
+    fireEvent.click(screen.getByRole("button", { name: "Holiday" }));
+    expect(tags.getByRole("button", { name: "Remove the tag Holiday" })).toBeTruthy();
+    expect(offered()).toEqual(["Family favorite"]);
+
+    // Taken off again, it is back among the suggestions.
+    fireEvent.click(tags.getByRole("button", { name: "Remove the tag Holiday" }));
+    expect(offered()).toEqual(["Family favorite", "Holiday"]);
+  });
+
   it("points out a line an AI model read, with what it read", async () => {
     await renderAt("/mock/review?scene=pasted");
 

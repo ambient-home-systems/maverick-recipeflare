@@ -1,6 +1,6 @@
 import { findRecipe, LIMITS, Nutrition, parseIsoDuration } from "@recipeflare/schema";
-import { buildDraft } from "./build";
 import { afterBuild, detailsStage } from "./details";
+import { draftWithOrganizers } from "./organizers";
 import {
   type ImportHandler,
   NextStage,
@@ -497,7 +497,7 @@ export const importFromUrl: ImportHandler = async (job, input, tools, work) => {
   }
   if (job.stage === "build") {
     const text = typeof work.text === "string" ? work.text : "";
-    const draft = await buildDraft(text, tools.ai);
+    const draft = await draftWithOrganizers(text, tools);
     return afterBuild(
       {
         ...draft,

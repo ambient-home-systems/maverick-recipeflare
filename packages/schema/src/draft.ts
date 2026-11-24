@@ -226,6 +226,21 @@ export type DraftConversion = {
   issues: DraftIssue[];
   /** Organizer names from the source that the household does not have yet. */
   suggestions: Record<OrganizerKind, string[]>;
+  /**
+   * The household's own organizers that were suggested and are not chosen, by
+   * ID: for the cook to add or leave. Empty unless organizers are offered.
+   */
+  offered: Record<OrganizerKind, string[]>;
+};
+
+export type DraftConversionOptions = {
+  /**
+   * What becomes of an organizer the draft names that the household has.
+   * "choose", the default, selects it: a page names its own category. "offer"
+   * selects nothing and offers it: a model is guessing. A model's names that
+   * the household does not have are not offered at all; it never creates one.
+   */
+  organizers?: "choose" | "offer";
 };
 
 function splitSuggestions(
@@ -259,7 +274,9 @@ export function draftToInput(
   draft: RecipeDraft,
   lists: DraftLists,
   makeId: () => string = newId,
+  options: DraftConversionOptions = {},
 ): DraftConversion {
+  const offer = options.organizers === "offer";
   const issues = checkDraft(draft);
 
   const matchUnit = unitMatcher(lists.units);
@@ -357,11 +374,16 @@ export function draftToInput(
       notes: draft.notes
         .filter((note) => note.text.trim() !== "")
         .map((note) => ({ id: makeId(), title: note.title.trim(), text: note.text.trim() })),
-      categoryIds: categories.ids,
-      tagIds: tags.ids,
-      toolIds: tools.ids,
+      categoryIds: offer ? [] : categories.ids,
+      tagIds: offer ? [] : tags.ids,
+      toolIds: offer ? [] : tools.ids,
     },
     issues,
-    suggestions: { category: categories.unknown, tag: tags.unknown, tool: tools.unknown },
+    suggestions: offer
+      ? { category: [], tag: [], tool: [] }
+      : { category: categories.unknown, tag: tags.unknown, tool: tools.unknown },
+    offered: offer
+      ? { category: categories.ids, tag: tags.ids, tool: tools.ids }
+      : { category: [], tag: [], tool: [] },
   };
 }

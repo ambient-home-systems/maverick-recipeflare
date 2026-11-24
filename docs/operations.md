@@ -131,6 +131,8 @@ Once the check passes, on the Add page paste a recipe's text under **Paste text*
 
 For T2.7, in the editor type an ingredient line the app cannot read, such as "Juice of 2 lemons" or "a knob of butter", open it, and press **Read with AI**. The amount, food and note should fill in from the line's own words, and **Keep as written** should undo it. Then import a card or paste a recipe that has such a line: review should say how many lines were read by AI and mark each "check". Say if a reading is wrong and not just missing: a wrong amount is the thing this is built never to give.
 
+For T2.8, with a few categories and tags of your own under **Manage**, import a card or paste a recipe. In review, under Categories, Tags and Tools, it should say "AI suggests these of yours" with a button for each, and none of them chosen. Say whether the suggestions were sensible, and above all whether one ever appears that is not on your lists: that should be impossible.
+
 For T2.6, photograph cards: on a phone, Add, then **From photos**. Do five printed cards and five handwritten ones, some with a back, and press **Import**. Each should come up on the list as "Card 1", "Card 2" and so on, say "Reading the card" and then "Writing it up", and offer **Review**, where the card's photos sit beside the draft and **Save and next card** goes on to the next. Say how each came out, and above all whether any failed with "Nothing could be read from the photo" or "importing with AI is not working": this is the first time a picture is sent to a model, and the first place a wrong guess about what the models accept would show.
 
 ### When an import is slow or fails

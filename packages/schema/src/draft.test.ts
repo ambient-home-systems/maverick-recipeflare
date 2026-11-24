@@ -350,6 +350,29 @@ describe("draftToInput", () => {
     expect(suggestions).toEqual({ category: [], tag: ["Noodles"], tool: [] });
   });
 
+  it("offers a model's organizers and chooses none of them", () => {
+    const { input, suggestions, offered } = draftToInput(
+      RecipeDraft.parse(fullDraft),
+      lists,
+      countingIds(),
+      { organizers: "offer" },
+    );
+
+    // The household's own, by ID, for the cook to add or leave.
+    expect(input).toMatchObject({ categoryIds: [], tagIds: [], toolIds: [] });
+    expect(offered).toEqual({
+      category: [fixtureOrganizers.find((o) => o.name === "Dinner")?.id],
+      tag: [fixtureOrganizers.find((o) => o.name === "Weeknight")?.id],
+      tool: [],
+    });
+    // A name of the model's own is not offered for creating: it never makes one.
+    expect(suggestions).toEqual({ category: [], tag: [], tool: [] });
+  });
+
+  it("offers nothing unless asked to: a page's own organizers are chosen", () => {
+    expect(convert(fullDraft).offered).toEqual({ category: [], tag: [], tool: [] });
+  });
+
   it("does not match a tag name against a category", () => {
     const { input, suggestions } = convert({ title: "x", suggestedTags: ["Dinner"] });
     expect(input.tagIds).toEqual([]);

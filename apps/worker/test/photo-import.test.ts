@@ -3,7 +3,7 @@ import { Asset, ErrorBody, ImportDetail, ImportJob, Recipe } from "@recipeflare/
 import { fixtureMember } from "@recipeflare/schema/fixtures";
 import { beforeAll, describe, expect, it } from "vitest";
 import { aiFor } from "../src/ai";
-import { READ_PROMPT } from "../src/ai/prompts";
+import { ORGANIZE_PROMPT, READ_PROMPT } from "../src/ai/prompts";
 import { type AiSettings, createAiRunner } from "../src/ai/runner";
 import { STAND_IN_CARD } from "../src/ai/standIn";
 import { loadImportJob, loadImportJobForRun } from "../src/db/importJobs";
@@ -229,13 +229,14 @@ describe("reading a photographed card", () => {
     // Both photos are beside the draft in review.
     expect(after.assets.map((side) => side.id)).toEqual(photos);
     // And what each call took can be looked up afterwards.
-    expect(after.calls.map((call) => [call.task, call.failed])).toEqual([
-      ["read", null],
-      ["build", null],
-    ]);
+    // The reading, the writing up and, beside that, the question about organizers.
+    expect(after.calls.map((call) => call.task).sort()).toEqual(["build", "details", "read"]);
+    expect(after.calls.every((call) => call.failed === null)).toBe(true);
     // Two model calls, each kept with the job under the task it was for.
     const kept = (await loadImportJobForRun(db, job.id))?.work;
-    expect(kept?.calls?.map((call) => call.task)).toEqual(["read", "build"]);
+    // (Beside the writing up, the household's organizers are asked about: see organizers.test.ts.)
+    const own = kept?.calls?.filter((call) => call.prompt !== ORGANIZE_PROMPT.version);
+    expect(own?.map((call) => call.task)).toEqual(["read", "build"]);
   });
 
   it("keeps both photos as the saved recipe's original card, front first", async () => {
@@ -275,13 +276,13 @@ describe("reading a photographed card", () => {
   it("waits twice as long for the reader as for the writer", async () => {
     const { job } = await card(pngMarked(42));
     const { binding, tools } = toolsWith([chatAnswer(read()), chatAnswer(built())]);
-    const asked: (number | undefined)[] = [];
+    const asked: [string, number | undefined][] = [];
     const watched: ImportTools = {
       ...tools,
       ai: {
         profile: () => tools.ai.profile(),
         run: (request) => {
-          asked.push(request.timeoutMs);
+          asked.push([request.schemaName, request.timeoutMs]);
           return tools.ai.run(request);
         },
       },
@@ -291,7 +292,11 @@ describe("reading a photographed card", () => {
     await runImportJob(job.id, IMPORT_HANDLERS, watched, "build");
 
     // Three minutes to read the photographs; the writer keeps the usual wait.
-    expect(asked).toEqual([180_000, undefined]);
+    expect(asked.find(([name]) => name === "card_reading")).toEqual(["card_reading", 180_000]);
+    expect(asked.filter(([name]) => name !== "card_reading").map(([, wait]) => wait)).toEqual([
+      undefined,
+      undefined,
+    ]);
     expect(binding.calls).toHaveLength(2);
   });
 

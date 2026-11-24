@@ -1,5 +1,5 @@
-import { buildDraft } from "./build";
 import { afterBuild, detailsStage } from "./details";
+import { draftWithOrganizers } from "./organizers";
 import type { ImportHandler } from "./runner";
 
 /**
@@ -13,5 +13,5 @@ export const importFromText: ImportHandler = async (job, input, tools, work) => 
     return detailsStage(work, tools);
   }
   const text = input.text ?? "";
-  return afterBuild(await buildDraft(text, tools.ai), text, tools);
+  return afterBuild(await draftWithOrganizers(text, tools), text, tools);
 };
