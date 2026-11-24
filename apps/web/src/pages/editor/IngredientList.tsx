@@ -165,8 +165,8 @@ function LinePanel({
             </span>
             <button
               type="button"
-              aria-labelledby={`${row.id}-unit`}
-              aria-describedby={`${row.id}-unit-value`}
+              // Named by its label and by what it shows, so that saying what is on it presses it.
+              aria-labelledby={`${row.id}-unit ${row.id}-unit-value`}
               className={PICK}
               onClick={() => setPicking("unit")}
             >
@@ -183,8 +183,7 @@ function LinePanel({
             </span>
             <button
               type="button"
-              aria-labelledby={`${row.id}-food`}
-              aria-describedby={`${row.id}-food-value`}
+              aria-labelledby={`${row.id}-food ${row.id}-food-value`}
               className={PICK}
               onClick={() => setPicking("food")}
             >

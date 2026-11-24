@@ -406,23 +406,23 @@ describe("editing a recipe", () => {
     await renderAt(COOKIES);
     fireEvent.click(screen.getByRole("button", { name: startsWith("Edit 2 1/4 C. flour") }));
 
-    fireEvent.click(screen.getByRole("button", { name: "Unit" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Unit\b/ }));
     fireEvent.change(sheet("Unit").getByLabelText("Find a unit"), { target: { value: "oun" } });
     fireEvent.click(sheet("Unit").getByRole("button", { name: /ounce/ }));
     expect(screen.queryByRole("dialog")).toBeNull();
-    expect(screen.getByRole("button", { name: "Unit" }).textContent).toBe("ounce");
+    expect(screen.getByRole("button", { name: /^Unit\b/ }).textContent).toBe("ounce");
 
-    fireEvent.click(screen.getByRole("button", { name: "Unit" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Unit\b/ }));
     fireEvent.change(sheet("Unit").getByLabelText("Find a unit"), { target: { value: "handful" } });
     fireEvent.click(sheet("Unit").getByRole("button", { name: "Create the unit “handful”" }));
-    expect(screen.getByRole("button", { name: "Unit" }).textContent).toBe("handful");
+    expect(screen.getByRole("button", { name: /^Unit\b/ }).textContent).toBe("handful");
   });
 
   it("names a food that is not in the list without creating it, and marks it new", async () => {
     await renderAt(COOKIES);
     fireEvent.click(screen.getByRole("button", { name: startsWith("Edit 2 1/4 C. flour") }));
 
-    fireEvent.click(screen.getByRole("button", { name: "Food" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Food\b/ }));
     fireEvent.change(sheet("Food").getByLabelText("Find a food"), {
       target: { value: "cake flour" },
     });
