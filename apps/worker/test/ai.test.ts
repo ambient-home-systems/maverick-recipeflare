@@ -94,6 +94,7 @@ describe("asking a model", () => {
         json_schema: { name: string; schema: { required: string[] } };
       };
       reasoning_effort?: string;
+      chat_template_kwargs?: { enable_thinking?: boolean };
     };
     expect(inputs.messages.map((message) => message.role)).toEqual(["system", "user"]);
     expect(inputs.messages[1]?.content).toBe(ASK.prompt);
@@ -101,6 +102,19 @@ describe("asking a model", () => {
     expect(inputs.response_format.json_schema.name).toBe("sum");
     expect(inputs.response_format.json_schema.schema.required).toEqual(["word", "sum"]);
     expect(inputs.reasoning_effort).toBe("low");
+    // The model that writes a recipe up is told not to reason first, as the reader is.
+    expect(inputs.chat_template_kwargs).toEqual({ enable_thinking: false });
+  });
+
+  it("tells every model of every profile not to reason first", () => {
+    // Left to reason, one card took minutes. A model added to a profile without the switch fails here.
+    for (const profile of Object.values(AI_PROFILES)) {
+      for (const [task, model] of Object.entries(profile.models)) {
+        expect(model.input?.chat_template_kwargs, `${profile.name}: ${task}`).toEqual({
+          enable_thinking: false,
+        });
+      }
+    }
   });
 
   it("tells the model that reads photographs not to reason first", async () => {
