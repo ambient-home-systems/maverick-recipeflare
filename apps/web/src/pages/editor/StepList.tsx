@@ -1,14 +1,20 @@
+import { formatDuration, readStatedDuration } from "@recipeflare/schema";
 import { Plus, Rows3 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "../../ui/Button";
-import { TextArea } from "../../ui/Field";
+import { RemovableChip } from "../../ui/Chip";
+import { TextArea, TextField } from "../../ui/Field";
 import { FIELD } from "../../ui/field";
+import { Picker } from "../../ui/Picker";
 import {
   type FieldErrors,
   moveRow,
   newDivider,
   newStep,
+  retextStep,
   type StepListRow,
+  type StepReader,
+  type StepRow,
   splitEntries,
 } from "./editorState";
 import { ClosedRow, DividerClosed, DividerOpen, RowActions, SMALL_BUTTON } from "./rowParts";
@@ -29,19 +35,143 @@ function stepNumbers(rows: readonly StepListRow[]): Map<string, number> {
   return numbers;
 }
 
+/** One of the recipe's ingredient lines, as a step names it. */
+export type StepLine = {
+  id: string;
+  /** Its food, or failing that its own words. */
+  label: string;
+  /** The line as written, to tell two lines of the same food apart. */
+  text: string;
+};
+
+/** A time as typed for a step: "20 min", "1 hr 30 min", or a bare number of minutes. */
+function readTime(text: string): number | null {
+  const typed = text.trim();
+  return /^\d+$/.test(typed) ? Number(typed) * 60 || null : readStatedDuration(typed);
+}
+
+/** A step's time and its ingredients, in a few words: "15 min · butter, flour". */
+function detailsLine(row: StepRow, lines: readonly StepLine[]): string {
+  const names = row.ingredientIds.flatMap(
+    (id) => lines.find((line) => line.id === id)?.label ?? [],
+  );
+  return [
+    ...(row.durationSeconds === null ? [] : [formatDuration(row.durationSeconds)]),
+    ...(names.length > 0 ? [names.join(", ")] : []),
+  ].join(" · ");
+}
+
+/**
+ * What a step says about itself, for the cook to correct: its time, and which
+ * ingredient lines it uses. Both are read from the step's words to begin
+ * with; what is set here is kept when the words change.
+ */
+function StepDetailFields({
+  row,
+  lines,
+  onChange,
+}: {
+  row: StepRow;
+  lines: readonly StepLine[];
+  onChange: (row: StepRow) => void;
+}) {
+  const shown = row.durationSeconds === null ? "" : formatDuration(row.durationSeconds);
+  const [time, setTime] = useState(shown);
+  const [picking, setPicking] = useState(false);
+  // The step's words can set the time too. What was typed stays as typed while it says the same.
+  useEffect(() => {
+    setTime((typed) => (readTime(typed) === row.durationSeconds ? typed : shown));
+  }, [row.durationSeconds, shown]);
+  const timeBad = time.trim() !== "" && readTime(time) === null;
+  const used = row.ingredientIds.flatMap((id) => lines.find((line) => line.id === id) ?? []);
+  const toggle = (id: string) =>
+    onChange({
+      ...row,
+      ingredientIds: row.ingredientIds.includes(id)
+        ? row.ingredientIds.filter((other) => other !== id)
+        : // Kept in the recipe's order, whatever order they were picked in.
+          lines.flatMap((line) =>
+            line.id === id || row.ingredientIds.includes(line.id) ? [line.id] : [],
+          ),
+    });
+
+  return (
+    <fieldset className="mt-4">
+      <legend className="mb-2 text-sm font-semibold">What cook mode shows with this step</legend>
+      <TextField
+        className="w-[9.5rem]"
+        label="Time"
+        value={time}
+        error={timeBad ? "Use a time such as 20 min or 1 hr 30 min." : undefined}
+        onChange={(text) => {
+          setTime(text);
+          if (text.trim() === "") {
+            onChange({ ...row, durationSeconds: null });
+          } else if (readTime(text) !== null) {
+            onChange({ ...row, durationSeconds: readTime(text) });
+          }
+        }}
+      />
+      <h4 className="mt-3 mb-1.5 text-sm font-semibold">Ingredients</h4>
+      {lines.length === 0 ? (
+        <p className="text-sm">Add the ingredients above, then say which this step uses.</p>
+      ) : (
+        <ul className="flex flex-wrap items-center gap-2" aria-label="Ingredients this step uses">
+          {used.map((line) => (
+            <li key={line.id}>
+              <RemovableChip
+                label={line.label}
+                removeLabel={`Take ${line.label} off this step`}
+                onRemove={() => toggle(line.id)}
+              />
+            </li>
+          ))}
+          <li>
+            <button type="button" className={SMALL_BUTTON} onClick={() => setPicking(true)}>
+              <Plus aria-hidden="true" size="1.125rem" />
+              Choose ingredients
+            </button>
+          </li>
+        </ul>
+      )}
+      <Picker
+        open={picking}
+        onClose={() => setPicking(false)}
+        title="Ingredients this step uses"
+        searchLabel="Find an ingredient"
+        options={lines.map((line) => ({
+          id: line.id,
+          name: line.label,
+          detail: line.text !== line.label ? line.text : undefined,
+        }))}
+        selected={row.ingredientIds}
+        onPick={toggle}
+        multiple
+      />
+    </fieldset>
+  );
+}
+
 /**
  * The steps as one list in which a section is a titled divider row. A closed
- * step shows its number and text; pressing it opens it for editing.
+ * step shows its number and text, and under them its time and the ingredients
+ * it uses; pressing it opens it for editing.
  */
 export function StepList({
   rows,
   onChange,
   errors,
   flagged = [],
+  lines,
+  readStep,
 }: {
   rows: StepListRow[];
   onChange: (rows: StepListRow[]) => void;
   errors: FieldErrors;
+  /** The recipe's ingredient lines, for a step to say which it uses. */
+  lines: readonly StepLine[];
+  /** Reads a step's time and ingredients from its words, for the recipe as it stands. */
+  readStep: StepReader;
   /** Steps to look at, by ID: each is marked "check". */
   flagged?: readonly string[];
 }) {
@@ -53,7 +183,7 @@ export function StepList({
   const replace = (next: StepListRow) =>
     onChange(rows.map((row) => (row.id === next.id ? next : row)));
   const add = (text: string) => {
-    const steps = splitEntries(text).map(newStep);
+    const steps = splitEntries(text).map((step) => newStep(step, readStep));
     if (steps.length > 0) {
       onChange([...rows, ...steps]);
     }
@@ -110,8 +240,9 @@ export function StepList({
                   rows={3}
                   value={row.text}
                   error={error}
-                  onChange={(text) => replace({ ...row, text })}
+                  onChange={(text) => replace(retextStep(row, text, readStep))}
                 />
+                <StepDetailFields row={row} lines={lines} onChange={replace} />
                 {actions}
               </div>
             );
@@ -127,7 +258,14 @@ export function StepList({
                 <span aria-hidden="true" className="w-6 flex-none text-lg font-bold leading-snug">
                   {number}
                 </span>
-                <span className="min-w-0 leading-normal">{row.text}</span>
+                <span className="min-w-0 leading-normal">
+                  <span className="block">{row.text}</span>
+                  {detailsLine(row, lines) ? (
+                    <span data-testid="step-details" className="mt-1 block text-sm font-semibold">
+                      {detailsLine(row, lines)}
+                    </span>
+                  ) : null}
+                </span>
               </span>
             </ClosedRow>
           );

@@ -278,6 +278,33 @@ describe("typing a new recipe", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "Garlic Butter" })).toBeTruthy();
   });
 
+  it("saves each step with the time it states and the ingredients it names", async () => {
+    const api = fakeApi();
+    const { router } = await renderAt("/recipes/new");
+    await editorOpen();
+    fireEvent.change(title(), { target: { value: "Butter Toast" } });
+    typeLine("2 T butter, melted");
+    typeLine("Salt and pepper to taste");
+    typeStep("Brush with the butter and toast for 3 minutes.");
+    typeStep("Season and serve.");
+
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(router.state.location.pathname).toBe("/recipes/butter-toast"));
+
+    const [saved] = api.sent("POST", "/recipes");
+    const [butter] = linesOf(saved) as unknown as { id: string }[];
+    const steps = (
+      (saved?.body?.stepSections ?? []) as {
+        steps: { durationSeconds: number | null; ingredientIds: string[] }[];
+      }[]
+    ).flatMap((section) => section.steps);
+    expect(steps).toMatchObject([
+      { durationSeconds: 180, ingredientIds: [butter?.id] },
+      // No time stated and nothing named: a line kept as written has no food to go by.
+      { durationSeconds: null, ingredientIds: [] },
+    ]);
+  });
+
   it("asks once before adding new foods, creates them, and points each line at its food", async () => {
     const api = fakeApi();
     const { router } = await renderAt("/recipes/new");
@@ -632,6 +659,63 @@ describe("editing a recipe", () => {
     expect(linesOf(saved).map((line) => (line as unknown as { id: string }).id)).toEqual(
       CHICKEN.ingredientSections.flatMap((section) => section.items.map((item) => item.id)),
     );
+  });
+
+  type SavedStep = {
+    id: string;
+    text: string;
+    durationSeconds: number | null;
+    ingredientIds: string[];
+  };
+  const stepsOf = (call: Call | undefined) =>
+    ((call?.body?.stepSections ?? []) as { steps: SavedStep[] }[]).flatMap(
+      (section) => section.steps,
+    );
+  /** The recipe as it was typed before steps said anything of themselves. */
+  const BEFORE: Recipe = {
+    ...CHICKEN,
+    stepSections: CHICKEN.stepSections.map((section) => ({
+      ...section,
+      steps: section.steps.map((step) => ({ ...step, durationSeconds: null, ingredientIds: [] })),
+    })),
+  };
+
+  it("leaves the steps of an older recipe as they are until one is edited", async () => {
+    const api = fakeApi([BEFORE]);
+    const { router } = await renderAt(EDIT);
+    await editorOpen();
+
+    // Something else is changed and saved: no step gains a time or an ingredient.
+    fireEvent.change(title(), { target: { value: "Sunday Roast Chicken" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(router.state.location.pathname).toBe("/recipes/sunday-roast-chicken"),
+    );
+
+    expect(
+      stepsOf(api.sent("PUT")[0]).map((step) => [step.durationSeconds, step.ingredientIds]),
+    ).toEqual(BEFORE.stepSections.flatMap((section) => section.steps.map(() => [null, []])));
+  });
+
+  it("reads a step when its words are edited, and only that step", async () => {
+    const api = fakeApi([BEFORE]);
+    const { router } = await renderAt(EDIT);
+    await editorOpen();
+
+    fireEvent.click(
+      screen.getAllByRole("button", { name: startsWith("Edit step 4:") })[0] as Element,
+    );
+    fireEvent.change(screen.getByLabelText("Step 4"), {
+      target: { value: "Move the chicken to a board and rest it for 20 minutes." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/recipes/${CHICKEN.slug}`));
+
+    const saved = stepsOf(api.sent("PUT")[0]);
+    expect(saved[3]).toMatchObject({ durationSeconds: 1200, ingredientIds: [] });
+    expect(saved.filter((step) => step.durationSeconds !== null)).toHaveLength(1);
+    expect(saved.every((step, index) => index === 3 || step.ingredientIds.length === 0)).toBe(true);
   });
 
   it("goes back to the recipe on Cancel", async () => {

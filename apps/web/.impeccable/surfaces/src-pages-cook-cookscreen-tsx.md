@@ -33,6 +33,22 @@ DECISIONS:
 
 FINISH: reviewed by the finish reviewer on 23 Nov 2026, verdict "ship after fixes", eight fixes, all made: the notice bands scroll away with the first step; Done is a quiet outline and asks before leaving mid-recipe; a ticked box is an outline with a tick, and the step the cook is on is set heavier; a ticked step goes to the top and the ending comes into view; an unscaled line says "not doubled"; the ingredients bar is taller and survives large text; a phone on its side gets two columns and a one-line header; the header and its empty track are outlined. From the ceiling notes, the recipe's category colour runs along the foot of the header. DESIGN.md is updated for cook mode (header, check row, step sizes, ingredients bar and column).
 
+## Step details (T2.9)
+
+Scope: under a step, the ingredients it uses and the time it states. Drawn at `/mock/cook/<slug>` from the fixtures, whose steps are read by the app's own rules.
+
+Job: the cook reaches "Rub the butter into the flour" and needs the amounts without opening the ingredients, with floury hands. The step tells them what to do; the lines under it tell them how much.
+
+DECISIONS:
+- The details belong to the step and sit inside its row, under its words, in the text column. The row is still one target: nothing under a step is pressed.
+- One size down from the step: the step is in the cook size and what it uses is in the large body size, regular weight, with each amount set heavier, exactly as the ingredient list writes a line. The eye reads the instruction first.
+- A line is the list's own line, at the scale being cooked at, and wears the list's own "not doubled" mark. A step's amounts and the list's can never disagree.
+- The time is a word in an outline above the ingredients ("15 min"), the system's mark for a fact about a row. It is not a timer and is not pressed.
+- A done step puts its details away: it has stepped back, and its amounts are no longer wanted. Its words stay.
+- A step that names no ingredient and states no time shows nothing more. There is no empty state and no "no ingredients".
+
 ## Unresolved
 
-- Timers and each step's own ingredients arrive with Phase 2's step details.
+- Timers. A step's time is shown and nothing counts it down; the feature spec keeps timers out.
+- Whether a done step should keep its details for a cook who looks back. They are put away for now.
+- The owner has not been through it at the stove on a phone and on a tablet on its side: that is T2.9's acceptance check.

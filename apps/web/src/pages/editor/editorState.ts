@@ -4,6 +4,7 @@ import {
   formatQuantity,
   type LineParser,
   type Nutrition,
+  namedIngredients,
   newId,
   type Organizer,
   type ParsedLine,
@@ -11,6 +12,7 @@ import {
   type RecipeFormValue,
   RecipeInput,
   readQuantity,
+  statedStepTime,
   type Unit,
 } from "@recipeflare/schema";
 
@@ -272,8 +274,9 @@ export function newLine(text: string, parse: LineParser): LineRow {
   return { kind: "line", id: newId(), text: text.trim(), ...(parse(text.trim()) ?? NO_PARSE) };
 }
 
-export function newStep(text: string): StepRow {
-  return { kind: "step", id: newId(), text: text.trim(), durationSeconds: null, ingredientIds: [] };
+export function newStep(text: string, read?: StepReader): StepRow {
+  const details = read?.(text.trim()) ?? { durationSeconds: null, ingredientIds: [] };
+  return { kind: "step", id: newId(), text: text.trim(), ...details };
 }
 
 export function newDivider(title = ""): DividerRow {
@@ -297,6 +300,73 @@ export function moveRow<T>(rows: readonly T[], from: number, to: number): T[] {
   const [row] = next.splice(from, 1);
   next.splice(to, 0, row as T);
   return next;
+}
+
+// --- What a step says about itself ---
+
+/** A step's time and the ingredient lines it uses. */
+export type StepDetails = Pick<StepRow, "durationSeconds" | "ingredientIds">;
+
+/** Reads a step's time and ingredients from its words. */
+export type StepReader = (text: string) => StepDetails;
+
+/** The foods a step's ingredients are found by: the household's own, with every name each goes by. */
+type NamedFoods = { foods: readonly Pick<Food, "id" | "name" | "pluralName" | "aliases">[] };
+
+/** What an ingredient line is called on a step: its food, or failing that its own words. */
+export function lineLabel(line: LineRow, lists: NamedFoods): string {
+  const food = lists.foods.find((f) => f.id === line.foodId);
+  return food?.name ?? line.newFood ?? line.text.trim();
+}
+
+/**
+ * A reader for the recipe as it stands: the time a step states, and which of
+ * these ingredient lines it names. A line that is as written has no food to
+ * go by, and is linked only by hand.
+ */
+export function stepReader(
+  ingredients: readonly IngredientListRow[],
+  lists: NamedFoods,
+): StepReader {
+  const named = ingredients.flatMap((row) => {
+    if (row.kind !== "line") {
+      return [];
+    }
+    const food = lists.foods.find((f) => f.id === row.foodId);
+    const names = food ? [food.name, food.pluralName, ...food.aliases] : [row.newFood];
+    return [{ id: row.id, names }];
+  });
+  return (text) => ({
+    durationSeconds: statedStepTime(text),
+    ingredientIds: namedIngredients(text, named),
+  });
+}
+
+const sameIds = (a: readonly string[], b: readonly string[]) =>
+  a.length === b.length && a.every((id) => b.includes(id));
+
+/**
+ * A step whose words have changed. Its time and ingredients are read again
+ * from the new words, each only if it was still as the old words read: what
+ * the cook set by hand is theirs, and a corrected typo does not undo it.
+ */
+export function retextStep(row: StepRow, text: string, read: StepReader): StepRow {
+  const before = read(row.text);
+  const after = read(text);
+  // A step with neither has never been read: one from before steps said
+  // anything of themselves. Editing it is what reads it.
+  if (row.durationSeconds === null && row.ingredientIds.length === 0) {
+    return { ...row, text, ...after };
+  }
+  return {
+    ...row,
+    text,
+    durationSeconds:
+      row.durationSeconds === before.durationSeconds ? after.durationSeconds : row.durationSeconds,
+    ingredientIds: sameIds(row.ingredientIds, before.ingredientIds)
+      ? after.ingredientIds
+      : row.ingredientIds,
+  };
 }
 
 export type SummaryPart = { text: string; isNew?: boolean };
@@ -412,6 +482,9 @@ export function checkEditorValue(value: EditorValue): Checked {
   };
   const ingredientSections = group<LineRow>(value.ingredients);
   const stepSections = group<StepRow>(value.steps);
+  const lineIds = new Set(
+    value.ingredients.flatMap((row) => (row.kind === "line" ? [row.id] : [])),
+  );
 
   // Only the values that were filled in are kept, as the saved recipe keeps them.
   const nutrition = Object.fromEntries(
@@ -451,7 +524,8 @@ export function checkEditorValue(value: EditorValue): Checked {
         id: step.id,
         text: step.text,
         durationSeconds: step.durationSeconds,
-        ingredientIds: step.ingredientIds,
+        // A line that has since been deleted is no longer one of the step's.
+        ingredientIds: step.ingredientIds.filter((id) => lineIds.has(id)),
       })),
     })),
     notes: value.notes.filter((note) => note.title.trim() !== "" || note.text.trim() !== ""),

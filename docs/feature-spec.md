@@ -254,7 +254,7 @@ The cook types a line the way it is written on the card. The rule-based parser (
 - Ticking a step moves it to the top of the screen, so the next one sits directly under it with one step to look back at. Ticking the last brings the ending into view.
 - The recipe's category colour runs along the foot of the header.
 - Cook mode reads from the device's copy of the recipe, so it works offline and with an expired session. Each is said in a band above the first step, which scrolls away with it; a signed-out cook is offered "Sign in again" and can carry on without it.
-- No timers in Phase 1. Phase 2's step details adds each step's ingredients and stated times to this screen.
+- No timers. Since Phase 2's step details (T2.9, [section 12](#12-import-with-ai-phase-2)) a step shows, under its words, the ingredients it uses at the scale being cooked at, and the time it states. Nothing counts the time down.
 
 ## 8. Offline
 
@@ -348,5 +348,13 @@ Added with the Phase 2 tasks, each as it is built. The [Phase 2 plan](phase-2-pl
   - A link read from a page's own recipe data is as before: the organizers the page names that the household has are chosen, and the rest are offered for creating.
   - A household with no categories, tags or tools is not asked about, and gets no suggestions.
   - If the model gives no answer about them the import arrives all the same, with no suggestions.
+- **What a step uses, and how long it takes** (T2.9). A step can carry the time it states and the ingredient lines it uses. Both are read from the step's own words by the app's rules, with no model: a missing detail costs a glance at the list, a wrong one puts the wrong amount in front of the cook.
+  - *The time* is taken only when the step states exactly one plain time: "Bake until golden, about 15 minutes" is 15 minutes. A step with two times, a range ("20 to 25 minutes") or a time that says how often ("every 5 minutes") has none.
+  - *An ingredient* is linked only when the step has its food's name, singular or plural. A short name is not taken from inside a longer one that is also an ingredient ("butter" from "peanut butter"). A name that two lines share, such as flour for the base and flour for the top, is linked to neither: the step does not say which. A line kept as written has no food to go by and is linked only by hand.
+  - *In the editor* a step is read as it is typed. A closed step shows what was read under its words: "30 min · butter, flour". The open step has, under "What cook mode shows with this step", a Time box that takes "20 min", "1 hr 30 min" or a bare number of minutes, and the ingredients as chips, each taken off with its cross, with "Choose ingredients" to add any of the recipe's lines. What the cook sets is kept when the step's words change; what they had not touched is read again.
+  - *An import's steps* are read the same way when review opens.
+  - *A recipe from before this* is not touched. Its steps gain nothing until one is edited, and then only that step is read.
+  - *In cook mode* a step that is not yet ticked shows its time as a word in an outline and, under it, each ingredient it uses as the ingredient list writes it, at the scale being cooked at, with the same "not doubled" mark on a line that is as written. A ticked step puts them away. With the ingredients scaled, the list says "Amounts written in the steps are not changed": the lines under a step are, the step's own words are not.
+  - Deleting an ingredient takes it off every step that used it.
 - **Failures** say what happened: there was not enough there to make a recipe from; the day's allowance for importing with AI is used up; the AI could not be reached; the AI could not make a recipe of it; or importing with AI is not working and whoever looks after the app can check it. "Try again" and "Remove" are offered as for a link.
 - **No recipe is made up.** Text with no recipe in it fails; it is not padded out. A recipe with a gap in it keeps its gap, and review says what is missing, as it does for a link.

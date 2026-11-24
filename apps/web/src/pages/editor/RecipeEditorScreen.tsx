@@ -18,7 +18,9 @@ import {
   isDirty,
   type LineParser,
   type LineReader,
+  lineLabel,
   NUTRITION_FIELDS,
+  stepReader,
 } from "./editorState";
 import { IngredientList } from "./IngredientList";
 import { OrganizerFields } from "./OrganizerFields";
@@ -546,6 +548,12 @@ export function RecipeEditorScreen({
           onChange={(steps) => set("steps", steps)}
           errors={errors}
           flagged={review?.flaggedRows}
+          lines={value.ingredients.flatMap((row) =>
+            row.kind === "line"
+              ? [{ id: row.id, label: lineLabel(row, lists), text: row.text.trim() }]
+              : [],
+          )}
+          readStep={stepReader(value.ingredients, lists)}
         />
       </div>
 

@@ -229,9 +229,52 @@ describe("ingredients in cook mode", () => {
       column().getByRole("checkbox", { name: /6 cups water or vegetable stock.*not doubled/ }),
     ).toBeTruthy();
     expect(column().getByRole("status").textContent).toBe(
-      "Doubled. 3 lines are shown as written and were not changed. Amounts in the steps are not changed.",
+      "Doubled. 3 lines are shown as written and were not changed. Amounts written in the steps are not changed.",
     );
     expect(screen.getByRole("button", { name: /^Ingredients/ }).textContent).toContain("at 2×");
+  });
+
+  it("shows under a step the ingredients it uses, with their amounts, and the time it states", async () => {
+    await renderAt(CHICKEN);
+
+    const stuffing = step(/^Step 2\. Stuff the cavity/).closest("label");
+    expect(
+      [...(stuffing?.querySelector("[data-step-details]")?.children ?? [])].map(
+        (line) => line.textContent,
+      ),
+    ).toEqual([
+      "1 lemon, halved",
+      "6 cloves garlic, smashed",
+      "4 sprigs thyme",
+      "2 tbsp olive oil",
+    ]);
+    // A step that states one time shows it; one that names no ingredient shows none.
+    const roasting = step(/^Step 3\. Roast until/).closest("label");
+    expect(roasting?.querySelector("[data-step-details]")?.textContent).toBe("1 hr 20 min");
+    expect(
+      step(/^Step 1\. Heat the oven/)
+        .closest("label")
+        ?.querySelector("[data-step-details]"),
+    ).toBeNull();
+  });
+
+  it("shows a step's ingredients at the scale being cooked at", async () => {
+    await renderAt(CHICKEN);
+    fireEvent.click(column().getByRole("radio", { name: "Double" }));
+
+    const stuffing = step(/^Step 2\. Stuff the cavity/).closest("label");
+    expect(stuffing?.querySelector("[data-step-details]")?.textContent).toContain(
+      "12 cloves garlic, smashed",
+    );
+  });
+
+  it("puts a done step's ingredients away with it", async () => {
+    await renderAt(CHICKEN);
+    const stuffing = step(/^Step 2\. Stuff the cavity/);
+    fireEvent.click(stuffing);
+
+    expect(stuffing.closest("label")?.querySelector("[data-step-details]")).toBeNull();
+    expect(stuffing.closest("label")?.textContent).toContain("Stuff the cavity");
   });
 
   it("scales to a number of servings when the recipe says how many it serves", async () => {

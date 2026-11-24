@@ -14,4 +14,5 @@ export * from "./primitives";
 export * from "./recipe";
 export * from "./sections";
 export * from "./slug";
+export * from "./step-details";
 export * from "./url";

@@ -26,6 +26,118 @@ const typeLine = (text: string) => {
 };
 const sheet = (name: string | RegExp) => within(screen.getByRole("dialog", { name }));
 
+describe("what a step uses", () => {
+  const typeStep = (text: string) => {
+    const entry = screen.getByLabelText("Add a step");
+    fireEvent.change(entry, { target: { value: text } });
+    fireEvent.keyDown(entry, { key: "Enter" });
+  };
+  const details = (row: HTMLElement | undefined) =>
+    row?.querySelector("[data-testid=step-details]")?.textContent ?? null;
+  const openStep = (number: number) =>
+    fireEvent.click(screen.getByRole("button", { name: startsWith(`Edit step ${number}:`) }));
+  const uses = () =>
+    within(screen.getByRole("list", { name: "Ingredients this step uses" }))
+      .getAllByRole("button")
+      .map((button) => button.getAttribute("aria-label") ?? button.textContent);
+
+  it("is read from the step as it is typed: its time, and the ingredients it names", async () => {
+    await renderAt("/mock/new");
+    typeLine("1 cup flour");
+    typeLine("1/2 cup butter, cold");
+
+    typeStep("Rub the butter into the flour. Chill 30 minutes.");
+    typeStep("Press into a pan.");
+
+    expect(details(stepRows()[0])).toBe("30 min · all-purpose flour, butter");
+    // A step that states no time and names no ingredient shows nothing more.
+    expect(details(stepRows()[1])).toBeNull();
+  });
+
+  it("can be corrected on the open step: the time, and each ingredient", async () => {
+    await renderAt("/mock/new");
+    typeLine("1 cup flour");
+    typeLine("1/2 cup butter, cold");
+    typeLine("2 eggs");
+    typeStep("Rub the butter into the flour. Chill 30 minutes.");
+    openStep(1);
+
+    expect((screen.getByLabelText("Time") as HTMLInputElement).value).toBe("30 min");
+    expect(uses()).toEqual([
+      "Take all-purpose flour off this step",
+      "Take butter off this step",
+      "Choose ingredients",
+    ]);
+
+    // A time as it would be said, or a bare number of minutes.
+    fireEvent.change(screen.getByLabelText("Time"), { target: { value: "1 hr 15 min" } });
+    fireEvent.click(screen.getByRole("button", { name: "Take butter off this step" }));
+    fireEvent.click(screen.getByRole("button", { name: "Choose ingredients" }));
+    fireEvent.click(
+      sheet("Ingredients this step uses").getByRole("button", { name: startsWith("egg") }),
+    );
+    fireEvent.click(sheet("Ingredients this step uses").getByRole("button", { name: "Done" }));
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+
+    // In the recipe's order, whatever order they were chosen in.
+    expect(details(stepRows()[0])).toBe("1 hr 15 min · all-purpose flour, egg");
+  });
+
+  it("says so when a time cannot be read, and keeps the one it had", async () => {
+    await renderAt("/mock/new");
+    typeStep("Chill 30 minutes.");
+    openStep(1);
+
+    fireEvent.change(screen.getByLabelText("Time"), { target: { value: "a while" } });
+
+    const time = screen.getByLabelText("Time");
+    expect(document.getElementById(time.getAttribute("aria-describedby") ?? "")?.textContent).toBe(
+      "Use a time such as 20 min or 1 hr 30 min.",
+    );
+    fireEvent.change(time, { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    // Cleared on purpose, it is gone.
+    expect(details(stepRows()[0])).toBeNull();
+  });
+
+  it("keeps a correction when the step's words are changed afterwards", async () => {
+    await renderAt("/mock/new");
+    typeLine("1/2 cup butter, cold");
+    typeStep("Melt the butter, about 2 minutes.");
+    openStep(1);
+    fireEvent.change(screen.getByLabelText("Time"), { target: { value: "5" } });
+
+    fireEvent.change(screen.getByLabelText("Step 1"), {
+      target: { value: "Melt the butter gently, about 2 minutes." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+
+    expect(details(stepRows()[0])).toBe("5 min · butter");
+  });
+
+  it("says to add the ingredients first when the recipe has none", async () => {
+    await renderAt("/mock/new");
+    typeStep("Chill 30 minutes.");
+    openStep(1);
+
+    expect(
+      screen.getByText("Add the ingredients above, then say which this step uses."),
+    ).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Choose ingredients" })).toBeNull();
+  });
+
+  it("is read for an import's steps too", async () => {
+    await renderAt("/mock/review?scene=pasted");
+
+    const baking = screen.getByRole("button", { name: startsWith("Edit step 2:") }).closest("li");
+    expect(details(baking as HTMLElement)).toBe("15 min");
+    // Butter and powdered sugar are each named and each one line. Flour is two
+    // lines here, so the step does not say which, and neither is linked.
+    const rubbing = screen.getByRole("button", { name: startsWith("Edit step 1:") }).closest("li");
+    expect(details(rubbing as HTMLElement)).toBe("butter, powdered sugar");
+  });
+});
+
 describe("a line the app could not read", () => {
   const open = (text: string) =>
     fireEvent.click(screen.getByRole("button", { name: startsWith(`Edit ${text}`) }));

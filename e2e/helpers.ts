@@ -70,6 +70,14 @@ export async function makeRecipe(
     }
     assets.push({ id: (await upload.json()).id, role: "attachment" });
   }
+  const lines = ["2 onions, sliced", "1 tin tomatoes", "a pinch of salt"].map((originalText) => ({
+    id: uuid(),
+    originalText,
+    quantity: null,
+    unitId: null,
+    foodId: null,
+    note: "",
+  }));
   const response = await request.post("/api/v1/recipes", {
     data: {
       title,
@@ -77,25 +85,26 @@ export async function makeRecipe(
       description: "Made for the end-to-end run.",
       servings: 4,
       totalTimeSeconds: 2700,
-      ingredientSections: [
-        {
-          title: null,
-          items: ["2 onions, sliced", "1 tin tomatoes", "a pinch of salt"].map((originalText) => ({
-            id: uuid(),
-            originalText,
-            quantity: null,
-            unitId: null,
-            foodId: null,
-            note: "",
-          })),
-        },
-      ],
+      ingredientSections: [{ title: null, items: lines }],
       stepSections: [
         {
           title: null,
-          steps: ["Soften the onions.", "Add the tomatoes and simmer.", "Season and serve."].map(
-            (text) => ({ id: uuid(), text, durationSeconds: null, ingredientIds: [] }),
-          ),
+          steps: [
+            // The first step says how long it takes and which line it uses, so
+            // the screens that show a step's details have some to show.
+            {
+              id: uuid(),
+              text: "Soften the onions for 10 minutes.",
+              durationSeconds: 600,
+              ingredientIds: [lines[0]?.id ?? ""],
+            },
+            ...["Add the tomatoes and simmer.", "Season and serve."].map((text) => ({
+              id: uuid(),
+              text,
+              durationSeconds: null,
+              ingredientIds: [],
+            })),
+          ],
         },
       ],
     },

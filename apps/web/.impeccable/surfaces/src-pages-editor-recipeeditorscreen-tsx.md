@@ -34,7 +34,24 @@ DECISIONS:
 
 FINISH: reviewed by the finish reviewer on 22 Nov 2026, verdict "ship after fixes", eight fixes, all made: the problem summary and the review's checks became rows that go to what they name; the entry box stays clear of the action bar and takes text uncorrected; the Serves and Makes problems sit under their boxes; the time fields keep "min" on their line at tablet width; the handle no longer blocks scrolling and sits on the row's first line; the Recipe and Original switch sticks and remembers each pane's place; the duplicate message is a notice band; and three wording and spacing slips. From the ceiling notes, the entry hints show only for the first row and the photos band no longer repeats its first label. DESIGN.md is updated for the components this screen adds (form fields, marks, editor rows, picker, divider back).
 
+## Step details (T2.9)
+
+Scope: a step's time and the ingredient lines it uses, shown on the step and corrected there. Drawn at `/mock/new`, `/mock/edit/<slug>` and `/mock/review`.
+
+Job: the cook types a step as the card has it. The app reads the time it states and the ingredients it names, as it reads an ingredient line, and the cook glances at what it made of the step and corrects only what is wrong.
+
+DECISIONS:
+- A closed step says what was read under its words, in the small weight a line's reading has: "30 min · butter, flour". A step with nothing read shows nothing more.
+- The open step has the two things under its text, under a legend that says where they are seen: "What cook mode shows with this step". The cook is not asked to file a step; they are shown what the stove will show.
+- Time is one short box that takes a time as it is said ("20 min", "1 hr 30 min") or a bare number of minutes. Not two boxes: a step's time is short and typed once.
+- Ingredients are chips named by their food, each taken off with its own cross, and "Choose ingredients" opens the same full-height sheet the units and foods use, staying open while several are chosen. Two lines of the same food are told apart there by the line as written.
+- What the cook sets is theirs: changing the step's words reads it again only where they had not corrected it.
+- With no ingredients typed yet the step says to add them first. It does not show a button that opens an empty sheet.
+
 ## Unresolved
+
+- The owner has not been through it on a phone: adding and removing a link, and correcting a time. That is T2.9's acceptance check.
+- A step and an ingredient are linked by the food's name. A step that says "the dry ingredients" is linked by hand.
 
 - Attachments are not drawn; no fixture has one.
 - Uploading: the mock shows a chosen photo from the device and sends it nowhere. Progress and failure of a real upload are drawn with T1.10.
