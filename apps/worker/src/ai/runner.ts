@@ -63,6 +63,8 @@ export type AiRequest<T> = {
   maxTokens?: number;
   /** One model by ID, in place of the profile's. For the owner's check. */
   model?: string;
+  /** How long this call may take, when it is known to need longer than most: reading photographs. */
+  timeoutMs?: number;
 };
 
 export type AiAnswer<T> = {
@@ -250,7 +252,7 @@ export function createAiRunner(
             // The gateway keeps who was asked, when and at what cost. What was
             // asked and answered is a family's recipe card, and is kept only on request.
             extraHeaders: keepContent ? {} : { "cf-aig-collect-log-payload": "false" },
-            signal: AbortSignal.timeout(options.timeoutMs ?? TIMEOUT_MS),
+            signal: AbortSignal.timeout(request.timeoutMs ?? options.timeoutMs ?? TIMEOUT_MS),
           });
         } catch (error) {
           const failure = classifyFailure(error, binding.lastRequestHttpStatusCode);

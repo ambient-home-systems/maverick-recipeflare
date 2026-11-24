@@ -1,6 +1,7 @@
 import {
   canonicalUrl,
   type DraftIssue,
+  type ImportCall,
   ImportJob,
   type ImportJobKind,
   newId,
@@ -43,6 +44,8 @@ export type AiCallRecord = {
   outputTokens: number | null;
   tries: number;
   at: string;
+  /** Why the call gave no answer: the failure's reason and the service's words. Absent for one that did. */
+  failed?: string;
 };
 
 /**
@@ -198,6 +201,29 @@ export async function createPhotoImportJob(
 export async function loadImportJob(db: D1Database, id: string): Promise<ImportJob | null> {
   const row = await drizzle(db).select().from(importJobs).where(eq(importJobs.id, id)).get();
   return row ? toJob(row) : null;
+}
+
+/**
+ * The model calls a job has made, as the detail route shows them: times and
+ * token counts, and for a call that gave no answer, why. Nothing that was
+ * asked or answered is in them.
+ */
+export async function importCalls(db: D1Database, id: string): Promise<ImportCall[]> {
+  const row = await drizzle(db)
+    .select({ work: importJobs.work })
+    .from(importJobs)
+    .where(eq(importJobs.id, id))
+    .get();
+  return (toWork(row?.work ?? null).calls ?? []).map((call) => ({
+    task: call.task,
+    model: call.model,
+    milliseconds: call.milliseconds,
+    inputTokens: call.inputTokens,
+    outputTokens: call.outputTokens,
+    tries: call.tries,
+    failed: call.failed ?? null,
+    at: call.at,
+  }));
 }
 
 /** The oldest recipe saved from a link, if the household has one. `url` is in its canonical form. */

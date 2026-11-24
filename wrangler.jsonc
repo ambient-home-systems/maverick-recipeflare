@@ -45,13 +45,14 @@
   // dead-letter queue, whose consumer, also this Worker, marks the job failed,
   // so nothing is lost silently. A batch is not waited for: an import starts at once.
   // A message is one stage of one import, and a stage can be a model call that
-  // takes a minute. Two to a batch keeps an invocation well inside its time.
+  // takes minutes. The jobs of a batch run side by side, so a batch takes as
+  // long as its slowest job; four to a batch keeps their photos inside memory.
   "queues": {
     "producers": [{ "binding": "IMPORT_QUEUE", "queue": "recipeflare-imports" }],
     "consumers": [
       {
         "queue": "recipeflare-imports",
-        "max_batch_size": 2,
+        "max_batch_size": 4,
         "max_batch_timeout": 0,
         "max_retries": 3,
         "dead_letter_queue": "recipeflare-imports-dlq"
@@ -88,7 +89,7 @@
         "consumers": [
           {
             "queue": "recipeflare-staging-imports",
-            "max_batch_size": 2,
+            "max_batch_size": 4,
             "max_batch_timeout": 0,
             "max_retries": 3,
             "dead_letter_queue": "recipeflare-staging-imports-dlq"

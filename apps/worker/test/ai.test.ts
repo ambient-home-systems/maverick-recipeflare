@@ -262,6 +262,26 @@ describe("a call that fails", () => {
     expect(failure.retryable).toBe(true);
   });
 
+  it("waits as long as a call says it needs, whatever the others get", async () => {
+    const slow = (milliseconds: number) => {
+      const binding = standInBinding([]);
+      binding.run = (_model, _inputs, options) =>
+        new Promise((resolve, reject) => {
+          const signal = options?.signal as AbortSignal;
+          signal.addEventListener("abort", () => reject(signal.reason));
+          setTimeout(() => resolve(chatAnswer(GOOD)), milliseconds);
+        });
+      return binding;
+    };
+
+    // Reading photographs asks for longer than the rest, and gets it.
+    const patient = createAiRunner(slow(40), {}, { timeoutMs: 5 });
+    expect((await patient.run({ ...ASK, timeoutMs: 2000 })).value).toEqual(GOOD);
+    // And a call can ask for less.
+    const failure = await failureOf(createAiRunner(slow(2000), {}).run({ ...ASK, timeoutMs: 5 }));
+    expect(failure.message).toBe("The model took too long to answer.");
+  });
+
   it("counts an error nobody foresaw as worth another try", () => {
     const failure = classifyFailure(new Error("socket hang up"));
     expect([failure.reason, failure.retryable]).toEqual(["unavailable", true]);

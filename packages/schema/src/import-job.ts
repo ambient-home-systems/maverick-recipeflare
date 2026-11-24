@@ -56,6 +56,26 @@ export const ImportJob = z.object({
 export type ImportJob = z.infer<typeof ImportJob>;
 
 /**
+ * One call an import made to a model: what it was for, who was asked, how long
+ * it took and how much was read and written. Nothing of what was asked or
+ * answered. It is how a slow or failed import is explained afterwards.
+ */
+export const ImportCall = z.object({
+  /** The AI task: `read`, `build` and so on. */
+  task: z.string(),
+  model: z.string(),
+  milliseconds: z.int().min(0),
+  inputTokens: z.int().min(0).nullable(),
+  outputTokens: z.int().min(0).nullable(),
+  /** How many times the model was asked before its answer fitted. Nought for a call that gave none. */
+  tries: z.int().min(0),
+  /** Why the call gave no answer, in the service's own words; null for one that did. */
+  failed: z.string().nullable(),
+  at: Timestamp,
+});
+export type ImportCall = z.infer<typeof ImportCall>;
+
+/**
  * A recipe page as the cook's own browser read it: the page's address, what
  * the site calls itself, and its JSON-LD blocks, as text. The "Send to
  * Recipeflare" bookmark gathers this from the page the browser is showing.

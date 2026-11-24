@@ -228,6 +228,11 @@ describe("reading a photographed card", () => {
     expect(after.result?.issues).toEqual([]);
     // Both photos are beside the draft in review.
     expect(after.assets.map((side) => side.id)).toEqual(photos);
+    // And what each call took can be looked up afterwards.
+    expect(after.calls.map((call) => [call.task, call.failed])).toEqual([
+      ["read", null],
+      ["build", null],
+    ]);
     // Two model calls, each kept with the job under the task it was for.
     const kept = (await loadImportJobForRun(db, job.id))?.work;
     expect(kept?.calls?.map((call) => call.task)).toEqual(["read", "build"]);
@@ -265,6 +270,29 @@ describe("reading a photographed card", () => {
     });
     // The writer is never asked to make a recipe of nothing.
     expect(binding.calls).toHaveLength(1);
+  });
+
+  it("waits twice as long for the reader as for the writer", async () => {
+    const { job } = await card(pngMarked(42));
+    const { binding, tools } = toolsWith([chatAnswer(read()), chatAnswer(built())]);
+    const asked: (number | undefined)[] = [];
+    const watched: ImportTools = {
+      ...tools,
+      ai: {
+        profile: () => tools.ai.profile(),
+        run: (request) => {
+          asked.push(request.timeoutMs);
+          return tools.ai.run(request);
+        },
+      },
+    };
+
+    await runImportJob(job.id, IMPORT_HANDLERS, watched, null);
+    await runImportJob(job.id, IMPORT_HANDLERS, watched, "build");
+
+    // Three minutes to read the photographs; the writer keeps the usual wait.
+    expect(asked).toEqual([180_000, undefined]);
+    expect(binding.calls).toHaveLength(2);
   });
 
   it("counts sides with nothing on them as nothing read", async () => {
