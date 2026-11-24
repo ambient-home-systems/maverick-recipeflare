@@ -20,7 +20,8 @@ function scaleDone(scale: number): string {
   return named ? SCALE_DONE[named] : `Scaled to ${formatQuantity(scale)} times`;
 }
 
-function IngredientText({ item, scale }: { item: Ingredient; scale: number }) {
+/** An ingredient at the scale it is being cooked at, with its amount set heavier. */
+export function IngredientText({ item, scale }: { item: Ingredient; scale: number }) {
   const text = formatIngredient(item, { scale });
   const amount = ingredientAmount(item, { scale });
   return (
@@ -94,7 +95,7 @@ export function IngredientChecklist({
           {unscaled > 0
             ? `${unscaled} ${unscaled === 1 ? "line is" : "lines are"} shown as written and ${unscaled === 1 ? "was" : "were"} not changed. `
             : ""}
-          Amounts in the steps are not changed.
+          Amounts written in the steps are not changed.
         </p>
       ) : null}
 

@@ -8,7 +8,13 @@ import {
   type OrganizerKind,
   type RecipeDraft,
 } from "@recipeflare/schema";
-import { type EditorValue, fromInput, isAsWritten, type LineParser } from "./editorState";
+import {
+  type EditorValue,
+  fromInput,
+  isAsWritten,
+  type LineParser,
+  stepReader,
+} from "./editorState";
 
 /** What review mode needs to open on a draft: the editor's value, and what to point the cook at. */
 export type PreparedReview = {
@@ -86,6 +92,15 @@ export function prepareReview(
     }
     return row.foodId ? row : { ...row, ...(byRule ?? {}) };
   });
+
+  // A step that arrives with no time and no ingredients of its own is read by
+  // the rules, as a typed one is: the time it states, the ingredients it names.
+  const readStep = stepReader(value.ingredients, lists);
+  value.steps = value.steps.map((row) =>
+    row.kind === "step" && row.durationSeconds === null && row.ingredientIds.length === 0
+      ? { ...row, ...readStep(row.text) }
+      : row,
+  );
 
   const lines = value.ingredients.flatMap((row) => (row.kind === "line" ? [row] : []));
   const unread = lines.filter(isAsWritten);

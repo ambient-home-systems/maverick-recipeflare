@@ -1,5 +1,6 @@
 import type { Asset, AssetRole, FoodRef, OrganizerKind, OrganizerRef, UnitRef } from "../lists";
 import type { Ingredient, Recipe } from "../recipe";
+import { namedIngredients, statedStepTime } from "../step-details";
 import {
   FIXTURE_TIME,
   fixtureFoods,
@@ -130,6 +131,22 @@ function buildRecipe(number: number, spec: RecipeSpec): Recipe {
 
   const minutes = (value: number | undefined) => (value === undefined ? null : value * 60);
 
+  const ingredientSections = (spec.ingredients ?? []).map((section) => ({
+    title: section.title,
+    items: section.lines.map(toIngredient),
+  }));
+  // Each step's time and ingredients are what the app's own rules read from
+  // its words, as they would be for a recipe typed into the editor.
+  const named = ingredientSections
+    .flatMap((section) => section.items)
+    .map((item) => {
+      const known = fixtureFoods.find((entry) => entry.id === item.food?.id);
+      return {
+        id: item.id,
+        names: known ? [known.name, known.pluralName, ...known.aliases] : [],
+      };
+    });
+
   return {
     id,
     slug: spec.slug,
@@ -145,17 +162,14 @@ function buildRecipe(number: number, spec: RecipeSpec): Recipe {
     nutrition: spec.nutrition ?? null,
     sourceName: spec.sourceName ?? null,
     sourceUrl: spec.sourceUrl ?? null,
-    ingredientSections: (spec.ingredients ?? []).map((section) => ({
-      title: section.title,
-      items: section.lines.map(toIngredient),
-    })),
+    ingredientSections,
     stepSections: (spec.steps ?? []).map((section) => ({
       title: section.title,
       steps: section.steps.map((text) => ({
         id: nextId(),
         text,
-        durationSeconds: null,
-        ingredientIds: [],
+        durationSeconds: statedStepTime(text),
+        ingredientIds: namedIngredients(text, named),
       })),
     })),
     notes: (spec.notes ?? []).map((note) => ({ id: nextId(), ...note })),

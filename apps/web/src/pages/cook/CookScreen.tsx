@@ -1,13 +1,15 @@
-import { formatQuantity, type Recipe } from "@recipeflare/schema";
+import { formatDuration, formatQuantity, isScalable, type Recipe } from "@recipeflare/schema";
 import { ChevronUp, CloudOff, ListChecks, Sun, SunDim, UserRoundX } from "lucide-react";
 import { type ReactNode, useRef, useState } from "react";
 import { Button } from "../../ui/Button";
+import { Mark } from "../../ui/Field";
 import { Notice } from "../../ui/Notice";
 import { Sheet } from "../../ui/Sheet";
 import { STOCK_BG, type Stock } from "../../ui/stock";
+import { notScaledLabel } from "../recipe/recipeFacts";
 import { CheckRow } from "./CheckRow";
 import type { CookSession } from "./cookSession";
-import { IngredientChecklist } from "./IngredientChecklist";
+import { IngredientChecklist, IngredientText } from "./IngredientChecklist";
 import type { WakeState } from "./useWakeLock";
 
 type CookScreenProps = {
@@ -73,6 +75,10 @@ export function CookScreen({
   const steps = recipe.stepSections.flatMap((section) => section.steps);
   const lines = recipe.ingredientSections.flatMap((section) => section.items);
   const doneSteps = steps.filter((step) => session.steps.includes(step.id)).length;
+  // The recipe's ingredient lines by ID, for a step to show the ones it uses.
+  const lineById = new Map(
+    recipe.ingredientSections.flatMap((section) => section.items).map((item) => [item.id, item]),
+  );
   const outLines = lines.filter((line) => session.ingredients.includes(line.id)).length;
   const allDone = steps.length > 0 && doneSteps === steps.length;
   const sectioned = recipe.stepSections.some((section) => section.title);
@@ -242,6 +248,7 @@ export function CookScreen({
                     {section.steps.map((step, number) => {
                       const isTicked = session.steps.includes(step.id);
                       const isCurrent = step.id === current?.id;
+                      const uses = step.ingredientIds.flatMap((id) => lineById.get(id) ?? []);
                       return (
                         <li
                           key={step.id}
@@ -265,7 +272,37 @@ export function CookScreen({
                                 {number + 1}
                               </span>
                               <span className="sr-only">Step {number + 1}.</span>
-                              <span className="min-w-0 max-w-[40ch]">{step.text}</span>
+                              <span className="min-w-0 max-w-[40ch]">
+                                <span className="block">{step.text}</span>
+                                {/* What the step needs to hand, at the scale being cooked at. A done step has no more use for it. */}
+                                {!isTicked && (step.durationSeconds !== null || uses.length > 0) ? (
+                                  <span
+                                    data-step-details
+                                    className="mt-2 block text-lg font-normal leading-snug"
+                                  >
+                                    {step.durationSeconds !== null ? (
+                                      <span className="mb-1.5 block">
+                                        <Mark large>{formatDuration(step.durationSeconds)}</Mark>
+                                      </span>
+                                    ) : null}
+                                    {uses.map((item) => (
+                                      <span
+                                        key={item.id}
+                                        // One line box for every line, marked or not, so the lines
+                                        // keep an even pitch and the marks' outlines stay apart.
+                                        className="flex min-h-8 flex-wrap items-center gap-x-2"
+                                      >
+                                        <span>
+                                          <IngredientText item={item} scale={session.scale} />
+                                        </span>
+                                        {session.scale !== 1 && !isScalable(item) ? (
+                                          <Mark large>{notScaledLabel(session.scale)}</Mark>
+                                        ) : null}
+                                      </span>
+                                    ))}
+                                  </span>
+                                ) : null}
+                              </span>
                             </span>
                           </CheckRow>
                         </li>

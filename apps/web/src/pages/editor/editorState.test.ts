@@ -1,5 +1,11 @@
-import { RecipeUpdate, recipeToUpdate } from "@recipeflare/schema";
-import { cinnamonToast, fixtureRecipes, roastChicken } from "@recipeflare/schema/fixtures";
+import { ingredientParser, RecipeUpdate, recipeToUpdate } from "@recipeflare/schema";
+import {
+  cinnamonToast,
+  fixtureFoods,
+  fixtureRecipes,
+  fixtureUnits,
+  roastChicken,
+} from "@recipeflare/schema/fixtures";
 import { describe, expect, it } from "vitest";
 import {
   checkEditorValue,
@@ -11,10 +17,90 @@ import {
   newLine,
   newStep,
   readQuantity,
+  retextStep,
+  type StepRow,
   splitEntries,
+  stepReader,
 } from "./editorState";
 
 const noParse = () => null;
+
+describe("what a step says about itself", () => {
+  const lists = { foods: fixtureFoods };
+  const parse = ingredientParser({ units: fixtureUnits, foods: fixtureFoods });
+  const butter = newLine("1/2 cup butter, cold", parse);
+  const flour = newLine("1 cup flour", parse);
+  const written = newLine("a knob of something for the pan", parse);
+  const read = stepReader([butter, newDivider("For the top"), flour, written], lists);
+
+  it("is read from its words: the time it states and the ingredients it names", () => {
+    expect(read("Rub the butter into the flour. Chill 30 minutes.")).toEqual({
+      durationSeconds: 1800,
+      ingredientIds: [butter.id, flour.id],
+    });
+    expect(read("Press into the pan.")).toEqual({ durationSeconds: null, ingredientIds: [] });
+  });
+
+  it("is read for a step as it is typed", () => {
+    expect(newStep("Melt the butter, about 2 minutes.", read)).toMatchObject({
+      text: "Melt the butter, about 2 minutes.",
+      durationSeconds: 120,
+      ingredientIds: [butter.id],
+    });
+    // With no reader, as before: nothing is read.
+    expect(newStep("Melt the butter.")).toMatchObject({ durationSeconds: null, ingredientIds: [] });
+  });
+
+  it("is read again when the words change, while the cook has not corrected it", () => {
+    const step = newStep("Melt the butter, about 2 minutes.", read);
+
+    expect(retextStep(step, "Sift the flour. Rest 10 minutes.", read)).toMatchObject({
+      text: "Sift the flour. Rest 10 minutes.",
+      durationSeconds: 600,
+      ingredientIds: [flour.id],
+    });
+  });
+
+  it("keeps what the cook set by hand when the words change", () => {
+    const step: StepRow = {
+      ...newStep("Melt the butter, about 2 minutes.", read),
+      // The cook made it five minutes, and said it uses the flour too.
+      durationSeconds: 300,
+      ingredientIds: [butter.id, flour.id],
+    };
+
+    expect(retextStep(step, "Melt the butter gently, about 2 minutes.", read)).toMatchObject({
+      durationSeconds: 300,
+      ingredientIds: [butter.id, flour.id],
+    });
+  });
+
+  it("reads a step that has never been read, once its words are edited", () => {
+    // From before steps said anything of themselves: no time and no ingredients, whatever its words say.
+    const old: StepRow = {
+      ...newStep("Melt the butter, about 2 minutes."),
+      durationSeconds: null,
+      ingredientIds: [],
+    };
+
+    expect(retextStep(old, "Melt the butter, about 3 minutes.", read)).toMatchObject({
+      durationSeconds: 180,
+      ingredientIds: [butter.id],
+    });
+  });
+
+  it("drops a line that has since been deleted when the recipe is checked", () => {
+    const value = {
+      ...emptyEditorValue(),
+      title: "Shortbread",
+      ingredients: [flour],
+      steps: [{ ...newStep("Rub the butter into the flour.", read) }],
+    };
+
+    const step = checkEditorValue(value).input?.stepSections[0]?.steps[0];
+    expect(step?.ingredientIds).toEqual([flour.id]);
+  });
+});
 
 describe("readQuantity", () => {
   it.each([
