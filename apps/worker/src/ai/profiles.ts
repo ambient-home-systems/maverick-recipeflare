@@ -29,8 +29,15 @@ const GEMMA: AiModel = {
   id: "@cf/google/gemma-4-26b-a4b-it",
   input: { chat_template_kwargs: { enable_thinking: false } },
 };
-// Reasons as hard as it can unless told otherwise, which copying out a recipe does not need.
-const QWEN: AiModel = { id: "@cf/qwen/qwen3.8-27b", input: { reasoning_effort: "low" } };
+// Reasons as hard as it can unless told otherwise, which copying out a recipe
+// does not need. Even at its lowest effort it wrote three times what a draft
+// holds and took most of a minute, so its reasoning is turned off as the
+// reader's is (the same switch: its model page, read 24 Nov 2026). The effort
+// stays beside it, for a deployment where the switch is not honoured.
+const QWEN: AiModel = {
+  id: "@cf/qwen/qwen3.8-27b",
+  input: { reasoning_effort: "low", chat_template_kwargs: { enable_thinking: false } },
+};
 
 const all = (model: AiModel): Record<AiTask, AiModel> => ({
   read: model,
