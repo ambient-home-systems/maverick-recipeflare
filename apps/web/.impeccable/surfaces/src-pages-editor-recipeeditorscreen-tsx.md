@@ -52,7 +52,7 @@ FINISH (step details): reviewed by the finish reviewer on 24 Nov 2026, verdict "
 
 ## Unresolved
 
-- The owner has not been through it on a phone: adding and removing a link, and correcting a time. That is T2.9's acceptance check.
+- The owner approved the step details on 24 Nov 2026 and expects they may want adjusting later. Adding and removing a link and correcting a time on a phone are not recorded as tried.
 - A step and an ingredient are linked by the food's name. A step that says "the dry ingredients" is linked by hand.
 
 - Attachments are not drawn; no fixture has one.

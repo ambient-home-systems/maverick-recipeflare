@@ -273,6 +273,12 @@ Each task is one pull request with its ID in the title. Hours are estimates and 
   - *It cannot fail an import*, like `details`: the draft was already in review. With no answer it goes back as it was, with a line saying so.
   - *The translated lines are read afresh.* What had been read from a line's old words is let go, the rules read the English line, and `details` follows for any they cannot.
   - *A draft read from a page's own data can be translated.* That is the one way such an import reaches a model, and only on the cook's ask.
+- **The owner's checks of T2.7 to T2.10, 24 Nov 2026**, on production with a real model. These close what the four entries above list as not checked.
+  - *T2.7:* "Juice of 2 lemons", typed in the editor, was read with AI as the amount 2, the food "lemons" (marked new, the household having no lemon yet) and the note "Juice of": every part from the line's own words.
+  - *T2.8:* a pasted soup recipe was offered "Soup", one of the household's own categories, and nothing was chosen for the cook.
+  - *T2.9:* the owner approved the design, and expects it may want adjusting later. Whether it was looked at on a phone is not recorded.
+  - *T2.10:* a recipe pasted in Spanish was offered "Translate into English", and the translation came back well.
+  - What these do not show: T2.7 inside an import, a suggestion that should have been refused, or a translation whose amounts the check had to send back. Each is one case that went right.
 - **The deploy token** needs no new permission. The staging deploy that followed T2.1, on 23 Nov 2026, uploaded the Worker with its `AI` binding using the token as it was.
 
 Suggested order: T2.1 and T2.5 first, since both wait on the owner. Then T2.2 to T2.4, which give a working import with no camera in the way. Then T2.6, T2.7 and T2.8. T2.11 as soon as cards can be imported, because its result decides the models every later task is judged with. T2.9 and T2.10 can follow the gate if time is short: neither is in the gate's twenty cards.
