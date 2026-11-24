@@ -86,4 +86,27 @@ test("a sitting of two cards is photographed, sent, reviewed one after the other
   await expect(page.getByRole("button", { name: /Original card/ })).toContainText("2");
   await page.goto("/");
   await expect(page.getByRole("list", { name: "Imports" })).toHaveCount(0);
+
+  // The report says what review changed in each: here the titles and nothing else.
+  await page.goto("/manage");
+  await page.getByRole("link", { name: /Import report/ }).click();
+  await expect(page).toHaveURL(/\/manage\/import-report$/);
+  const each = page.getByRole("list", { name: "Each import" });
+  const cardOne = each.getByRole("listitem").filter({ hasText: "Card One Shortbread" });
+  const cardTwo = each.getByRole("listitem").filter({ hasText: "Card Two Shortbread" });
+  await expect(cardOne).toContainText("Photographed card 1");
+  await expect(cardOne).toContainText("As you saved it, from the standard draft: No changes.");
+  await expect(cardOne).toContainText("Title changed.");
+  await expect(cardTwo).toContainText("Photographed card 2");
+
+  // The owner runs both cards again with another set of models. The stand-in
+  // reads the same words whoever it is said to be, so the runs agree.
+  await page.getByRole("button", { name: "Run again with gemma" }).click();
+  await expect(page.getByText(/^Started 2 runs with gemma\./)).toBeVisible();
+  for (const card of [cardOne, cardTwo]) {
+    await expect(card).toContainText("Run again with gemma: No changes.", { timeout: 60_000 });
+  }
+  // A run that is compared is nobody's to review: the list shows no import.
+  await page.goto("/");
+  await expect(page.getByRole("list", { name: "Imports" })).toHaveCount(0);
 });

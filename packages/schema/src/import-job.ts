@@ -9,11 +9,17 @@ export const SENT_PAGE_LIMITS = { blocks: 40, blockLength: 400_000, totalLength:
 export const ImportJobKind = z.enum(["url", "photo", "text", "video"]);
 export type ImportJobKind = z.infer<typeof ImportJobKind>;
 
+/**
+ * `compared` is where a comparison ends: an import run again under another
+ * profile, whose draft was measured against the saved recipe and is never
+ * reviewed. Every other import ends `completed`, by a cook's save.
+ */
 export const ImportJobStatus = z.enum([
   "queued",
   "running",
   "needs_review",
   "completed",
+  "compared",
   "failed",
   "cancelled",
 ]);

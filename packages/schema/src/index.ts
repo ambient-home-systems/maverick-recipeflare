@@ -13,6 +13,7 @@ export * from "./name-key";
 export * from "./parse-ingredient";
 export * from "./primitives";
 export * from "./recipe";
+export * from "./review";
 export * from "./sections";
 export * from "./slug";
 export * from "./step-details";

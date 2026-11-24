@@ -1,8 +1,10 @@
 import {
+  CompareResponse,
   FoodListResponse,
   ImportDetail,
   ImportJob,
   ImportListResponse,
+  ImportReport,
   LabelListResponse,
   OrganizerListResponse,
   RECIPES_PER_PAGE,
@@ -206,6 +208,34 @@ export function useImport(id: string) {
   return useQuery({
     queryKey: ["imports", "one", id],
     queryFn: ({ signal }) => api(`/imports/${id}`, { schema: ImportDetail, signal }),
+  });
+}
+
+/**
+ * The import report: each saved import and how it was changed in review. While
+ * a card is being run again under another profile it is asked for again, as
+ * the list of imports is while one is being read.
+ */
+export function useImportReport() {
+  return useQuery({
+    queryKey: ["imports", "report"],
+    queryFn: ({ signal }) => api("/imports/report", { schema: ImportReport, signal }),
+    refetchInterval: (query) =>
+      query.state.data?.cards.some((card) =>
+        card.comparisons.some((run) => run.status === "queued" || run.status === "running"),
+      )
+        ? IMPORT_POLL_MS
+        : false,
+  });
+}
+
+/** Runs the saved cards again under another profile. The report shows the runs from then on. */
+export function useCompare() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (profile: string) =>
+      api("/imports/compare", { method: "POST", body: { profile }, schema: CompareResponse }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["imports", "report"] }),
   });
 }
 

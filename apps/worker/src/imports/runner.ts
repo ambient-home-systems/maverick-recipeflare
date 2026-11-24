@@ -1,6 +1,13 @@
-import { checkDraft, type ImportJob, type ImportJobKind, RecipeDraft } from "@recipeflare/schema";
+import {
+  checkDraft,
+  compareWithDraft,
+  type ImportJob,
+  type ImportJobKind,
+  RecipeDraft,
+} from "@recipeflare/schema";
 import { z } from "zod";
 import { AiFailure } from "../ai/failure";
+import { profileNamed } from "../ai/profiles";
 import type { AiAnswer, AiRequest, AiRunner, AiSettings } from "../ai/runner";
 import {
   type AiCallRecord,
@@ -8,12 +15,15 @@ import {
   claimImportJob,
   countAiImports,
   failImportJob,
+  finishComparison,
   finishImportJob,
   type JobInput,
   type JobWork,
   keepImportWork,
   loadImportJobForRun,
+  recipeOfImport,
 } from "../db/importJobs";
+import { loadRecipe } from "../db/recipes";
 import { keepPicture } from "./picture";
 
 /**
@@ -143,11 +153,19 @@ function importError(failure: AiFailure): PermanentImportError {
  * added: the daily limit is checked before a job's first call, and every call
  * is written down in `calls`, to be kept with the job.
  */
-function aiForJob(tools: ImportTools, jobId: string, calls: AiCallRecord[]): AiRunner {
+function aiForJob(
+  tools: ImportTools,
+  jobId: string,
+  calls: AiCallRecord[],
+  /** The profile a comparison is run under, in place of the setting's. */
+  under?: string,
+): AiRunner {
   const limit = Number(tools.env.AI_DAILY_IMPORTS?.trim() || DAILY_AI_IMPORTS);
+  const profile = () => (under ? profileNamed(under) : tools.ai.profile());
   return {
-    profile: () => tools.ai.profile(),
-    async run<T>(request: AiRequest<T>) {
+    profile,
+    async run<T>(asked: AiRequest<T>) {
+      const request: AiRequest<T> = under ? { ...asked, profile: under } : asked;
       if (calls.length === 0) {
         // A job that has already asked a model is let finish: stopping it
         // half-way would waste what it has spent.
@@ -167,8 +185,8 @@ function aiForJob(tools: ImportTools, jobId: string, calls: AiCallRecord[]): AiR
         if (error instanceof AiFailure && error.reason !== "settings") {
           calls.push({
             task: request.task,
-            profile: tools.ai.profile().name,
-            model: request.model ?? tools.ai.profile().models[request.task].id,
+            profile: profile().name,
+            model: request.model ?? profile().models[request.task].id,
             prompt: request.promptVersion ?? null,
             milliseconds: Date.now() - started,
             inputTokens: null,
@@ -251,7 +269,7 @@ export async function runImportJob(
     const answer = await handler(
       job,
       input,
-      { ...tools, ai: aiForJob(tools, jobId, calls) },
+      { ...tools, ai: aiForJob(tools, jobId, calls, input.compare?.profile) },
       loaded.work,
     );
 
@@ -281,6 +299,31 @@ export async function runImportJob(
 
     const byAi = answer instanceof AiDraft;
     const draft = RecipeDraft.parse(byAi ? answer.draft : answer);
+    if (input.compare) {
+      // A comparison is not for review. Its draft is measured against the
+      // recipe the cook settled on for the same card, and the job ends there.
+      const recipe = await loadRecipe(db, (await recipeOfImport(db, input.compare.of)) ?? "");
+      if (!recipe) {
+        return fail("nothing_to_compare", "The recipe this was saved as is no longer here.");
+      }
+      await finishComparison(
+        db,
+        jobId,
+        {
+          draft,
+          issues: checkDraft(draft),
+          sourceText: byAi ? answer.sourceText : null,
+          readBy: byAi ? "ai" : "structured-data",
+        },
+        {
+          ...compareWithDraft(draft, recipe),
+          profile: input.compare.profile,
+          at: new Date().toISOString(),
+        },
+        withCalls(loaded.work),
+      );
+      return { ack: true };
+    }
     // The picture the source points at is fetched here, for every kind of
     // import, so that a handler still saves nothing itself.
     await keepPicture({ id: job.id, createdBy }, draft.imageUrl, tools);

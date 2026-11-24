@@ -72,6 +72,9 @@ export function importStatus(job: ImportJob): string {
       return "Cancelled";
     case "completed":
       return "Saved";
+    case "compared":
+      // A comparison is never in this list; the report shows it.
+      return "Compared";
   }
 }
 

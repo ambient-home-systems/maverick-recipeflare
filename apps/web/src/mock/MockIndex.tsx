@@ -43,6 +43,11 @@ const READY = [
     name: "Reviewing an import",
     detail: "What a link or pasted text brought in, with what to check and the original beside it.",
   },
+  {
+    to: "/mock/report",
+    name: "Import report",
+    detail: "What review changed in each saved import, and how other models did on the same cards.",
+  },
 ] as const;
 
 const COMING: string[] = [];

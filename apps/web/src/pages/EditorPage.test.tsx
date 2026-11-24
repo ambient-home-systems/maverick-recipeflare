@@ -359,10 +359,10 @@ describe("typing a new recipe", () => {
 
     // A unit the household lacks, made from the unit picker of an open line.
     fireEvent.click(screen.getByRole("button", { name: startsWith("Edit 2 cups nuts") }));
-    fireEvent.click(screen.getByRole("button", { name: "Unit" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Unit\b/ }));
     fireEvent.change(sheet("Unit").getByLabelText("Find a unit"), { target: { value: "handful" } });
     fireEvent.click(sheet("Unit").getByRole("button", { name: "Create the unit “handful”" }));
-    expect(screen.getByRole("button", { name: "Unit" }).textContent).toBe("handful");
+    expect(screen.getByRole("button", { name: /^Unit\b/ }).textContent).toBe("handful");
 
     // A tag made in place.
     fireEvent.click(screen.getByRole("button", { name: "Choose tags" }));
@@ -396,7 +396,7 @@ describe("typing a new recipe", () => {
     await editorOpen();
     typeLine("2 cups nuts");
     fireEvent.click(screen.getByRole("button", { name: startsWith("Edit 2 cups nuts") }));
-    fireEvent.click(screen.getByRole("button", { name: "Unit" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Unit\b/ }));
     fireEvent.change(sheet("Unit").getByLabelText("Find a unit"), { target: { value: "handful" } });
     fireEvent.click(sheet("Unit").getByRole("button", { name: "Create the unit “handful”" }));
 

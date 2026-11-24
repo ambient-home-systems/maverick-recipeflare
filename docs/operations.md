@@ -153,8 +153,22 @@ Each is optional. Add it as an environment **variable** of the GitHub environmen
 | `AI_GATEWAY` | The name of the AI Gateway every model call goes through. Any name but `default` must be created in the dashboard first | `default` |
 | `AI_LOG_CONTENT` | `true` lets the gateway keep what was asked of a model and what it answered: photos of recipe cards and their text | Not kept. The gateway still records each call's model, time and cost |
 | `AI_DAILY_IMPORTS` | How many imports may ask a model in any 24 hours. Past it, a new import fails saying the day's allowance is used up; one already under way finishes | 100 |
+| `AI_COMPARE` | `on` lets the owner run saved imports again under another profile, from the import report. Set it on `staging` only: every run asks a model and is billed | Off. The report is still there; it offers nothing to run |
 
 A variable that has been set stays set on the Worker after it is removed from GitHub. To go back to a default, set the variable to the default's value and deploy.
+
+### Comparing models
+
+This is how the default profile is chosen (T2.11 in the [Phase 2 plan](phase-2-plan.md)). It is done on staging, with real cards, by the owner.
+
+1. Once: add the variable `AI_COMPARE` with the value `on` to the `staging` GitHub environment, and deploy staging. Do not add it to `production`.
+2. On staging, photograph twenty cards (Add, From photos), handwritten ones among them, and review and save each as you would at home. The photos stay in staging's bucket.
+3. Open Manage, Import report. Each card says what you changed in review.
+4. At the bottom, press "Run again with" for every profile, the one in use included. Twenty cards are started at a press; each run appears under its card as it finishes, and the page keeps itself up to date while any is under way.
+5. Compare the "Run again with" lines under "Added up" with each other: changes for each import, how many were within minor fixes, amounts corrected without a warning, and the time taken. Do not set them against "As you saved them": your review began from one profile's draft, which flatters it.
+6. To put the winner in use, set `AI_PROFILE` on each environment and deploy. The numbers go into the plan.
+
+Each run counts towards `AI_DAILY_IMPORTS` and the gateway's spend limit: twenty cards under three profiles is sixty runs, on top of the twenty imports themselves. A run that failed is tried again by pressing the same button. `GET /api/v1/imports/report`, opened in the browser, gives the same report as data.
 
 ### The gateway, once
 

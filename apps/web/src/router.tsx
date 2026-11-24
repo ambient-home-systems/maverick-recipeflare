@@ -12,12 +12,14 @@ import {
   validateMockEditorSearch,
   validateMockListSearch,
   validateMockRecipeSearch,
+  validateMockReportSearch,
   validateMockReviewSearch,
 } from "./mock/scenes";
 import { AddPage } from "./pages/AddPage";
 import { CapturePage } from "./pages/CapturePage";
 import { CookPage } from "./pages/CookPage";
 import { EditRecipePage, NewRecipePage, ReviewImportPage } from "./pages/EditorPage";
+import { ImportReportPage } from "./pages/ImportReportPage";
 import { ManageListPage, ManagePage } from "./pages/ManagePage";
 import { RecipePage } from "./pages/RecipePage";
 import { RecipesPage } from "./pages/RecipesPage";
@@ -67,6 +69,12 @@ const mockCaptureRoute = createRoute({
   path: "/mock/capture",
   validateSearch: validateMockCaptureSearch,
   component: lazyRouteComponent(() => import("./mock/MockCapture"), "MockCapture"),
+});
+const mockReportRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/mock/report",
+  validateSearch: validateMockReportSearch,
+  component: lazyRouteComponent(() => import("./mock/MockReport"), "MockReport"),
 });
 
 const mockRecipeRoute = createRoute({
@@ -143,6 +151,8 @@ const routeTree = rootRoute.addChildren([
   at("/add/photos", CapturePage),
   at("/imports/$id/review", ReviewImportPage),
   at("/manage", ManagePage),
+  // Not one of the lists. A fixed address is matched before `$list`.
+  at("/manage/import-report", ImportReportPage),
   at("/manage/$list", ManageListPage),
   at("/mock", MockIndex),
   at("/mock/tokens", MockTokens),
@@ -151,6 +161,7 @@ const routeTree = rootRoute.addChildren([
   mockListRoute,
   mockAddRoute,
   mockCaptureRoute,
+  mockReportRoute,
   mockRecipeRoute,
   mockEditRoute,
   mockNewRoute,

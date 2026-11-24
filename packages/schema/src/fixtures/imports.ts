@@ -1,5 +1,7 @@
+import type { ImportReport, ImportRun } from "../api";
 import { checkDraft, RecipeDraft } from "../draft";
 import type { ImportJob } from "../import-job";
+import type { ImportReview, ReviewCount } from "../review";
 import { fixtureId, IMPORT_JOB_GROUP } from "./lists";
 
 /**
@@ -290,3 +292,143 @@ export const fixtureCardImports: ImportJob[] = [
 
 /** Newest first, as the list shows them. */
 export const fixtureImportJobs: ImportJob[] = [importRunning, importNeedsReview, importFailed];
+
+const untouched = (same: number): ReviewCount => ({
+  same,
+  moved: 0,
+  changed: 0,
+  added: 0,
+  removed: 0,
+});
+
+const review = (profile: string | null, changes: Partial<ImportReview> = {}): ImportReview => ({
+  profile,
+  titleChanged: false,
+  ingredients: untouched(8),
+  steps: untouched(5),
+  amounts: { changed: 0, unflagged: 0 },
+  at: "2026-11-24T09:00:00.000Z",
+  ...changes,
+});
+
+const compared = (number: number, profile: string, run: Partial<ImportRun> = {}): ImportRun => ({
+  id: fixtureId(IMPORT_JOB_GROUP, number),
+  profile,
+  status: "compared",
+  review: review(profile),
+  error: null,
+  milliseconds: 21_000,
+  ...run,
+});
+
+/**
+ * The import report, with one import in each state the page has to show: an
+ * amount corrected without a warning, a card still being run again, a run that
+ * failed, a link no model read, and an import saved before the record was
+ * kept. The numbers are invented; the titles are the invented fixture recipes'.
+ */
+export const fixtureImportReport: ImportReport = {
+  compareWith: ["standard", "gemma", "qwen"],
+  cards: [
+    {
+      id: fixtureId(IMPORT_JOB_GROUP, 20),
+      kind: "photo",
+      card: 4,
+      title: "Cardamom Sugar Cookies",
+      slug: "cardamom-sugar-cookies",
+      savedAt: "2026-11-24T09:12:00.000Z",
+      profile: "standard",
+      status: "completed",
+      review: review("standard", {
+        ingredients: { same: 7, moved: 0, changed: 1, added: 0, removed: 0 },
+        amounts: { changed: 1, unflagged: 1 },
+      }),
+      error: null,
+      milliseconds: 24_500,
+      comparisons: [
+        compared(21, "gemma", {
+          review: review("gemma", {
+            ingredients: { same: 6, moved: 0, changed: 2, added: 0, removed: 0 },
+            steps: { same: 3, moved: 1, changed: 0, added: 0, removed: 1 },
+          }),
+          milliseconds: 11_200,
+        }),
+        compared(22, "qwen", { milliseconds: 96_000 }),
+      ],
+    },
+    {
+      id: fixtureId(IMPORT_JOB_GROUP, 23),
+      kind: "photo",
+      card: 3,
+      title: "Lemony Red Lentil Soup",
+      slug: "lemony-red-lentil-soup",
+      savedAt: "2026-11-24T09:08:00.000Z",
+      profile: "standard",
+      status: "completed",
+      review: review("standard"),
+      error: null,
+      milliseconds: 19_800,
+      comparisons: [
+        compared(24, "gemma", {
+          review: review("gemma", {
+            ingredients: { same: 7, moved: 0, changed: 1, added: 0, removed: 0 },
+            steps: { same: 4, moved: 0, changed: 1, added: 0, removed: 0 },
+          }),
+          milliseconds: 9_400,
+        }),
+        compared(25, "qwen", { status: "running", review: null, milliseconds: 6_000 }),
+      ],
+    },
+    {
+      id: fixtureId(IMPORT_JOB_GROUP, 26),
+      kind: "text",
+      title: "Sunday Beef and Bean Chili",
+      slug: "sunday-beef-and-bean-chili",
+      savedAt: "2026-11-23T18:40:00.000Z",
+      profile: "standard",
+      status: "completed",
+      review: review("standard", {
+        titleChanged: true,
+        ingredients: { same: 9, moved: 0, changed: 2, added: 1, removed: 0 },
+        steps: { same: 4, moved: 0, changed: 1, added: 0, removed: 1 },
+      }),
+      error: null,
+      milliseconds: 14_000,
+      comparisons: [
+        compared(27, "gemma", {
+          status: "failed",
+          review: null,
+          error: { code: "ai_unavailable", message: "The model took too long to answer." },
+          milliseconds: 90_000,
+        }),
+      ],
+    },
+    {
+      id: fixtureId(IMPORT_JOB_GROUP, 28),
+      kind: "url",
+      title: "Buttermilk Pancakes",
+      slug: "buttermilk-pancakes",
+      savedAt: "2026-11-23T12:05:00.000Z",
+      profile: null,
+      status: "completed",
+      review: review(null),
+      error: null,
+      milliseconds: 0,
+      comparisons: [],
+    },
+    {
+      id: fixtureId(IMPORT_JOB_GROUP, 29),
+      kind: "photo",
+      card: 1,
+      title: "Cinnamon Toast",
+      slug: null,
+      savedAt: "2026-11-22T16:30:00.000Z",
+      profile: "standard",
+      status: "completed",
+      review: null,
+      error: null,
+      milliseconds: 31_000,
+      comparisons: [],
+    },
+  ],
+};

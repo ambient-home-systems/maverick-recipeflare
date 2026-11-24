@@ -56,26 +56,43 @@ export function ManageIndexScreen({
           </EmptyState>
         </>
       ) : (
-        <ul aria-label="Lists">
-          {groups.map((group) => (
-            <li key={group.key} className="border-b border-rule last:border-b-0">
+        <>
+          <ul aria-label="Lists">
+            {groups.map((group) => (
+              <li key={group.key} className="border-b border-rule last:border-b-0">
+                <Link
+                  to="/manage/$list"
+                  params={{ list: group.key }}
+                  className="transition-rf flex min-h-touch items-center gap-3 px-4 py-3 text-ink no-underline hover:bg-surface-sunk"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-lg font-semibold">{group.name}</span>
+                    <span className="block text-sm">{group.detail}</span>
+                  </span>
+                  {group.count === null ? null : (
+                    <span className="flex-none text-base font-semibold">{group.count}</span>
+                  )}
+                  <ChevronRight aria-hidden="true" size="1.25rem" className="flex-none" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+          {/* Not a list of the household's: what review changed in each import. */}
+          <ul aria-label="Reports" className="border-t border-rule-strong">
+            <li>
               <Link
-                to="/manage/$list"
-                params={{ list: group.key }}
+                to="/manage/import-report"
                 className="transition-rf flex min-h-touch items-center gap-3 px-4 py-3 text-ink no-underline hover:bg-surface-sunk"
               >
                 <span className="min-w-0 flex-1">
-                  <span className="block text-lg font-semibold">{group.name}</span>
-                  <span className="block text-sm">{group.detail}</span>
+                  <span className="block text-lg font-semibold">Import report</span>
+                  <span className="block text-sm">How much each import was changed in review.</span>
                 </span>
-                {group.count === null ? null : (
-                  <span className="flex-none text-base font-semibold">{group.count}</span>
-                )}
                 <ChevronRight aria-hidden="true" size="1.25rem" className="flex-none" />
               </Link>
             </li>
-          ))}
-        </ul>
+          </ul>
+        </>
       )}
     </Page>
   );

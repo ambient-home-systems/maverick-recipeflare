@@ -1,8 +1,9 @@
 import { z } from "zod";
-import { ImportCall, ImportJob } from "./import-job";
+import { ImportCall, ImportJob, ImportJobKind, ImportJobStatus } from "./import-job";
 import { Asset, Food, Label, Member, Organizer, Unit } from "./lists";
-import { Id, Slug } from "./primitives";
+import { Id, Slug, Timestamp } from "./primitives";
 import { Recipe, RecipeSummary } from "./recipe";
+import { ImportReview } from "./review";
 
 /** Body of `GET /api/v1/health`. */
 export const HealthResponse = z.object({
@@ -154,3 +155,53 @@ export const ImportDetail = ImportJob.extend({
   calls: z.array(ImportCall).default([]),
 });
 export type ImportDetail = z.infer<typeof ImportDetail>;
+
+/**
+ * One run of an import under one profile, as the report shows it: the cook's
+ * own, or a comparison. `review` is how far the saved recipe is from the draft
+ * that run made; null while a comparison is under way, when it failed, and for
+ * an import saved before the record was kept.
+ */
+export const ImportRun = z.object({
+  id: Id,
+  /** The profile whose models wrote the draft. Null when no model did. */
+  profile: z.string().nullable(),
+  status: ImportJobStatus,
+  review: ImportReview.nullable(),
+  error: z.object({ code: z.string(), message: z.string() }).nullable(),
+  /** What its model calls took, added up. */
+  milliseconds: z.int().min(0),
+});
+export type ImportRun = z.infer<typeof ImportRun>;
+
+/** One saved import in the report, with every comparison run of it, oldest first. */
+export const ReportCard = ImportRun.extend({
+  kind: ImportJobKind,
+  /** A photographed card's place in its sitting. */
+  card: z.int().min(1).optional(),
+  title: z.string(),
+  /** The recipe it was saved as. Null when that recipe has since been deleted. */
+  slug: Slug.nullable(),
+  savedAt: Timestamp,
+  comparisons: z.array(ImportRun),
+});
+export type ReportCard = z.infer<typeof ReportCard>;
+
+/** Body of `GET /api/v1/imports/report`: saved imports, newest first, and how each was changed in review. */
+export const ImportReport = z.object({
+  cards: z.array(ReportCard),
+  /**
+   * The profiles the cards can be run again with. Empty where comparing is
+   * not switched on, and for a member who is not the owner.
+   */
+  compareWith: z.array(z.string()),
+});
+export type ImportReport = z.infer<typeof ImportReport>;
+
+/** Body of `POST /api/v1/imports/compare`: run the saved cards again under this profile. */
+export const CompareRequest = z.object({ profile: z.string().trim().min(1).max(40) });
+export type CompareRequest = z.infer<typeof CompareRequest>;
+
+/** Its answer: how many runs were started, and how many cards were left for another press. */
+export const CompareResponse = z.object({ started: z.int().min(0), waiting: z.int().min(0) });
+export type CompareResponse = z.infer<typeof CompareResponse>;

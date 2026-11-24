@@ -8,8 +8,10 @@ import { emptyLibrary, makeRecipe } from "./helpers";
  * using the app with a screen reader.
  */
 
-// A tall page, so nothing is judged while it happens to sit half under the navigation bar.
-test.use({ viewport: { width: 412, height: 2600 } });
+// A page taller than any screen here, so nothing is judged while it happens to sit half
+// under the navigation bar or the action bar. An import's review is the longest: 2600 was
+// not enough for it, and a row under the Save bar was reported as too small to press.
+test.use({ viewport: { width: 412, height: 6000 } });
 
 let slug = "";
 
@@ -100,6 +102,61 @@ const screens: { name: string; open: (page: Page) => Promise<void> }[] = [
     open: async (page) => {
       await page.goto("/manage/units");
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    },
+  },
+  {
+    name: "the manage index",
+    open: async (page) => {
+      await page.goto("/manage");
+      await expect(page.getByRole("link", { name: /Import report/ })).toBeVisible();
+    },
+  },
+  // What importing with AI added or changed is checked as the mock draws it:
+  // the same screens, in states a library of one typed recipe does not have.
+  {
+    name: "the list, with photographed cards coming in",
+    open: async (page) => {
+      await page.goto("/mock/list?scene=cards");
+      await expect(page.getByRole("list", { name: "Imports" })).toBeVisible();
+    },
+  },
+  {
+    name: "reviewing an import a model wrote up",
+    open: async (page) => {
+      await page.goto("/mock/review?scene=pasted");
+      await expect(page.getByText(/Written up by AI/)).toBeVisible();
+    },
+  },
+  {
+    name: "reviewing an import in another language",
+    open: async (page) => {
+      await page.goto("/mock/review?scene=foreign");
+      await expect(page.getByRole("button", { name: "Translate into English" })).toBeVisible();
+    },
+  },
+  {
+    name: "reviewing a photographed card",
+    open: async (page) => {
+      await page.goto("/mock/review?scene=card");
+      await expect(page.getByLabel("Title")).toBeVisible();
+    },
+  },
+  {
+    name: "the editor, with a line the rules could not read",
+    open: async (page) => {
+      await page.goto("/recipes/new");
+      await page.getByLabel("Add an ingredient").fill("Juice of 2 lemons");
+      await page.getByLabel("Add an ingredient").press("Enter");
+      await page.getByRole("button", { name: /^Edit Juice of 2 lemons/ }).click();
+      await expect(page.getByRole("button", { name: "Read with AI" })).toBeVisible();
+    },
+  },
+  {
+    name: "the import report",
+    open: async (page) => {
+      await page.goto("/mock/report");
+      await expect(page.getByRole("button", { name: "Run again with gemma" })).toBeVisible();
+      await expect(page.getByText("Reading it again")).toBeVisible();
     },
   },
 ];

@@ -126,6 +126,27 @@ export function validateMockAddSearch(raw: Record<string, unknown>): { scene?: "
   return raw.scene === "offline" ? { scene: "offline" } : {};
 }
 
+/** The import report as its states: what the owner sees on staging, what everyone else sees, and the rest. */
+export const REPORT_SCENES = ["owner", "plain", "empty", "loading", "failed", "offline"] as const;
+export type ReportScene = (typeof REPORT_SCENES)[number];
+export const REPORT_SCENE_LABELS: Record<ReportScene, string> = {
+  owner: "With comparing on",
+  plain: "Without comparing",
+  empty: "Nothing saved yet",
+  loading: "Loading",
+  failed: "Could not load",
+  offline: "Offline",
+};
+
+export function validateMockReportSearch(raw: Record<string, unknown>): {
+  scene?: Exclude<ReportScene, "owner">;
+} {
+  const scene = (REPORT_SCENES as readonly unknown[]).includes(raw.scene)
+    ? (raw.scene as ReportScene)
+    : "owner";
+  return scene === "owner" ? {} : { scene };
+}
+
 /** States of photographing cards that a camera alone cannot reach, or is slow to reach. */
 export const CAPTURE_SCENES = [
   "sitting",

@@ -1,12 +1,15 @@
 import {
   canonicalUrl,
+  compareWithDraft,
   type FieldIssue,
   flattenIngredientSections,
   flattenStepSections,
   groupIngredientRows,
   groupStepRows,
+  type ImportReview,
   newId,
   Recipe,
+  RecipeDraft,
   type RecipeInput,
   type RecipeUpdate,
   slugify,
@@ -286,7 +289,14 @@ async function readBeforeSave(orm: Orm, target: Target, input: RecipeInput) {
       .from(organizers)
       .where(inJson(organizers.id, organizerIds)),
     orm
-      .select({ status: importJobs.status })
+      .select({
+        status: importJobs.status,
+        result: importJobs.result,
+        // Which profile's models wrote the draft, when a model did.
+        profile: sql<string | null>`json_extract(${importJobs.work}, '$.calls[0].profile')`.as(
+          "draft_profile",
+        ),
+      })
       .from(importJobs)
       .where(eq(importJobs.id, importJobId)),
     // The recipe's assets as they stand, what the import brought, and any the save names.
@@ -300,6 +310,8 @@ async function readBeforeSave(orm: Orm, target: Target, input: RecipeInput) {
 
   return {
     importStatus: jobRows[0]?.status ?? null,
+    /** The draft the import made, as stored, and who wrote it: what the save is measured against. */
+    importDraft: { result: jobRows[0]?.result ?? null, profile: jobRows[0]?.profile ?? null },
     /** Asset ID to the recipe that has it, or null for one that is not on a recipe yet. */
     assetOwners: new Map(assetRows.map((asset) => [asset.id, asset.ownerId])),
     base,
@@ -432,6 +444,33 @@ async function save(
       }
       throw error;
     }
+  }
+}
+
+/**
+ * The record kept when a save confirms an import: how far what the cook saved
+ * is from the draft, as JSON. Null when the import has no draft that can be
+ * read; a record that cannot be made must never stop a save.
+ */
+function reviewOfSave(
+  job: { result: string | null; profile: string | null },
+  input: RecipeInput,
+  at: string,
+): string | null {
+  try {
+    const stored: unknown = job.result === null ? null : JSON.parse(job.result);
+    const draft = RecipeDraft.safeParse((stored as { draft?: unknown } | null)?.draft);
+    if (!draft.success) {
+      return null;
+    }
+    const review: ImportReview = {
+      ...compareWithDraft(draft.data, input),
+      profile: job.profile,
+      at,
+    };
+    return JSON.stringify(review);
+  } catch {
+    return null;
   }
 }
 
@@ -598,7 +637,13 @@ function writeStatements(
     statements.push(
       orm
         .update(importJobs)
-        .set({ status: "completed", recipeId: id, updatedAt: now })
+        .set({
+          status: "completed",
+          recipeId: id,
+          // How far what the cook saved is from what the import made of it.
+          review: reviewOfSave(known.importDraft, input, now),
+          updatedAt: now,
+        })
         .where(sql`${importJobs.id} = ${confirming} AND ${importJobs.status} = 'needs_review'`),
     );
   }
