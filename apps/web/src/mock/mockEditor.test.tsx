@@ -73,10 +73,8 @@ describe("what a step uses", () => {
     fireEvent.change(screen.getByLabelText("Time"), { target: { value: "1 hr 15 min" } });
     fireEvent.click(screen.getByRole("button", { name: "Take butter off this step" }));
     fireEvent.click(screen.getByRole("button", { name: "Choose ingredients" }));
-    fireEvent.click(
-      sheet("Ingredients this step uses").getByRole("button", { name: startsWith("egg") }),
-    );
-    fireEvent.click(sheet("Ingredients this step uses").getByRole("button", { name: "Done" }));
+    fireEvent.click(sheet("Used in this step").getByRole("button", { name: startsWith("egg") }));
+    fireEvent.click(sheet("Used in this step").getByRole("button", { name: "Done" }));
     fireEvent.click(screen.getByRole("button", { name: "Done" }));
 
     // In the recipe's order, whatever order they were chosen in.
@@ -88,9 +86,12 @@ describe("what a step uses", () => {
     typeStep("Chill 30 minutes.");
     openStep(1);
 
-    fireEvent.change(screen.getByLabelText("Time"), { target: { value: "a while" } });
-
     const time = screen.getByLabelText("Time");
+    fireEvent.change(time, { target: { value: "a while" } });
+    // Half typed is not yet wrong: nothing is said until the box is left.
+    expect(time.getAttribute("aria-describedby")).toBeNull();
+    fireEvent.blur(time);
+
     expect(document.getElementById(time.getAttribute("aria-describedby") ?? "")?.textContent).toBe(
       "Use a time such as 20 min or 1 hr 30 min.",
     );
@@ -113,6 +114,40 @@ describe("what a step uses", () => {
     fireEvent.click(screen.getByRole("button", { name: "Done" }));
 
     expect(details(stepRows()[0])).toBe("5 min · butter");
+  });
+
+  it("names three ingredients on a closed step and counts the rest", async () => {
+    await renderAt("/mock/new");
+    for (const line of [
+      "1 cup flour",
+      "1/2 cup butter, cold",
+      "2 eggs",
+      "1 cup sugar",
+      "1 lemon",
+    ]) {
+      typeLine(line);
+    }
+
+    typeStep("Beat the eggs, sugar, butter and flour with the juice of the lemon.");
+
+    expect(details(stepRows()[0])).toBe("all-purpose flour, butter, egg and 2 more");
+  });
+
+  it("calls a line with no food by its own words, up to the first comma", async () => {
+    await renderAt("/mock/new");
+    typeLine("a knob of something, for the pan");
+    typeStep("Grease the pan.");
+    openStep(1);
+    fireEvent.click(screen.getByRole("button", { name: "Choose ingredients" }));
+    // The sheet shows the whole line under the name, to tell lines apart.
+    const row = sheet("Used in this step").getByRole("button", {
+      name: startsWith("a knob of something"),
+    });
+    expect(row.textContent).toContain("a knob of something, for the pan");
+    fireEvent.click(row);
+    fireEvent.click(sheet("Used in this step").getByRole("button", { name: "Done" }));
+
+    expect(uses()).toEqual(["Take a knob of something off this step", "Choose ingredients"]);
   });
 
   it("says to add the ingredients first when the recipe has none", async () => {

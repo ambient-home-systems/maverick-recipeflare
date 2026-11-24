@@ -48,6 +48,8 @@ DECISIONS:
 - What the cook sets is theirs: changing the step's words reads it again only where they had not corrected it.
 - With no ingredients typed yet the step says to add them first. It does not show a button that opens an empty sheet.
 
+FINISH (step details): reviewed by the finish reviewer on 24 Nov 2026, verdict "fix", five fixes, all made: a closed step names three ingredients and counts the rest, and a line with no food is called by its words up to the first comma, so the note stays shorter than the step; the legend became a sentence ("Cook mode shows these with the step.") where it had read as a third label over two labelled fields; the Time box is short inside a field of the row's width, so its problem does not wrap in a column, and the problem is said when the box is left, not while it is typed; the picker's title is "Used in this step", which fits one line on a phone. The fixes were looked at in a browser afterwards; the reviewer has not seen them.
+
 ## Unresolved
 
 - The owner has not been through it on a phone: adding and removing a link, and correcting a time. That is T2.9's acceptance check.

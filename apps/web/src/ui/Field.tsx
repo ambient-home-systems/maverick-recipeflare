@@ -94,6 +94,7 @@ export function TextField({
   enterKeyHint,
   onEnter,
   verbatim = false,
+  boxClassName,
   ...props
 }: FieldProps & {
   /** For text that must stay exactly as typed: the device does not correct, capitalise or check it. */
@@ -103,6 +104,8 @@ export function TextField({
   autoComplete?: string;
   enterKeyHint?: "next" | "done" | "enter";
   onEnter?: () => void;
+  /** For a box that holds something short. The field keeps its width, so a problem under it does not wrap in a column. */
+  boxClassName?: string;
 }) {
   const id = useId();
   return (
@@ -127,7 +130,7 @@ export function TextField({
             onEnter();
           }
         }}
-        className={FIELD}
+        className={boxClassName ? `${FIELD} ${boxClassName}` : FIELD}
       />
     </Shell>
   );

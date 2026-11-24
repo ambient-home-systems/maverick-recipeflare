@@ -288,7 +288,9 @@ export function CookScreen({
                                     {uses.map((item) => (
                                       <span
                                         key={item.id}
-                                        className="flex flex-wrap items-baseline gap-x-2"
+                                        // One line box for every line, marked or not, so the lines
+                                        // keep an even pitch and the marks' outlines stay apart.
+                                        className="flex min-h-8 flex-wrap items-center gap-x-2"
                                       >
                                         <span>
                                           <IngredientText item={item} scale={session.scale} />

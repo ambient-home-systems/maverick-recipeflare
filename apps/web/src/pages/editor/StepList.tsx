@@ -50,14 +50,25 @@ function readTime(text: string): number | null {
   return /^\d+$/.test(typed) ? Number(typed) * 60 || null : readStatedDuration(typed);
 }
 
-/** A step's time and its ingredients, in a few words: "15 min · butter, flour". */
+/** How many ingredients a closed step names before it counts the rest. */
+const NAMED = 3;
+
+/**
+ * A step's time and its ingredients, in a few words: "15 min · butter, flour".
+ * It is a note under the step, so it stays shorter than the step: past three
+ * ingredients it names three and counts the rest.
+ */
 function detailsLine(row: StepRow, lines: readonly StepLine[]): string {
   const names = row.ingredientIds.flatMap(
     (id) => lines.find((line) => line.id === id)?.label ?? [],
   );
+  const named =
+    names.length > NAMED
+      ? `${names.slice(0, NAMED).join(", ")} and ${names.length - NAMED} more`
+      : names.join(", ");
   return [
     ...(row.durationSeconds === null ? [] : [formatDuration(row.durationSeconds)]),
-    ...(names.length > 0 ? [names.join(", ")] : []),
+    ...(named === "" ? [] : [named]),
   ].join(" · ");
 }
 
@@ -78,11 +89,13 @@ function StepDetailFields({
   const shown = row.durationSeconds === null ? "" : formatDuration(row.durationSeconds);
   const [time, setTime] = useState(shown);
   const [picking, setPicking] = useState(false);
+  // A time half typed is not yet a wrong one: the problem is said once the box is left.
+  const [left, setLeft] = useState(false);
   // The step's words can set the time too. What was typed stays as typed while it says the same.
   useEffect(() => {
     setTime((typed) => (readTime(typed) === row.durationSeconds ? typed : shown));
   }, [row.durationSeconds, shown]);
-  const timeBad = time.trim() !== "" && readTime(time) === null;
+  const timeBad = left && time.trim() !== "" && readTime(time) === null;
   const used = row.ingredientIds.flatMap((id) => lines.find((line) => line.id === id) ?? []);
   const toggle = (id: string) =>
     onChange({
@@ -97,21 +110,26 @@ function StepDetailFields({
 
   return (
     <fieldset className="mt-4">
-      <legend className="mb-2 text-sm font-semibold">What cook mode shows with this step</legend>
-      <TextField
-        className="w-[9.5rem]"
-        label="Time"
-        value={time}
-        error={timeBad ? "Use a time such as 20 min or 1 hr 30 min." : undefined}
-        onChange={(text) => {
-          setTime(text);
-          if (text.trim() === "") {
-            onChange({ ...row, durationSeconds: null });
-          } else if (readTime(text) !== null) {
-            onChange({ ...row, durationSeconds: readTime(text) });
-          }
-        }}
-      />
+      {/* A sentence, not a third label over two labelled fields. */}
+      <legend className="mb-3 text-sm">Cook mode shows these with the step.</legend>
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: it only notes that the box inside was left */}
+      <div onBlur={() => setLeft(true)}>
+        <TextField
+          boxClassName="max-w-[9.5rem]"
+          label="Time"
+          value={time}
+          error={timeBad ? "Use a time such as 20 min or 1 hr 30 min." : undefined}
+          onChange={(text) => {
+            setTime(text);
+            setLeft(false);
+            if (text.trim() === "") {
+              onChange({ ...row, durationSeconds: null });
+            } else if (readTime(text) !== null) {
+              onChange({ ...row, durationSeconds: readTime(text) });
+            }
+          }}
+        />
+      </div>
       <h4 className="mt-3 mb-1.5 text-sm font-semibold">Ingredients</h4>
       {lines.length === 0 ? (
         <p className="text-sm">Add the ingredients above, then say which this step uses.</p>
@@ -137,7 +155,7 @@ function StepDetailFields({
       <Picker
         open={picking}
         onClose={() => setPicking(false)}
-        title="Ingredients this step uses"
+        title="Used in this step"
         searchLabel="Find an ingredient"
         options={lines.map((line) => ({
           id: line.id,

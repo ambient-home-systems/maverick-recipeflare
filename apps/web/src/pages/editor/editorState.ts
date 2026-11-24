@@ -316,7 +316,9 @@ type NamedFoods = { foods: readonly Pick<Food, "id" | "name" | "pluralName" | "a
 /** What an ingredient line is called on a step: its food, or failing that its own words. */
 export function lineLabel(line: LineRow, lists: NamedFoods): string {
   const food = lists.foods.find((f) => f.id === line.foodId);
-  return food?.name ?? line.newFood ?? line.text.trim();
+  // A line with no food is called by its own words, up to the first comma: what
+  // follows a comma is how it is prepared, and would read as another ingredient in a list.
+  return food?.name ?? line.newFood ?? (line.text.split(",")[0] ?? "").trim();
 }
 
 /**
