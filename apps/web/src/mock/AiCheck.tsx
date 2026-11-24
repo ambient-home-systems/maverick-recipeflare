@@ -39,7 +39,11 @@ function Outcome({ result }: { result: Result }) {
       {answer.model} answered in {(answer.milliseconds / 1000).toFixed(1)} seconds
       {answer.tries > 1 ? `, on try ${answer.tries}` : ""}. Profile: {answer.profile}.
       {answer.usage
-        ? ` It read ${answer.usage.inputTokens} tokens and wrote ${answer.usage.outputTokens}.`
+        ? ` It read ${answer.usage.inputTokens} tokens and wrote ${answer.usage.outputTokens}${
+            answer.usage.reasoningTokens
+              ? `, ${answer.usage.reasoningTokens} of them reasoning`
+              : ""
+          }.`
         : ""}
       {answer.logId ? ` Gateway log: ${answer.logId}.` : ""}
     </Notice>

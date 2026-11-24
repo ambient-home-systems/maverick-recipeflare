@@ -188,6 +188,7 @@ function aiForJob(tools: ImportTools, jobId: string, calls: AiCallRecord[]): AiR
         milliseconds: answer.milliseconds,
         inputTokens: answer.usage?.inputTokens ?? null,
         outputTokens: answer.usage?.outputTokens ?? null,
+        reasoningTokens: answer.usage?.reasoningTokens ?? null,
         tries: answer.tries,
         at: new Date().toISOString(),
       });
